@@ -1,0 +1,90 @@
+{
+  "title": "Raccolta rifiuti",
+  "subtitle": "Prossime 2 settimane",
+  "sections": {
+    "today": "Oggi",
+    "upcoming": "Prossimi 7 giorni",
+    "types": "Tipi di rifiuto",
+    "rules": "Regole di raccolta",
+    "exceptions": "Eccezioni (festività)",
+    "management": "Gestione"
+  },
+  "actions": {
+    "addType": "Aggiungi tipo",
+    "addRule": "Aggiungi regola",
+    "addException": "Nuova eccezione",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "delete": "Elimina",
+    "edit": "Modifica"
+  },
+  "aria": {
+    "editType": "Modifica {{name}}",
+    "deleteType": "Elimina {{name}}",
+    "editRule": "Modifica regola",
+    "deleteRule": "Elimina regola"
+  },
+  "weekdays": {
+    "long": ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"],
+    "short": ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"]
+  },
+  "freq": {
+    "weekly": "Settimanale",
+    "everyNDays": "Ogni N giorni",
+    "everyNDaysShort": "Ogni {{n}} giorni"
+  },
+  "container": {
+    "bag": "Sacchetto",
+    "bin": "Bidone"
+  },
+  "form": {
+    "type": {
+      "newTitle": "Nuovo tipo di rifiuto",
+      "editTitle": "Modifica tipo",
+      "title": "Tipo di rifiuto",
+      "name": "Nome",
+      "namePlaceholder": "es. Plastica",
+      "color": "Colore",
+      "colorPlaceholder": "#4CAF50 o oklch(...)",
+      "icon": "Icona",
+      "iconPlaceholder": "trash",
+      "containerType": "Contenitore",
+      "expositionInstructions": "Istruzioni esposizione",
+      "expositionInstructionsPlaceholder": "Dove e come esporre..."
+    },
+    "rule": {
+      "title": "Regola di raccolta",
+      "wasteType": "Tipo di rifiuto",
+      "frequency": "Frequenza",
+      "interval": "Intervallo (giorni)",
+      "weekday": "Giorno della settimana",
+      "expositionTime": "Orario esposizione",
+      "anchorDate": "Data di riferimento"
+    },
+    "exception": {
+      "title": "Eccezione",
+      "wasteType": "Tipo di rifiuto",
+      "originalDate": "Data originale",
+      "replacementDate": "Data sostitutiva",
+      "reason": "Motivo"
+    }
+  },
+  "confirm": {
+    "title": "Conferma eliminazione",
+    "deleteType": "Eliminare \"{{name}}\" e tutte le sue regole ed eccezioni?",
+    "deleteRule": "Eliminare questa regola?"
+  },
+  "empty": {
+    "today": "Oggi non c'è nessuna raccolta.",
+    "upcoming": "Nessuna raccolta prossima.",
+    "types": "Nessun tipo di rifiuto configurato.",
+    "rules": "Nessuna regola configurata",
+    "exceptions": "Nessuna eccezione configurata.",
+    "day": "—"
+  },
+  "labels": {
+    "today": "Oggi"
+  },
+  "describeRule": "{{freq}} — ore {{time}}",
+  "describeRuleWithDays": "{{freq}} — {{days}} — ore {{time}}"
+}

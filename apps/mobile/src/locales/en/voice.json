@@ -1,0 +1,176 @@
+{
+  "title": "Voice",
+  "enabled": "Voice control",
+  "sensitivity": "Sensitivity",
+  "sensitivityLow": "Low",
+  "sensitivityHigh": "High",
+  "status": {
+    "disabled": "Disabled",
+    "idle": "Listening",
+    "listening": "Hearing you…",
+    "processing": "Processing…",
+    "speaking": "Speaking…",
+    "error": "Error"
+  },
+  "commands": {
+    "title": "Available commands",
+    "addShopping": "\"Add [item] to the shopping list\"",
+    "removeShopping": "\"Remove [item] from the shopping list\"",
+    "readShopping": "\"What's on the shopping list?\"",
+    "addEvent": "\"Add [event] to the calendar\"",
+    "readTodayEvents": "\"What events do I have today?\"",
+    "readWaste": "\"What goes out tonight?\"",
+    "readWeather": "\"What's the weather like?\"",
+    "addPostit": "\"Note: [text]\"",
+    "morning": "\"Good morning\" (morning routine)",
+    "night": "\"Good night\" (evening routine)"
+  },
+  "privacy": {
+    "active": "Microphone active",
+    "paused": "Microphone paused",
+    "disabled": "Voice control disabled"
+  },
+  "aria": {
+    "active": "Voice active",
+    "indicator": "Voice indicator"
+  },
+  "responses": {
+    "shopping": {
+      "dontUnderstandAdd": "I didn't catch what to add to the shopping list",
+      "dontUnderstandRemove": "I didn't catch what to remove from the shopping list",
+      "added": "Added {{name}} to the shopping list",
+      "removed": "Removed {{name}} from the shopping list",
+      "notFound": "I couldn't find {{name}} on the shopping list",
+      "empty": "The shopping list is empty",
+      "single": "There's only {{name}} on the shopping list",
+      "multiple": "On the shopping list: {{names}} and {{last}}"
+    },
+    "calendar": {
+      "dontUnderstandEvent": "I didn't catch which event to add",
+      "eventAdded": "Event added to the calendar",
+      "todayEmpty": "No events scheduled for today",
+      "todayList": "Today you have: {{list}}",
+      "tomorrowEmpty": "No events tomorrow",
+      "tomorrowList": "Tomorrow you have: {{list}}",
+      "eventAtTime": "{{title}} at {{time}}"
+    },
+    "timer": {
+      "noDuration": "I didn't catch the timer duration. Try 'timer 5 minutes'.",
+      "dontUnderstandDuration": "I didn't catch the duration. Try 'timer 5 minutes' or 'timer half an hour'.",
+      "started": "Timer set for {{duration}}!",
+      "stopped": "Timer stopped!",
+      "cancelled": "Timer cancelled!",
+      "noActive": "There's no active timer",
+      "cancelledAll_one": "I cancelled the only timer",
+      "cancelledAll_other": "I cancelled all {{count}} timers",
+      "cancelledOne": "I cancelled the {{remaining}} timer",
+      "multipleList_one": "There's {{count}} active timer: {{list}}. Which one should I cancel? Say the first, the second, or all.",
+      "multipleList_other": "There are {{count}} active timers: {{list}}. Which one should I cancel? Say the first, the second, or all.",
+      "stopFailed": "I couldn't stop the timer",
+      "zero": "0 seconds",
+      "hours_one": "{{count}} hour",
+      "hours_other": "{{count}} hours",
+      "minutes_one": "{{count}} minute",
+      "minutes_other": "{{count}} minutes",
+      "seconds_one": "{{count}} second",
+      "seconds_other": "{{count}} seconds",
+      "ordinals": ["first", "second", "third", "fourth", "fifth"]
+    },
+    "postit": {
+      "dontUnderstand": "I didn't catch what to write. Try 'remind me to buy bread'.",
+      "written": "Done! I wrote: {{text}}"
+    },
+    "recipe": {
+      "askWhat": "What would you like to cook? Tell me a dish and I'll look up the recipe.",
+      "searchHint": "Try searching for \"{{query}}\" on the recipes page! You can also say \"ok home, good morning\" for a daily briefing."
+    },
+    "datetime": {
+      "timeExact": "It's {{hour}} o'clock",
+      "timeWithMinutes": "It's {{hour}}:{{minutes}}",
+      "dateFull": "Today is {{weekday}}, {{month}} {{day}}, {{year}}",
+      "weekdays": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+      "months": [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+      ]
+    },
+    "routine": {
+      "morningGreeting": "Good morning!",
+      "todayList": "Today you have: {{list}}.",
+      "todayEmpty": "No events today.",
+      "nightGreeting": "Good night! Sleep well."
+    },
+    "music": {
+      "played": "Music started!",
+      "playFailed": "I can't start the music. Make sure Spotify is open on a device.",
+      "paused": "Music paused",
+      "pauseFailed": "I can't pause right now",
+      "next": "Next track!",
+      "nextFailed": "I can't skip the track",
+      "previous": "Previous track",
+      "previousFailed": "I can't go back",
+      "noVolume": "I didn't catch the volume. Try 'volume 50' or 'turn it up'.",
+      "volumeAt": "Volume at {{percent}}%",
+      "volumeFailed": "I can't change the volume"
+    },
+    "conversation": {
+      "greetings": [
+        "Hi! How can I help?",
+        "Hey there! Tell me.",
+        "Hi! I'm here for you.",
+        "Here I am! What do you need?"
+      ],
+      "howAreYou": [
+        "Great, thanks! And you?",
+        "Doing well! Ready to help.",
+        "All good! What can I do for you?",
+        "Can't complain, I'm a virtual assistant!"
+      ],
+      "thankYou": [
+        "You're welcome!",
+        "Anytime!",
+        "It was my pleasure!",
+        "Always here!",
+        "No problem!"
+      ],
+      "jokes": [
+        "Why did the computer go to the doctor? Because it had a virus!",
+        "What do you call a cat in front of a computer? A mouse hunter!",
+        "Why was the math book sad? Because it had too many problems!",
+        "What does one WiFi say to the other? You have a great connection!",
+        "Why don't ghosts lie? Because you can see right through them!",
+        "Why did the smart home go to therapy? Too many issues with commitment — it kept turning off!",
+        "What did the router say to the modem? Let's stay connected!",
+        "Why did the tomato turn red? Because it saw the salad dressing!"
+      ],
+      "compliments": [
+        "Thanks, you're too kind!",
+        "Oh, you're making me blush! If I could…",
+        "Thanks! You're fantastic too!",
+        "Too kind! Nice to hear."
+      ],
+      "whoAreYou": [
+        "I'm Home, your household assistant! I can handle shopping, weather, calendar, and much more.",
+        "My name is Home! I'm your house assistant. Say 'help' to find out what I can do."
+      ]
+    },
+    "help": "I can do lots of things! Try: 'what's the weather', 'add milk to the shopping list', 'what time is it', 'timer 5 minutes', 'what's on today', 'tell me a joke', or 'good morning' for a daily briefing.",
+    "cancel": {
+      "stoppedAlert": "Stopped",
+      "cancelled": "Ok, cancelled"
+    },
+    "errors": {
+      "generic": "Something went wrong"
+    }
+  }
+}

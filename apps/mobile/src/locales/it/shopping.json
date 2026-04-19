@@ -1,0 +1,51 @@
+{
+  "title": "Spesa",
+  "subtitle": "Lista condivisa di casa",
+  "addPlaceholder": "Aggiungi un prodotto…",
+  "fields": {
+    "quantity": "Quantità",
+    "unit": "Unità",
+    "category": "Categoria"
+  },
+  "actions": {
+    "add": "Aggiungi",
+    "delete": "Elimina"
+  },
+  "sections": {
+    "active": "Da comprare",
+    "completed": "Completati"
+  },
+  "empty": {
+    "title": "La tua spesa è vuota",
+    "body": "Aggiungi il primo prodotto, o dillo a voce: \"Ok casa, aggiungi latte alla spesa\""
+  },
+  "categories": {
+    "fruits": "Frutta e verdura",
+    "meat": "Carne e pesce",
+    "dairy": "Latticini",
+    "bakery": "Pane e dolci",
+    "pantry": "Dispensa",
+    "frozen": "Surgelati",
+    "beverages": "Bevande",
+    "other": "Altro"
+  },
+  "units": {
+    "pz": "pz",
+    "kg": "kg",
+    "g": "g",
+    "l": "l",
+    "ml": "ml",
+    "confezione": "confezione",
+    "bottiglia": "bottiglia",
+    "lattina": "lattina",
+    "barattolo": "barattolo",
+    "scatola": "scatola",
+    "busta": "busta",
+    "other": "altro"
+  },
+  "tile": {
+    "count_one": "{{count}} prodotto",
+    "count_other": "{{count}} prodotti",
+    "calmState": "Tutto sotto controllo"
+  }
+}

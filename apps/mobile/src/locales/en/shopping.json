@@ -1,0 +1,51 @@
+{
+  "title": "Shopping",
+  "subtitle": "Shared household list",
+  "addPlaceholder": "Add a product...",
+  "fields": {
+    "quantity": "Quantity",
+    "unit": "Unit",
+    "category": "Category"
+  },
+  "actions": {
+    "add": "Add",
+    "delete": "Delete"
+  },
+  "sections": {
+    "active": "To buy",
+    "completed": "Completed"
+  },
+  "empty": {
+    "title": "Your shopping list is empty",
+    "body": "Add the first item, or say it out loud: \"Hey home, add milk to the shopping list\""
+  },
+  "categories": {
+    "fruits": "Fruits & vegetables",
+    "meat": "Meat & fish",
+    "dairy": "Dairy",
+    "bakery": "Bread & pastries",
+    "pantry": "Pantry",
+    "frozen": "Frozen",
+    "beverages": "Beverages",
+    "other": "Other"
+  },
+  "units": {
+    "pz": "pc",
+    "kg": "kg",
+    "g": "g",
+    "l": "l",
+    "ml": "ml",
+    "confezione": "pack",
+    "bottiglia": "bottle",
+    "lattina": "can",
+    "barattolo": "jar",
+    "scatola": "box",
+    "busta": "bag",
+    "other": "other"
+  },
+  "tile": {
+    "count_one": "{{count}} item",
+    "count_other": "{{count}} items",
+    "calmState": "All under control"
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "title": "Cameras",
+  "subtitle": "Blink",
+  "setup": {
+    "title": "Set up Blink",
+    "body": "Enter your Blink account credentials to connect your cameras",
+    "email": "Email",
+    "password": "Password",
+    "connect": "Connect",
+    "disclaimer": "Credentials are stored securely on your local server"
+  },
+  "status": {
+    "online": "Online",
+    "offline": "Offline",
+    "notConfigured": "Not configured"
+  },
+  "actions": {
+    "sync": "Sync",
+    "disconnect": "Disconnect",
+    "deleteClip": "Delete clip"
+  },
+  "clips": {
+    "title": "Recent clips",
+    "empty": "No clips recorded",
+    "duration": "{{seconds}}s"
+  },
+  "videoUnavailable": "Video unavailable",
+  "tile": {
+    "count_one": "{{count}} camera",
+    "count_other": "{{count}} cameras",
+    "notConfigured": "Not configured"
+  },
+  "notConfigured": {
+    "message": "No cameras configured. Connect your accounts in settings.",
+    "goToSettings": "Go to Settings"
+  },
+  "confirm": {
+    "disconnect": "Disconnect the Blink account?",
+    "deleteClip": "Delete this clip?"
+  },
+  "errors": {
+    "setupFailed": "Failed to connect to Blink",
+    "syncFailed": "Sync failed"
+  }
+}

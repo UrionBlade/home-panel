@@ -1,0 +1,99 @@
+{
+  "title": "Ricette",
+  "subtitle": "Le ricette di casa",
+  "search": "Cerca ricette...",
+  "searchCombined": "Cerca tra le mie ricette e su GialloZafferano…",
+  "filters": {
+    "all": "Tutte",
+    "favorites": "Preferite",
+    "primo": "Primi",
+    "secondo": "Secondi",
+    "contorno": "Contorni",
+    "dolce": "Dolci",
+    "colazione": "Colazione",
+    "snack": "Snack"
+  },
+  "fields": {
+    "title": "Titolo",
+    "description": "Descrizione",
+    "sourceUrl": "URL originale",
+    "imageUrl": "URL immagine",
+    "prepTime": "Preparazione (min)",
+    "cookTime": "Cottura (min)",
+    "servings": "Porzioni",
+    "difficulty": "Difficoltà",
+    "ingredients": "Ingredienti",
+    "steps": "Procedimento",
+    "tags": "Categorie",
+    "notes": "Note personali"
+  },
+  "difficulty": {
+    "facile": "Facile",
+    "medio": "Medio",
+    "difficile": "Difficile"
+  },
+  "actions": {
+    "add": "Nuova ricetta",
+    "importUrl": "Importa da URL",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "favorite": "Preferita",
+    "unfavorite": "Rimuovi preferita",
+    "openSource": "Apri originale",
+    "save": "Salva"
+  },
+  "sections": {
+    "mine": "Le mie ricette",
+    "mineEmpty": "Non hai ancora salvato nessuna ricetta. Cerca qualcosa qui sopra o aggiungine una a mano.",
+    "mineEmptySearch": "Nessuna ricetta salvata corrisponde alla ricerca.",
+    "gzLatest": "Ultime da GialloZafferano",
+    "gzSearch": "Da GialloZafferano",
+    "gzLoading": "Carico le ultime ricette…",
+    "gzEmpty": "Nessuna ricetta disponibile al momento.",
+    "gzError": "Impossibile contattare GialloZafferano. Riprova più tardi."
+  },
+  "empty": {
+    "title": "Nessuna ricetta",
+    "body": "Aggiungi la tua prima ricetta o importala da un sito"
+  },
+  "import": {
+    "searchEmpty": "Nessuna ricetta trovata",
+    "searchLoading": "Cerco su GialloZafferano…",
+    "fetchingDetails": "Scarico il dettaglio…"
+  },
+  "remoteDetail": {
+    "save": "Salva tra le mie ricette",
+    "saved": "Salvata",
+    "fetchError": "Non sono riuscito a scaricare i dettagli completi dalla pagina. Puoi comunque aprire l'originale.",
+    "saveError": "Errore durante il salvataggio. Riprova.",
+    "sections": {
+      "tips": "Consiglio",
+      "notes": "Note",
+      "conservation": "Conservazione"
+    }
+  },
+  "importUrl": {
+    "title": "Importa ricetta da URL",
+    "body": "Incolla il link di una ricetta da qualsiasi sito (GialloZafferano, BBC Good Food, Cookist…). Estrarrò titolo, ingredienti e passaggi.",
+    "placeholder": "https://…",
+    "analyze": "Analizza",
+    "analyzing": "Analizzo la pagina…",
+    "error": "Non sono riuscito a leggere la ricetta da questa pagina.",
+    "back": "Indietro",
+    "save": "Salva ricetta"
+  },
+  "tile": {
+    "title": "Ricette",
+    "suggestion": "Cosa cuciniamo?",
+    "count_one": "{{count}} ricetta",
+    "count_other": "{{count}} ricette"
+  },
+  "confirm": {
+    "delete": "Eliminare questa ricetta?"
+  },
+  "addIngredient": "Aggiungi ingrediente",
+  "addStep": "Aggiungi passaggio",
+  "placeholders": {
+    "notes": "Note personali..."
+  }
+}

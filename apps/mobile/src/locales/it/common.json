@@ -1,0 +1,51 @@
+{
+  "actions": {
+    "save": "Salva",
+    "cancel": "Annulla",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "add": "Aggiungi",
+    "confirm": "Conferma",
+    "close": "Chiudi",
+    "reload": "Ricarica",
+    "back": "Indietro"
+  },
+  "states": {
+    "loading": "Caricamento…",
+    "empty": "Niente da mostrare",
+    "error": "Si è verificato un errore"
+  },
+  "tabs": {
+    "home": "Home",
+    "calendar": "Calendario",
+    "shopping": "Spesa",
+    "board": "Bacheca",
+    "waste": "Rifiuti",
+    "timers": "Timer",
+    "cameras": "Telecamere",
+    "recipes": "Ricette",
+    "laundry": "Lavanderia",
+    "music": "Musica",
+    "settings": "Impostazioni"
+  },
+  "greeting": {
+    "morning": "Buongiorno",
+    "afternoon": "Buon pomeriggio",
+    "evening": "Buonasera"
+  },
+  "comingSoon": {
+    "title": "In arrivo",
+    "subtitle": "Questa sezione sarà disponibile in una prossima versione",
+    "shopping": "La lista della spesa arriverà in una prossima versione",
+    "calendar": "Il calendario famiglia arriverà in una prossima versione",
+    "board": "La bacheca post-it arriverà in una prossima versione",
+    "cameras": "Le telecamere Blink arriveranno in una prossima versione"
+  },
+  "backend": {
+    "connected": "Backend connesso",
+    "disconnected": "Backend non raggiungibile"
+  },
+  "aria": {
+    "mainNav": "Navigazione principale"
+  }
+}

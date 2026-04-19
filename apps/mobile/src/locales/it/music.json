@@ -1,0 +1,57 @@
+{
+  "title": "Musica",
+  "connectedAs": "Connesso come {{name}}",
+  "disconnect": "Disconnetti",
+  "login": {
+    "title": "Connetti Spotify",
+    "subtitle": "Controlla Spotify dal pannello di casa",
+    "openSpotify": "Apri Spotify",
+    "instructionsOpen": "Si aprirà Spotify per autorizzare l'accesso. Dopo il login verrai reindirizzato — copia l'URL dalla barra e incollalo qui sotto.",
+    "pasteTitle": "Incolla il codice",
+    "pasteBody": "Dopo il login su Spotify, copia l'URL completo dalla barra del browser e incollalo qui sotto.",
+    "pastePlaceholder": "Incolla URL o codice...",
+    "connect": "Connetti",
+    "error": "Errore durante la connessione. Riprova.",
+    "restart": "Ricomincia"
+  },
+  "player": {
+    "nowPlaying": "In riproduzione",
+    "noTrack": "Nessun brano in riproduzione",
+    "progress": "Avanzamento brano",
+    "controls": "Controlli riproduzione",
+    "shuffle": "Shuffle",
+    "previous": "Brano precedente",
+    "next": "Brano successivo",
+    "play": "Riproduci",
+    "pause": "Pausa",
+    "repeat": "Ripeti",
+    "volume": "Volume",
+    "albumCover": "Copertina di {{album}}",
+    "playTrack": "Riproduci {{name}} di {{artists}}"
+  },
+  "devices": {
+    "title": "Dispositivi",
+    "refresh": "Aggiorna",
+    "refreshLabel": "Aggiorna dispositivi",
+    "empty": "Nessun dispositivo disponibile. Apri Spotify su un dispositivo (Google Home, telefono, PC) per farlo apparire qui.",
+    "select": "Seleziona dispositivo di riproduzione"
+  },
+  "playlists": {
+    "title": "Playlist",
+    "yours": "Le tue playlist",
+    "play": "Riproduci playlist {{name}}",
+    "trackCount": "{{count}} brani · {{owner}}"
+  },
+  "search": {
+    "title": "Cerca",
+    "label": "Cerca brani",
+    "placeholder": "Cerca artisti, brani, album…",
+    "ariaLabel": "Cerca in Spotify",
+    "noResults": "Nessun risultato trovato"
+  },
+  "callback": {
+    "aria": "Collegamento Spotify in corso",
+    "connecting": "Collegamento a Spotify in corso…",
+    "error": "Errore durante il collegamento. Torna alla pagina Musica e riprova."
+  }
+}

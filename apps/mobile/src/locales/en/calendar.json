@@ -1,0 +1,84 @@
+{
+  "title": "Calendar",
+  "subtitle": "Family events",
+  "views": {
+    "today": "Today",
+    "agenda": "Agenda",
+    "month": "Month",
+    "week": "Week"
+  },
+  "actions": {
+    "addEvent": "New event",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "createEvent": "Create event",
+  "agenda": {
+    "empty30days": "No events in the next 30 days"
+  },
+  "aria": {
+    "section": "Section",
+    "view": "Calendar view"
+  },
+  "fields": {
+    "title": "Title",
+    "description": "Description",
+    "startsAt": "Start",
+    "endsAt": "End",
+    "allDay": "All day",
+    "location": "Location",
+    "category": "Category",
+    "attendees": "Attendees",
+    "recurrence": "Recurrence",
+    "reminder": "Reminder"
+  },
+  "recurrence": {
+    "none": "None",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "yearly": "Yearly"
+  },
+  "reminders": {
+    "none": "None",
+    "15": "15 minutes before",
+    "60": "1 hour before",
+    "1440": "1 day before"
+  },
+  "today": {
+    "noEvents": "No events scheduled for today",
+    "header": "Today's events"
+  },
+  "tile": {
+    "title": "Today",
+    "noEvents": "No events today",
+    "moreCount": "+{{count}} more"
+  },
+  "errors": {
+    "titleRequired": "Title is required",
+    "endBeforeStart": "End must be after start"
+  },
+  "sources": {
+    "title": "External calendars",
+    "add": "Add calendar",
+    "name": "Name",
+    "url": "URL (ICS or CalDAV)",
+    "type": "Type",
+    "color": "Color",
+    "syncInterval": "Sync every (minutes)",
+    "lastSync": "Last synced",
+    "syncNow": "Sync now",
+    "syncing": "Syncing...",
+    "syncError": "Sync error",
+    "neverSynced": "Never synced",
+    "empty": "No external calendars configured",
+    "urlPlaceholder": "https://calendar.google.com/calendar/ical/xxx/basic.ics",
+    "delete": "Remove this calendar?",
+    "deleteConfirm": "Delete",
+    "ics": "ICS (direct URL)",
+    "caldav": "CalDAV",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "googleHelp": "For Google Calendar: Settings > Calendar > Secret address in iCal format"
+  }
+}

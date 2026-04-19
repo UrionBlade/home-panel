@@ -1,0 +1,176 @@
+{
+  "title": "Voce",
+  "enabled": "Controllo vocale",
+  "sensitivity": "Sensibilità",
+  "sensitivityLow": "Bassa",
+  "sensitivityHigh": "Alta",
+  "status": {
+    "disabled": "Disattivato",
+    "idle": "In ascolto",
+    "listening": "Sto ascoltando…",
+    "processing": "Elaboro…",
+    "speaking": "Parlo…",
+    "error": "Errore"
+  },
+  "commands": {
+    "title": "Comandi disponibili",
+    "addShopping": "\"Aggiungi [prodotto] alla spesa\"",
+    "removeShopping": "\"Togli [prodotto] dalla spesa\"",
+    "readShopping": "\"Cosa c'è nella spesa?\"",
+    "addEvent": "\"Aggiungi [evento] al calendario\"",
+    "readTodayEvents": "\"Che eventi ho oggi?\"",
+    "readWaste": "\"Cosa porto fuori stasera?\"",
+    "readWeather": "\"Che tempo fa?\"",
+    "addPostit": "\"Nota: [testo]\"",
+    "morning": "\"Buongiorno\" (routine mattina)",
+    "night": "\"Buonanotte\" (routine sera)"
+  },
+  "privacy": {
+    "active": "Microfono attivo",
+    "paused": "Microfono in pausa",
+    "disabled": "Controllo vocale disattivato"
+  },
+  "aria": {
+    "active": "Voce attiva",
+    "indicator": "Indicatore vocale"
+  },
+  "responses": {
+    "shopping": {
+      "dontUnderstandAdd": "Non ho capito cosa aggiungere alla spesa",
+      "dontUnderstandRemove": "Non ho capito cosa togliere dalla spesa",
+      "added": "Ho aggiunto {{name}} alla spesa",
+      "removed": "Ho rimosso {{name}} dalla spesa",
+      "notFound": "Non ho trovato {{name}} nella spesa",
+      "empty": "La lista della spesa è vuota",
+      "single": "Nella spesa c'è solo {{name}}",
+      "multiple": "Nella spesa ci sono: {{names}} e {{last}}"
+    },
+    "calendar": {
+      "dontUnderstandEvent": "Non ho capito quale evento aggiungere",
+      "eventAdded": "Evento aggiunto al calendario",
+      "todayEmpty": "Oggi non ci sono eventi in programma",
+      "todayList": "Oggi hai: {{list}}",
+      "tomorrowEmpty": "Domani non ci sono eventi",
+      "tomorrowList": "Domani hai: {{list}}",
+      "eventAtTime": "{{title}} alle {{time}}"
+    },
+    "timer": {
+      "noDuration": "Non ho capito la durata del timer. Prova con 'timer 5 minuti'.",
+      "dontUnderstandDuration": "Non ho capito la durata. Prova con 'timer 5 minuti' o 'timer mezz'ora'.",
+      "started": "Timer di {{duration}} avviato!",
+      "stopped": "Timer fermato!",
+      "cancelled": "Timer cancellato!",
+      "noActive": "Non c'è nessun timer attivo",
+      "cancelledAll_one": "Ho cancellato l'unico timer",
+      "cancelledAll_other": "Ho cancellato tutti i {{count}} timer",
+      "cancelledOne": "Ho cancellato il timer da {{remaining}}",
+      "multipleList_one": "C'è {{count}} timer attivo: {{list}}. Quale vuoi cancellare? Dì il primo, il secondo, o tutti.",
+      "multipleList_other": "Ci sono {{count}} timer attivi: {{list}}. Quale vuoi cancellare? Dì il primo, il secondo, o tutti.",
+      "stopFailed": "Non sono riuscito a fermare il timer",
+      "zero": "0 secondi",
+      "hours_one": "{{count}} ora",
+      "hours_other": "{{count}} ore",
+      "minutes_one": "{{count}} minuto",
+      "minutes_other": "{{count}} minuti",
+      "seconds_one": "{{count}} secondo",
+      "seconds_other": "{{count}} secondi",
+      "ordinals": ["primo", "secondo", "terzo", "quarto", "quinto"]
+    },
+    "postit": {
+      "dontUnderstand": "Non ho capito cosa scrivere. Prova 'ricordami di comprare il pane'.",
+      "written": "Fatto! Ho scritto: {{text}}"
+    },
+    "recipe": {
+      "askWhat": "Cosa vorresti cucinare? Dimmi un piatto e cerco la ricetta.",
+      "searchHint": "Prova a cercare \"{{query}}\" nella pagina ricette! Puoi anche dire \"ok casa, buongiorno\" per un riepilogo della giornata."
+    },
+    "datetime": {
+      "timeExact": "Sono le {{hour}}",
+      "timeWithMinutes": "Sono le {{hour}} e {{minutes}}",
+      "dateFull": "Oggi è {{weekday}} {{day}} {{month}} {{year}}",
+      "weekdays": ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"],
+      "months": [
+        "gennaio",
+        "febbraio",
+        "marzo",
+        "aprile",
+        "maggio",
+        "giugno",
+        "luglio",
+        "agosto",
+        "settembre",
+        "ottobre",
+        "novembre",
+        "dicembre"
+      ]
+    },
+    "routine": {
+      "morningGreeting": "Buongiorno!",
+      "todayList": "Oggi hai: {{list}}.",
+      "todayEmpty": "Oggi non ci sono eventi.",
+      "nightGreeting": "Buonanotte! Dormi bene."
+    },
+    "music": {
+      "played": "Musica avviata!",
+      "playFailed": "Non riesco ad avviare la musica. Assicurati che Spotify sia aperto su un dispositivo.",
+      "paused": "Musica in pausa",
+      "pauseFailed": "Non riesco a mettere in pausa",
+      "next": "Prossima canzone!",
+      "nextFailed": "Non riesco a cambiare canzone",
+      "previous": "Canzone precedente",
+      "previousFailed": "Non riesco a tornare indietro",
+      "noVolume": "Non ho capito il volume. Prova 'volume al 50' o 'alza il volume'.",
+      "volumeAt": "Volume al {{percent}}%",
+      "volumeFailed": "Non riesco a cambiare il volume"
+    },
+    "conversation": {
+      "greetings": [
+        "Ciao! Come posso aiutarti?",
+        "Ehi, ciao! Dimmi pure.",
+        "Ciao! Sono qui per te.",
+        "Eccomi! Cosa serve?"
+      ],
+      "howAreYou": [
+        "Alla grande, grazie! E tu?",
+        "Benissimo! Pronta per aiutarti.",
+        "Tutto bene! Cosa posso fare per te?",
+        "Non mi posso lamentare, sono un'assistente virtuale!"
+      ],
+      "thankYou": [
+        "Di niente!",
+        "Figurati!",
+        "È stato un piacere!",
+        "Sempre a disposizione!",
+        "Ma di che!"
+      ],
+      "jokes": [
+        "Perché il computer è andato dal dottore? Perché aveva un virus!",
+        "Cosa fa un gatto davanti al computer? Cerca il mouse!",
+        "Perché il libro di matematica era triste? Perché aveva troppi problemi!",
+        "Cosa dice un WiFi all'altro? Hai una buona connessione!",
+        "Sai qual è il colmo per un elettricista? Non avere un buon contatto con la gente!",
+        "Perché i fantasmi non dicono bugie? Perché si possono vedere attraverso!",
+        "Cosa fa una pecora in discoteca? Bee, bee, bee!",
+        "Sai perché il pomodoro è diventato rosso? Perché ha visto il condimento!"
+      ],
+      "compliments": [
+        "Grazie, sei troppo gentile!",
+        "Oh, mi fai arrossire! Se potessi...",
+        "Grazie! Anche tu sei fantastico!",
+        "Troppo gentile! Fa piacere sentirlo."
+      ],
+      "whoAreYou": [
+        "Sono Casa, il tuo assistente domestico! Posso gestire la spesa, il meteo, il calendario e molto altro.",
+        "Mi chiamo Casa! Sono l'assistente di casa tua. Dì 'aiuto' per scoprire cosa posso fare."
+      ]
+    },
+    "help": "Posso fare tante cose! Prova: 'che tempo fa', 'aggiungi latte alla spesa', 'che ore sono', 'timer 5 minuti', 'cosa c'è oggi in agenda', 'raccontami una barzelletta', o 'buongiorno' per il riepilogo della giornata.",
+    "cancel": {
+      "stoppedAlert": "Fermato",
+      "cancelled": "Ok, annullato"
+    },
+    "errors": {
+      "generic": "Si è verificato un errore"
+    }
+  }
+}

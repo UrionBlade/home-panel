@@ -1,0 +1,11 @@
+{
+  "network": "Connessione al backend non disponibile",
+  "auth": "Token di autenticazione non valido",
+  "validation": "Dati non validi",
+  "unknown": "Errore sconosciuto",
+  "boundary": {
+    "title": "Qualcosa è andato storto",
+    "body": "Si è verificato un errore imprevisto. Ricarica la pagina per riprovare.",
+    "reload": "Ricarica"
+  }
+}

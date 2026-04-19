@@ -1,0 +1,92 @@
+{
+  "title": "Laundry",
+  "subtitle": "Samsung washer and dryer",
+  "washer": "Washer",
+  "dryer": "Dryer",
+  "state": {
+    "stop": "Stopped",
+    "run": "Running",
+    "pause": "Paused"
+  },
+  "job": {
+    "none": "--",
+    "weightSensing": "Weighing",
+    "wash": "Washing",
+    "rinse": "Rinsing",
+    "spin": "Spinning",
+    "wrinklePrevent": "Wrinkle prevent",
+    "finish": "Done!",
+    "airWash": "Air wash",
+    "drying": "Drying",
+    "cooling": "Cooling"
+  },
+  "power": {
+    "on": "On",
+    "off": "Off"
+  },
+  "labels": {
+    "state": "Status",
+    "phase": "Phase",
+    "mode": "Program",
+    "waterTemp": "Water temperature",
+    "spinLevel": "Spin speed",
+    "rinseCycles": "Rinse cycles",
+    "energy": "Energy usage",
+    "remoteControl": "Remote control",
+    "endAt": "Ends at {{time}}"
+  },
+  "remoteControl": {
+    "on": "Enabled",
+    "off": "Disabled"
+  },
+  "actions": {
+    "refresh": "Refresh",
+    "start": "Start",
+    "stop": "Stop",
+    "pause": "Pause"
+  },
+  "confirm": {
+    "stop": "Stop the current cycle?"
+  },
+  "empty": {
+    "message": "No appliance configured. Pick a washer and dryer in settings."
+  },
+  "units": {
+    "rpm": "{{value}} rpm"
+  },
+  "countdown": {
+    "finished": "Done!",
+    "hoursAndMinutes": "{{hours}}h {{minutes}}min",
+    "minutes": "{{count}} min"
+  },
+  "modes": {
+    "normal": "Cotton",
+    "heavy": "Heavy",
+    "delicate": "Delicates",
+    "quick": "Quick",
+    "wool": "Wool",
+    "bedding": "Bedding",
+    "rinse": "Rinse",
+    "spin": "Spin",
+    "eco": "Eco",
+    "towel": "Towels",
+    "outdoor": "Outdoor",
+    "babyCare": "Baby Care",
+    "shirts": "Shirts",
+    "dryCotton": "Dry cotton",
+    "dryNormal": "Normal dry",
+    "dryDelicate": "Delicate dry",
+    "dryHeavy": "Heavy dry",
+    "timeDry": "Timed dry",
+    "airWash": "Air wash"
+  },
+  "notConfigured": {
+    "message": "Connect SmartThings in settings to monitor your washer and dryer.",
+    "goToSettings": "Go to Settings"
+  },
+  "tile": {
+    "idle": "All idle",
+    "running": "{{count}} running",
+    "finished": "Cycle done!"
+  }
+}

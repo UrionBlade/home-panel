@@ -1,0 +1,57 @@
+{
+  "title": "Music",
+  "connectedAs": "Connected as {{name}}",
+  "disconnect": "Disconnect",
+  "login": {
+    "title": "Connect Spotify",
+    "subtitle": "Control Spotify from your home panel",
+    "openSpotify": "Open Spotify",
+    "instructionsOpen": "Spotify will open to authorize access. After login you'll be redirected — copy the URL from the address bar and paste it below.",
+    "pasteTitle": "Paste the code",
+    "pasteBody": "After login on Spotify, copy the full URL from the browser address bar and paste it below.",
+    "pastePlaceholder": "Paste URL or code...",
+    "connect": "Connect",
+    "error": "Connection failed. Please try again.",
+    "restart": "Start over"
+  },
+  "player": {
+    "nowPlaying": "Now playing",
+    "noTrack": "No track playing",
+    "progress": "Track progress",
+    "controls": "Playback controls",
+    "shuffle": "Shuffle",
+    "previous": "Previous track",
+    "next": "Next track",
+    "play": "Play",
+    "pause": "Pause",
+    "repeat": "Repeat",
+    "volume": "Volume",
+    "albumCover": "Cover of {{album}}",
+    "playTrack": "Play {{name}} by {{artists}}"
+  },
+  "devices": {
+    "title": "Devices",
+    "refresh": "Refresh",
+    "refreshLabel": "Refresh devices",
+    "empty": "No devices available. Open Spotify on a device (Google Home, phone, PC) to make it show up here.",
+    "select": "Select playback device"
+  },
+  "playlists": {
+    "title": "Playlists",
+    "yours": "Your playlists",
+    "play": "Play playlist {{name}}",
+    "trackCount": "{{count}} tracks · {{owner}}"
+  },
+  "search": {
+    "title": "Search",
+    "label": "Search tracks",
+    "placeholder": "Search artists, tracks, albums…",
+    "ariaLabel": "Search in Spotify",
+    "noResults": "No results found"
+  },
+  "callback": {
+    "aria": "Connecting to Spotify",
+    "connecting": "Connecting to Spotify…",
+    "error": "Something went wrong while connecting. Go back to the Music page and try again."
+  }
+}

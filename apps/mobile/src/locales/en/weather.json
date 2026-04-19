@@ -1,0 +1,66 @@
+{
+  "title": "Weather",
+  "subtitle": "Local forecast",
+  "now": "Now",
+  "aria": {
+    "openDetail": "Open weather details"
+  },
+  "sections": {
+    "now": "Now",
+    "forecast": "Next 7 days"
+  },
+  "conditions": {
+    "clearDay": "Clear",
+    "clearNight": "Clear",
+    "cloudy": "Cloudy",
+    "partlyCloudy": "Partly cloudy",
+    "rain": "Rain",
+    "snow": "Snow",
+    "thunderstorm": "Thunderstorm",
+    "fog": "Fog"
+  },
+  "metrics": {
+    "feelsLike": "Feels like",
+    "humidity": "Humidity",
+    "wind": "Wind",
+    "windDirection": "Wind direction",
+    "pressure": "Pressure",
+    "precipitation": "Precipitation",
+    "precipProbability": "Chance of rain",
+    "maxWind": "Max wind",
+    "tempMax": "High",
+    "tempMin": "Low"
+  },
+  "alerts": {
+    "info": "Advisory",
+    "warning": "Warning",
+    "severe": "Severe alert",
+    "validUntil": "Valid until {{time}}"
+  },
+  "actions": {
+    "refresh": "Refresh",
+    "lastUpdate": "Last updated"
+  },
+  "settings": {
+    "locations": "Locations",
+    "add": "Add",
+    "noLocations": "No locations configured.",
+    "addLocation": "Add location",
+    "editLocation": "Edit location",
+    "cannotDeleteLast": "You cannot delete the only location",
+    "fields": {
+      "name": "Name",
+      "latitude": "Latitude",
+      "longitude": "Longitude"
+    },
+    "errors": {
+      "nameRequired": "Name is required",
+      "latitudeRange": "Latitude must be between -90 and 90",
+      "longitudeRange": "Longitude must be between -180 and 180"
+    }
+  },
+  "empty": {
+    "title": "No weather data",
+    "body": "Could not retrieve the forecast. Please try again later."
+  }
+}

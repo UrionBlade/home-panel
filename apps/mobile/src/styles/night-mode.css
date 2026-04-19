@@ -1,0 +1,13 @@
+[data-night-mode="true"] {
+  --color-bg: oklch(10% 0.012 60);
+  --color-surface: oklch(15% 0.014 60);
+  --color-surface-raised: oklch(18% 0.016 60);
+  --color-text: oklch(85% 0.005 80);
+  --color-text-muted: oklch(60% 0.005 80);
+  --color-border: oklch(22% 0.014 60);
+  --color-accent: oklch(50% 0.10 50);
+  --shadow-sm: 0 1px 3px oklch(5% 0.02 60 / 0.4);
+  --shadow-md: 0 4px 12px oklch(5% 0.02 60 / 0.4);
+  --duration-default: 600ms;
+  --duration-micro: 400ms;
+}

@@ -1,0 +1,60 @@
+{
+  "title": "Timers & Alarms",
+  "subtitle": "Countdowns and alarms",
+  "alarm": {
+    "noDayHint": "No day = one-off alarm"
+  },
+  "timer": {
+    "labelPlaceholder": "Pasta, cake..."
+  },
+  "timers": {
+    "title": "Active timers",
+    "empty": "No active timers",
+    "finished": "Time's up!",
+    "addMinute": "+1 min",
+    "pause": "Pause",
+    "resume": "Resume",
+    "dismiss": "Dismiss",
+    "custom": "Custom",
+    "setTimer": "Set timer",
+    "hours": "Hours",
+    "minutes": "Minutes",
+    "seconds": "Seconds"
+  },
+  "alarms": {
+    "title": "Alarms",
+    "empty": "No alarms",
+    "add": "New alarm",
+    "edit": "Edit alarm",
+    "editTitle": "Edit alarm",
+    "delete": "Delete alarm",
+    "label": "Label",
+    "time": "Time",
+    "days": "Days",
+    "enabled": "Enabled",
+    "sound": "Sound",
+    "fired": "Alarm!"
+  },
+  "days": {
+    "0": "Sun",
+    "1": "Mon",
+    "2": "Tue",
+    "3": "Wed",
+    "4": "Thu",
+    "5": "Fri",
+    "6": "Sat"
+  },
+  "tile": {
+    "noTimers": "No timers",
+    "nextAlarm": "Next alarm",
+    "running": "{{count}} active"
+  },
+  "quick": {
+    "1": "1 min",
+    "3": "3 min",
+    "5": "5 min",
+    "10": "10 min",
+    "15": "15 min",
+    "30": "30 min"
+  }
+}

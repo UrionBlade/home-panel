@@ -1,0 +1,362 @@
+@import "tailwindcss";
+
+/*
+ * Home Panel design tokens — "Stanza calda italiana".
+ * Palette warm cream/sabbia con 3 accent distinti (terracotta, salvia, senape).
+ * Ombre calde, bordi minimali, radius generosi.
+ */
+
+@theme {
+  /* === Color: Light theme default ===
+   * bg = crema caldo (sfondo pagina, contiene le card)
+   * surface = bianco latte leggermente warm
+   * surface-warm = sabbia per sezioni secondarie
+   * Tutte le tonalità con hue 60-80 (warm yellows/oranges)
+   */
+  --color-bg: oklch(96% 0.015 75);
+  --color-surface: oklch(99% 0.01 80);
+  --color-surface-elevated: oklch(100% 0 0);
+  --color-surface-warm: oklch(93% 0.025 70);
+  --color-text: oklch(22% 0.03 60);
+  --color-text-muted: oklch(48% 0.025 60);
+  --color-text-subtle: oklch(62% 0.02 65);
+  --color-border: oklch(88% 0.018 70);
+  --color-border-strong: oklch(75% 0.022 65);
+
+  /* === Accent trio ===
+   * terracotta = primario (azioni, highlight caldi)
+   * sage = natura, positivo, rifiuti, successo
+   * ochre = calendario, eventi, warning dolce
+   */
+  --color-accent: oklch(62% 0.18 35);
+  --color-accent-hover: oklch(57% 0.19 35);
+  --color-accent-foreground: oklch(99% 0 0);
+
+  --color-sage: oklch(68% 0.11 150);
+  --color-sage-hover: oklch(63% 0.12 150);
+  --color-sage-fg: oklch(99% 0 0);
+
+  --color-ochre: oklch(75% 0.14 80);
+  --color-ochre-hover: oklch(70% 0.15 80);
+  --color-ochre-fg: oklch(22% 0.04 60);
+
+  /* === Tinted tile backgrounds (per hero tiles) === */
+  --tile-terracotta-a: oklch(92% 0.045 40);
+  --tile-terracotta-b: oklch(87% 0.07 35);
+  --tile-sage-a: oklch(93% 0.035 150);
+  --tile-sage-b: oklch(88% 0.055 150);
+  --tile-ochre-a: oklch(95% 0.04 80);
+  --tile-ochre-b: oklch(90% 0.06 80);
+  --tile-mauve-a: oklch(93% 0.035 320);
+  --tile-mauve-b: oklch(88% 0.055 320);
+  --tile-sky-a: oklch(93% 0.04 220);
+  --tile-sky-b: oklch(87% 0.06 225);
+
+  /* === Status colors — warm-adjusted === */
+  --color-success: oklch(65% 0.14 150);
+  --color-warning: oklch(75% 0.16 75);
+  --color-danger: oklch(60% 0.19 28);
+
+  /* === Typography === */
+  --font-display:
+    "Fraunces Variable", "Fraunces", ui-serif, Georgia, serif;
+  --font-sans:
+    "Geist Variable", "Geist", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono:
+    "Geist Mono Variable", "Geist Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* === Spacing scale in rem === */
+  --spacing: 0.25rem;
+
+  /* === Radius scale — più generoso === */
+  --radius-xs: 0.375rem;
+  --radius-sm: 0.625rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.75rem;
+  --radius-2xl: 2.25rem;
+  --radius-tile: 1.75rem;
+
+  /* === Shadows — WARM (hue 60), morbide === */
+  --shadow-sm:
+    0 0.0625rem 0.125rem oklch(30% 0.04 60 / 0.06),
+    0 0.0625rem 0.0625rem oklch(30% 0.04 60 / 0.04);
+  --shadow-md:
+    0 0.375rem 0.875rem oklch(30% 0.04 60 / 0.09),
+    0 0.125rem 0.25rem oklch(30% 0.04 60 / 0.06);
+  --shadow-lg:
+    0 1rem 2rem oklch(30% 0.04 60 / 0.12),
+    0 0.375rem 0.75rem oklch(30% 0.04 60 / 0.08);
+  --shadow-xl:
+    0 1.5rem 3rem oklch(30% 0.04 60 / 0.15),
+    0 0.75rem 1.5rem oklch(30% 0.04 60 / 0.10);
+
+  /* === Motion === */
+  --ease-out-quart: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --duration-micro: 180ms;
+  --duration-default: 280ms;
+  --duration-slow: 500ms;
+  --duration-orchestration: 700ms;
+}
+
+/*
+ * Dark theme — WARM AMBER come luci di notte (1800K), non nero freddo.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: oklch(14% 0.012 60);
+    --color-surface: oklch(18% 0.016 65);
+    --color-surface-elevated: oklch(22% 0.018 65);
+    --color-surface-warm: oklch(20% 0.022 55);
+    --color-text: oklch(94% 0.015 75);
+    --color-text-muted: oklch(70% 0.02 70);
+    --color-text-subtle: oklch(55% 0.018 65);
+    --color-border: oklch(26% 0.02 60);
+    --color-border-strong: oklch(38% 0.025 60);
+
+    --color-accent: oklch(68% 0.19 35);
+    --color-accent-hover: oklch(73% 0.2 35);
+    --color-accent-foreground: oklch(14% 0.02 60);
+
+    --color-sage: oklch(72% 0.13 150);
+    --color-ochre: oklch(78% 0.16 80);
+
+    --tile-terracotta-a: oklch(28% 0.06 40);
+    --tile-terracotta-b: oklch(22% 0.08 35);
+    --tile-sage-a: oklch(28% 0.05 150);
+    --tile-sage-b: oklch(22% 0.07 150);
+    --tile-ochre-a: oklch(30% 0.06 80);
+    --tile-ochre-b: oklch(24% 0.08 80);
+    --tile-mauve-a: oklch(28% 0.05 320);
+    --tile-mauve-b: oklch(22% 0.07 320);
+    --tile-sky-a: oklch(26% 0.06 220);
+    --tile-sky-b: oklch(20% 0.08 225);
+
+    --color-success: oklch(72% 0.14 150);
+    --color-warning: oklch(80% 0.16 80);
+    --color-danger: oklch(66% 0.19 28);
+
+    --shadow-sm:
+      0 0.0625rem 0.125rem oklch(0% 0 0 / 0.50),
+      0 0.0625rem 0.0625rem oklch(0% 0 0 / 0.35);
+    --shadow-md:
+      0 0.375rem 0.875rem oklch(0% 0 0 / 0.55),
+      0 0.125rem 0.25rem oklch(0% 0 0 / 0.40);
+    --shadow-lg:
+      0 1rem 2rem oklch(0% 0 0 / 0.60),
+      0 0.375rem 0.75rem oklch(0% 0 0 / 0.45);
+    --shadow-xl:
+      0 1.5rem 3rem oklch(0% 0 0 / 0.65),
+      0 0.75rem 1.5rem oklch(0% 0 0 / 0.50);
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-bg: oklch(14% 0.012 60);
+  --color-surface: oklch(18% 0.016 65);
+  --color-surface-elevated: oklch(22% 0.018 65);
+  --color-surface-warm: oklch(20% 0.022 55);
+  --color-text: oklch(94% 0.015 75);
+  --color-text-muted: oklch(70% 0.02 70);
+  --color-text-subtle: oklch(55% 0.018 65);
+  --color-border: oklch(26% 0.02 60);
+  --color-border-strong: oklch(38% 0.025 60);
+
+  --color-accent: oklch(68% 0.19 35);
+  --color-accent-hover: oklch(73% 0.2 35);
+  --color-accent-foreground: oklch(14% 0.02 60);
+
+  --color-sage: oklch(72% 0.13 150);
+  --color-ochre: oklch(78% 0.16 80);
+
+  --tile-terracotta-a: oklch(28% 0.06 40);
+  --tile-terracotta-b: oklch(22% 0.08 35);
+  --tile-sage-a: oklch(28% 0.05 150);
+  --tile-sage-b: oklch(22% 0.07 150);
+  --tile-ochre-a: oklch(30% 0.06 80);
+  --tile-ochre-b: oklch(24% 0.08 80);
+  --tile-mauve-a: oklch(28% 0.05 320);
+  --tile-mauve-b: oklch(22% 0.07 320);
+  --tile-sky-a: oklch(26% 0.06 220);
+  --tile-sky-b: oklch(20% 0.08 225);
+
+  --shadow-sm: 0 0.0625rem 0.125rem oklch(0% 0 0 / 0.4);
+  --shadow-md: 0 0.375rem 0.875rem oklch(0% 0 0 / 0.45);
+  --shadow-lg: 0 1rem 2rem oklch(0% 0 0 / 0.5);
+  --shadow-xl: 0 1.5rem 3rem oklch(0% 0 0 / 0.55);
+}
+
+/* Base */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+html {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.font-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+  font-feature-settings: "ss01", "ss02";
+}
+
+/* Uppercase label style — micro-typo */
+.label-mono {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+/* Italic poetic label — wayfinding */
+.label-italic {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Tabular numbers per numeri, clock, temperatura */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+@layer base {
+  button {
+    font: inherit;
+    color: inherit;
+  }
+}
+
+/* === Custom keyframes per micro-animazioni === */
+@keyframes float-in {
+  0% {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sway {
+  0%,
+  100% {
+    transform: rotate(var(--sway-base, 0deg));
+  }
+  50% {
+    transform: rotate(calc(var(--sway-base, 0deg) + 0.6deg));
+  }
+}
+
+@keyframes rain {
+  0% {
+    transform: translate(0, -20%) rotate(-18deg);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(18px, 130%) rotate(-18deg);
+    opacity: 0;
+  }
+}
+
+@keyframes snow {
+  0% {
+    transform: translateY(-20%) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateY(120%) translateX(1rem) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(0.75rem);
+  }
+}
+
+@keyframes pulse-warm {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--color-accent);
+  }
+  50% {
+    box-shadow: 0 0 0 0.5rem oklch(62% 0.18 35 / 0);
+  }
+}
+
+@keyframes countdown-urgent {
+  0%,
+  100% {
+    color: var(--color-text);
+    transform: scale(1);
+  }
+  50% {
+    color: var(--color-danger);
+    transform: scale(1.04);
+  }
+}
+
+.anim-float-in {
+  animation: float-in var(--duration-orchestration) var(--ease-out-quart) both;
+}
+
+.anim-sway {
+  animation: sway 5s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+.anim-drift {
+  animation: drift 8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 120ms !important;
+  }
+}

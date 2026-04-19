@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Builds
+dist/
+build/
+.output/
+.turbo/
+
+# Tauri
+**/src-tauri/target/
+**/src-tauri/gen/schemas/
+**/src-tauri/Cargo.lock
+
+# iOS / Xcode
+**/src-tauri/gen/apple/
+*.xcuserstate
+xcuserdata/
+DerivedData/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+.DS_Store
+
+# DB
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.db
+data/
+.playwright-mcp/

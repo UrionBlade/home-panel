@@ -1,0 +1,266 @@
+import clsx from "clsx";
+import { motion } from "framer-motion";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { FamilyManager } from "../components/family/FamilyManager";
+import { PageContainer } from "../components/layout/PageContainer";
+import { PageHeader } from "../components/layout/PageHeader";
+import { CalendarSourcesSettings } from "../components/settings/CalendarSourcesSettings";
+import { CameraSettings } from "../components/settings/CameraSettings";
+import { KioskSettings } from "../components/settings/KioskSettings";
+import { LaundrySettings } from "../components/settings/LaundrySettings";
+import { VoiceSettings } from "../components/settings/VoiceSettings";
+import { WeatherSettings } from "../components/settings/WeatherSettings";
+import { useT } from "../lib/useT";
+import { type ThemeMode, useThemeStore } from "../store/theme-store";
+
+const LANGUAGES: { code: string; label: string }[] = [
+  { code: "it", label: "Italiano" },
+  { code: "en", label: "English" },
+];
+
+const APP_VERSION = "0.1.0";
+
+type SettingsTab = "home" | "services" | "devices" | "appearance";
+
+function srgb(c: number): number {
+  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+}
+
+function checkColor(hex: string): string {
+  const h = hex.replace("#", "");
+  const r = srgb(parseInt(h.slice(0, 2), 16) / 255);
+  const g = srgb(parseInt(h.slice(2, 4), 16) / 255);
+  const b = srgb(parseInt(h.slice(4, 6), 16) / 255);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.18 ? "#1a1a1a" : "#ffffff";
+}
+
+const PRESET_COLORS = [
+  { hex: "#c25838", label: "Terracotta" },
+  { hex: "#3b82f6", label: "Blue" },
+  { hex: "#8b5cf6", label: "Purple" },
+  { hex: "#ec4899", label: "Pink" },
+  { hex: "#10b981", label: "Green" },
+  { hex: "#f59e0b", label: "Amber" },
+  { hex: "#ef4444", label: "Red" },
+  { hex: "#06b6d4", label: "Cyan" },
+];
+
+export function SettingsPage() {
+  const { t } = useT("settings");
+  const { i18n } = useTranslation();
+  const [tab, setTab] = useState<SettingsTab>("appearance");
+  const mode = useThemeStore((s) => s.mode);
+  const setMode = useThemeStore((s) => s.setMode);
+  const accentColor = useThemeStore((s) => s.accentColor);
+  const setAccentColor = useThemeStore((s) => s.setAccentColor);
+
+  const tabs: { key: SettingsTab; label: string }[] = [
+    { key: "appearance", label: t("tabs.appearance") },
+    { key: "home", label: t("tabs.home") },
+    { key: "services", label: t("tabs.services") },
+    { key: "devices", label: t("tabs.devices") },
+  ];
+
+  return (
+    <PageContainer maxWidth="narrow">
+      <PageHeader title={t("title")} subtitle={t("subtitle")} />
+
+      <div
+        role="tablist"
+        aria-label={t("title")}
+        className="flex gap-1 p-1 bg-surface border border-border rounded-lg self-start overflow-x-auto"
+      >
+        {tabs.map(({ key, label }) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
+            onClick={() => setTab(key)}
+            className={clsx(
+              "relative px-4 py-2.5 rounded-md text-sm font-medium whitespace-nowrap min-h-[2.75rem] transition-colors duration-200",
+              tab === key ? "text-accent-foreground" : "text-text-muted hover:text-text",
+            )}
+          >
+            {tab === key && (
+              <motion.span
+                layoutId="settings-tab-bg"
+                className="absolute inset-0 rounded-md"
+                style={{ backgroundColor: "var(--color-accent)" }}
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              />
+            )}
+            <span
+              className="relative z-10"
+              style={{ color: tab === key ? "var(--color-accent-foreground)" : undefined }}
+            >
+              {label}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {tab === "home" && (
+        <>
+          <FamilyManager />
+          <KioskSettings />
+        </>
+      )}
+
+      {tab === "services" && (
+        <>
+          <WeatherSettings />
+          <CalendarSourcesSettings />
+          <VoiceSettings />
+        </>
+      )}
+
+      {tab === "devices" && (
+        <>
+          <CameraSettings />
+          <LaundrySettings />
+        </>
+      )}
+
+      {tab === "appearance" && (
+        <>
+          <section>
+            <h2 className="font-display text-3xl mb-5">{t("appearance.language")}</h2>
+            <div className="flex gap-2">
+              {LANGUAGES.map((lang) => (
+                <button
+                  type="button"
+                  key={lang.code}
+                  onClick={() => void i18n.changeLanguage(lang.code)}
+                  className={clsx(
+                    "px-5 py-3 rounded-md border font-medium transition-colors",
+                    i18n.language === lang.code || i18n.language.startsWith(lang.code)
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-border bg-surface text-text-muted hover:border-accent",
+                  )}
+                >
+                  {lang.label}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <h2 className="font-display text-3xl mb-5">{t("appearance.theme")}</h2>
+            <div className="flex flex-col gap-3">
+              {(["auto", "light", "dark"] as ThemeMode[]).map((m) => (
+                <label
+                  key={m}
+                  className="flex items-center gap-3 p-4 rounded-md bg-surface border border-border cursor-pointer hover:border-accent"
+                >
+                  <input
+                    type="radio"
+                    name="theme"
+                    value={m}
+                    checked={mode === m}
+                    onChange={() => setMode(m)}
+                    className="w-5 h-5 accent-accent"
+                  />
+                  <span className="font-medium">
+                    {m === "auto"
+                      ? t("appearance.themeAuto")
+                      : m === "light"
+                        ? t("appearance.themeLight")
+                        : t("appearance.themeDark")}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </section>
+
+          <section>
+            <h2 className="font-display text-3xl mb-5">{t("appearance.accentColor")}</h2>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setAccentColor(null)}
+                className={clsx(
+                  "w-11 h-11 rounded-full border-2 transition-all flex items-center justify-center",
+                  accentColor === null
+                    ? "border-text scale-110"
+                    : "border-border hover:border-text-muted",
+                )}
+                style={{ backgroundColor: "#c25838" }}
+                title={t("appearance.defaultColor")}
+              >
+                {accentColor === null && (
+                  <span style={{ color: checkColor("#c25838") }} className="text-xs font-bold">
+                    ✓
+                  </span>
+                )}
+              </button>
+
+              {PRESET_COLORS.slice(1).map((c) => (
+                <button
+                  type="button"
+                  key={c.hex}
+                  onClick={() => setAccentColor(c.hex)}
+                  className={clsx(
+                    "w-11 h-11 rounded-full border-2 transition-all",
+                    accentColor === c.hex
+                      ? "border-text scale-110"
+                      : "border-border hover:border-text-muted",
+                  )}
+                  style={{ backgroundColor: c.hex }}
+                  title={c.label}
+                >
+                  {accentColor === c.hex && (
+                    <span style={{ color: checkColor(c.hex) }} className="text-xs font-bold">
+                      ✓
+                    </span>
+                  )}
+                </button>
+              ))}
+
+              <label
+                className={clsx(
+                  "w-11 h-11 rounded-full border-2 cursor-pointer transition-all overflow-hidden relative",
+                  accentColor && !PRESET_COLORS.some((p) => p.hex === accentColor)
+                    ? "border-text scale-110"
+                    : "border-border hover:border-text-muted",
+                )}
+                title={t("appearance.customColor")}
+              >
+                <input
+                  type="color"
+                  value={accentColor ?? "#c25838"}
+                  onChange={(e) => setAccentColor(e.target.value)}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <span
+                  className="w-full h-full flex items-center justify-center text-xs font-bold"
+                  style={{
+                    background:
+                      accentColor && !PRESET_COLORS.some((p) => p.hex === accentColor)
+                        ? accentColor
+                        : "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)",
+                    color:
+                      accentColor && !PRESET_COLORS.some((p) => p.hex === accentColor)
+                        ? checkColor(accentColor)
+                        : "white",
+                  }}
+                >
+                  {accentColor && !PRESET_COLORS.some((p) => p.hex === accentColor) ? "✓" : ""}
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="font-display text-3xl mb-5">{t("sections.info")}</h2>
+            <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3">
+              <dt className="text-text-muted">{t("info.version")}</dt>
+              <dd className="font-display">{APP_VERSION}</dd>
+            </dl>
+          </section>
+        </>
+      )}
+    </PageContainer>
+  );
+}

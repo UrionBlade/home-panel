@@ -1,0 +1,60 @@
+{
+  "title": "Settings",
+  "subtitle": "Configurazione del pannello",
+  "sections": {
+    "family": "Famiglia",
+    "cameras": "Telecamere",
+    "laundry": "Lavanderia",
+    "appearance": "Aspetto",
+    "info": "Info"
+  },
+  "tabs": {
+    "home": "Casa",
+    "services": "Servizi",
+    "devices": "Dispositivi",
+    "appearance": "Aspetto"
+  },
+  "appearance": {
+    "language": "Lingua",
+    "theme": "Tema",
+    "accentColor": "Colore primario",
+    "customColor": "Colore personalizzato",
+    "themeAuto": "Automatico",
+    "themeLight": "Chiaro",
+    "themeDark": "Scuro",
+    "defaultColor": "Default (Terracotta)"
+  },
+  "info": {
+    "version": "Versione",
+    "readmeLink": "Documentazione",
+    "tailscaleHint": "Backend raggiungibile via Tailscale",
+    "keepScreenOn": "Mantieni schermo acceso"
+  },
+  "cameras": {
+    "connected": "Connesso",
+    "connectedAs": "Connesso come {{name}}",
+    "connecting": "Connessione...",
+    "pinInstructions": "Blink ha inviato un PIN di verifica al tuo telefono o email. Inseriscilo qui sotto.",
+    "pinInvalid": "PIN non valido",
+    "verifying": "Verifica...",
+    "verifyPin": "Verifica PIN",
+    "backToLogin": "← Torna al login"
+  },
+  "laundry": {
+    "confirmDisconnect": "Disconnettere SmartThings?",
+    "loadingDevices": "Caricamento dispositivi...",
+    "noDevices": "Nessuna lavatrice o asciugatrice trovata nel tuo account SmartThings."
+  },
+  "calendar": {
+    "editSource": "Modifica {{name}}",
+    "namePlaceholder": "Google Calendar, iCloud..."
+  },
+  "weather": {
+    "setDefault": "Imposta come predefinita",
+    "placeholders": {
+      "name": "es. Roma, Milano...",
+      "latitude": "es. 45.7595",
+      "longitude": "es. 8.6608"
+    }
+  }
+}

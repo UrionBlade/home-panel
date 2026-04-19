@@ -1,0 +1,60 @@
+{
+  "title": "Settings",
+  "subtitle": "Panel configuration",
+  "sections": {
+    "family": "Family",
+    "cameras": "Cameras",
+    "laundry": "Laundry",
+    "appearance": "Appearance",
+    "info": "Info"
+  },
+  "tabs": {
+    "home": "Home",
+    "services": "Services",
+    "devices": "Devices",
+    "appearance": "Appearance"
+  },
+  "appearance": {
+    "language": "Language",
+    "theme": "Theme",
+    "accentColor": "Accent color",
+    "customColor": "Custom color",
+    "themeAuto": "Auto",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "defaultColor": "Default (Terracotta)"
+  },
+  "info": {
+    "version": "Version",
+    "readmeLink": "Documentation",
+    "tailscaleHint": "Backend reachable via Tailscale",
+    "keepScreenOn": "Keep screen on"
+  },
+  "cameras": {
+    "connected": "Connected",
+    "connectedAs": "Connected as {{name}}",
+    "connecting": "Connecting...",
+    "pinInstructions": "Blink sent a verification PIN to your phone or email. Enter it below.",
+    "pinInvalid": "Invalid PIN",
+    "verifying": "Verifying...",
+    "verifyPin": "Verify PIN",
+    "backToLogin": "← Back to login"
+  },
+  "laundry": {
+    "confirmDisconnect": "Disconnect SmartThings?",
+    "loadingDevices": "Loading devices...",
+    "noDevices": "No washer or dryer found in your SmartThings account."
+  },
+  "calendar": {
+    "editSource": "Edit {{name}}",
+    "namePlaceholder": "Google Calendar, iCloud..."
+  },
+  "weather": {
+    "setDefault": "Set as default",
+    "placeholders": {
+      "name": "e.g. Rome, Milan...",
+      "latitude": "e.g. 45.7595",
+      "longitude": "e.g. 8.6608"
+    }
+  }
+}

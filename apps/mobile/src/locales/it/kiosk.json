@@ -1,0 +1,25 @@
+{
+  "title": "Schermo",
+  "nightMode": {
+    "title": "Modalit\u00e0 notte",
+    "enabled": "Attiva modalit\u00e0 notte",
+    "start": "Ora inizio",
+    "end": "Ora fine",
+    "brightness": "Luminosit\u00e0 notturna"
+  },
+  "screensaver": {
+    "title": "Salvaschermo",
+    "enabled": "Attiva salvaschermo foto",
+    "idleMinutes": "Minuti di inattivit\u00e0",
+    "refreshPhotos": "Aggiorna foto",
+    "photosRefreshed": "Foto aggiornate",
+    "noPhotos": "Nessuna foto trovata"
+  },
+  "actions": {
+    "testScreensaver": "Test salvaschermo",
+    "testNightMode": "Test modalit\u00e0 notte (30s)"
+  },
+  "aria": {
+    "screensaver": "Salvaschermo - tocca per chiudere"
+  }
+}

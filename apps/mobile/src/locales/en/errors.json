@@ -1,0 +1,11 @@
+{
+  "network": "Unable to connect to the backend",
+  "auth": "Invalid authentication token",
+  "validation": "Invalid data",
+  "unknown": "Unknown error",
+  "boundary": {
+    "title": "Something went wrong",
+    "body": "An unexpected error occurred. Reload the page to try again.",
+    "reload": "Reload"
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "title": "Waste collection",
+  "subtitle": "Next 2 weeks",
+  "sections": {
+    "today": "Today",
+    "upcoming": "Next 7 days",
+    "types": "Waste types",
+    "rules": "Collection rules",
+    "exceptions": "Exceptions (holidays)",
+    "management": "Management"
+  },
+  "actions": {
+    "addType": "Add type",
+    "addRule": "Add rule",
+    "addException": "New exception",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit"
+  },
+  "aria": {
+    "editType": "Edit {{name}}",
+    "deleteType": "Delete {{name}}",
+    "editRule": "Edit rule",
+    "deleteRule": "Delete rule"
+  },
+  "weekdays": {
+    "long": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    "short": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+  },
+  "freq": {
+    "weekly": "Weekly",
+    "everyNDays": "Every N days",
+    "everyNDaysShort": "Every {{n}} days"
+  },
+  "container": {
+    "bag": "Bag",
+    "bin": "Bin"
+  },
+  "form": {
+    "type": {
+      "newTitle": "New waste type",
+      "editTitle": "Edit type",
+      "title": "Waste type",
+      "name": "Name",
+      "namePlaceholder": "e.g. Plastic",
+      "color": "Color",
+      "colorPlaceholder": "#4CAF50 or oklch(...)",
+      "icon": "Icon",
+      "iconPlaceholder": "trash",
+      "containerType": "Container",
+      "expositionInstructions": "Exposition instructions",
+      "expositionInstructionsPlaceholder": "Where and how to expose..."
+    },
+    "rule": {
+      "title": "Collection rule",
+      "wasteType": "Waste type",
+      "frequency": "Frequency",
+      "interval": "Interval (days)",
+      "weekday": "Weekday",
+      "expositionTime": "Exposition time",
+      "anchorDate": "Reference date"
+    },
+    "exception": {
+      "title": "Exception",
+      "wasteType": "Waste type",
+      "originalDate": "Original date",
+      "replacementDate": "Replacement date",
+      "reason": "Reason"
+    }
+  },
+  "confirm": {
+    "title": "Confirm deletion",
+    "deleteType": "Delete \"{{name}}\" and all its rules and exceptions?",
+    "deleteRule": "Delete this rule?"
+  },
+  "empty": {
+    "today": "No collection today.",
+    "upcoming": "No upcoming collection.",
+    "types": "No waste types configured.",
+    "rules": "No rules configured",
+    "exceptions": "No exceptions configured.",
+    "day": "—"
+  },
+  "labels": {
+    "today": "Today"
+  },
+  "describeRule": "{{freq}} — at {{time}}",
+  "describeRuleWithDays": "{{freq}} — {{days}} — at {{time}}"
+}

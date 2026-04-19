@@ -1,0 +1,51 @@
+{
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "confirm": "Confirm",
+    "close": "Close",
+    "reload": "Reload",
+    "back": "Back"
+  },
+  "states": {
+    "loading": "Loading...",
+    "empty": "Nothing to show",
+    "error": "Something went wrong"
+  },
+  "tabs": {
+    "home": "Home",
+    "calendar": "Calendar",
+    "shopping": "Shopping",
+    "board": "Board",
+    "waste": "Waste",
+    "timers": "Timers",
+    "cameras": "Cameras",
+    "recipes": "Recipes",
+    "laundry": "Laundry",
+    "music": "Music",
+    "settings": "Settings"
+  },
+  "greeting": {
+    "morning": "Good morning",
+    "afternoon": "Good afternoon",
+    "evening": "Good evening"
+  },
+  "comingSoon": {
+    "title": "Coming soon",
+    "subtitle": "This section will be available in a future release",
+    "shopping": "The shopping list will be available in a future release",
+    "calendar": "The family calendar will be available in a future release",
+    "board": "The sticky-note board will be available in a future release",
+    "cameras": "Blink cameras will be available in a future release"
+  },
+  "backend": {
+    "connected": "Backend online",
+    "disconnected": "Backend unreachable"
+  },
+  "aria": {
+    "mainNav": "Main navigation"
+  }
+}

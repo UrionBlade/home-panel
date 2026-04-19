@@ -1,0 +1,37 @@
+{
+  "title": "Bacheca",
+  "subtitle": "I tuoi post-it",
+  "empty": {
+    "title": "La bacheca è vuota",
+    "body": "Aggiungi il primo post-it per iniziare"
+  },
+  "actions": {
+    "add": "Nuovo post-it",
+    "edit": "Modifica",
+    "delete": "Elimina",
+    "done": "Fatto"
+  },
+  "fields": {
+    "title": "Titolo",
+    "titlePlaceholder": "Titolo del post-it",
+    "body": "Contenuto",
+    "bodyPlaceholder": "Scrivi qualcosa…",
+    "color": "Colore"
+  },
+  "colors": {
+    "amber": "Ambra",
+    "terracotta": "Terracotta",
+    "sage": "Salvia",
+    "sand": "Sabbia",
+    "mauve": "Malva",
+    "ochre": "Ocra"
+  },
+  "confirm": {
+    "delete": "Eliminare questo post-it?"
+  },
+  "tile": {
+    "count_one": "{{count}} post-it",
+    "count_other": "{{count}} post-it",
+    "empty": "Nessun post-it"
+  }
+}

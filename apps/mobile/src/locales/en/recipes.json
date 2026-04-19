@@ -1,0 +1,99 @@
+{
+  "title": "Recipes",
+  "subtitle": "Home recipes",
+  "search": "Search recipes...",
+  "searchCombined": "Search my recipes and GialloZafferano...",
+  "filters": {
+    "all": "All",
+    "favorites": "Favorites",
+    "primo": "First courses",
+    "secondo": "Main courses",
+    "contorno": "Side dishes",
+    "dolce": "Desserts",
+    "colazione": "Breakfast",
+    "snack": "Snacks"
+  },
+  "fields": {
+    "title": "Title",
+    "description": "Description",
+    "sourceUrl": "Source URL",
+    "imageUrl": "Image URL",
+    "prepTime": "Prep time (min)",
+    "cookTime": "Cook time (min)",
+    "servings": "Servings",
+    "difficulty": "Difficulty",
+    "ingredients": "Ingredients",
+    "steps": "Instructions",
+    "tags": "Categories",
+    "notes": "Personal notes"
+  },
+  "difficulty": {
+    "facile": "Easy",
+    "medio": "Medium",
+    "difficile": "Hard"
+  },
+  "actions": {
+    "add": "New recipe",
+    "importUrl": "Import from URL",
+    "edit": "Edit",
+    "delete": "Delete",
+    "favorite": "Favorite",
+    "unfavorite": "Remove favorite",
+    "openSource": "Open original",
+    "save": "Save"
+  },
+  "sections": {
+    "mine": "My recipes",
+    "mineEmpty": "You haven't saved any recipes yet. Search above or add one manually.",
+    "mineEmptySearch": "No saved recipes match your search.",
+    "gzLatest": "Latest from GialloZafferano",
+    "gzSearch": "From GialloZafferano",
+    "gzLoading": "Loading latest recipes...",
+    "gzEmpty": "No recipes available right now.",
+    "gzError": "Could not reach GialloZafferano. Please try again later."
+  },
+  "empty": {
+    "title": "No recipes",
+    "body": "Add your first recipe or import one from a website"
+  },
+  "import": {
+    "searchEmpty": "No recipes found",
+    "searchLoading": "Searching GialloZafferano...",
+    "fetchingDetails": "Fetching details..."
+  },
+  "remoteDetail": {
+    "save": "Save to my recipes",
+    "saved": "Saved",
+    "fetchError": "Could not fetch the full details from the page. You can still open the original.",
+    "saveError": "Error while saving. Please try again.",
+    "sections": {
+      "tips": "Tip",
+      "notes": "Notes",
+      "conservation": "Storage"
+    }
+  },
+  "importUrl": {
+    "title": "Import recipe from URL",
+    "body": "Paste a recipe link from any website (GialloZafferano, BBC Good Food, Cookist...). Title, ingredients, and steps will be extracted.",
+    "placeholder": "https://...",
+    "analyze": "Analyze",
+    "analyzing": "Analyzing the page...",
+    "error": "Could not read the recipe from this page.",
+    "back": "Back",
+    "save": "Save recipe"
+  },
+  "tile": {
+    "title": "Recipes",
+    "suggestion": "What shall we cook?",
+    "count_one": "{{count}} recipe",
+    "count_other": "{{count}} recipes"
+  },
+  "confirm": {
+    "delete": "Delete this recipe?"
+  },
+  "addIngredient": "Add ingredient",
+  "addStep": "Add step",
+  "placeholders": {
+    "notes": "Personal notes..."
+  }
+}

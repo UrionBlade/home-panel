@@ -1,0 +1,92 @@
+{
+  "title": "Lavanderia",
+  "subtitle": "Lavatrice e asciugatrice Samsung",
+  "washer": "Lavatrice",
+  "dryer": "Asciugatrice",
+  "state": {
+    "stop": "Ferma",
+    "run": "In funzione",
+    "pause": "In pausa"
+  },
+  "job": {
+    "none": "—",
+    "weightSensing": "Pesatura",
+    "wash": "Lavaggio",
+    "rinse": "Risciacquo",
+    "spin": "Centrifuga",
+    "wrinklePrevent": "Antipiega",
+    "finish": "Finito!",
+    "airWash": "Lavaggio ad aria",
+    "drying": "Asciugatura",
+    "cooling": "Raffreddamento"
+  },
+  "power": {
+    "on": "Accesa",
+    "off": "Spenta"
+  },
+  "labels": {
+    "state": "Stato",
+    "phase": "Fase",
+    "mode": "Programma",
+    "waterTemp": "Temperatura acqua",
+    "spinLevel": "Centrifuga",
+    "rinseCycles": "Risciacqui",
+    "energy": "Consumo",
+    "remoteControl": "Controllo remoto",
+    "endAt": "Fine alle {{time}}"
+  },
+  "remoteControl": {
+    "on": "Abilitato",
+    "off": "Disabilitato"
+  },
+  "actions": {
+    "refresh": "Aggiorna",
+    "start": "Avvia",
+    "stop": "Ferma",
+    "pause": "Pausa"
+  },
+  "confirm": {
+    "stop": "Fermare il ciclo in corso?"
+  },
+  "empty": {
+    "message": "Nessun elettrodomestico configurato. Seleziona lavatrice e asciugatrice nelle impostazioni."
+  },
+  "units": {
+    "rpm": "{{value}} giri/min"
+  },
+  "countdown": {
+    "finished": "Finito!",
+    "hoursAndMinutes": "{{hours}}h {{minutes}}min",
+    "minutes": "{{count}} min"
+  },
+  "modes": {
+    "normal": "Cotone",
+    "heavy": "Resistenti",
+    "delicate": "Delicati",
+    "quick": "Rapido",
+    "wool": "Lana",
+    "bedding": "Piumoni",
+    "rinse": "Risciacquo",
+    "spin": "Centrifuga",
+    "eco": "Eco",
+    "towel": "Asciugamani",
+    "outdoor": "Outdoor",
+    "babyCare": "Baby Care",
+    "shirts": "Camicie",
+    "dryCotton": "Cotone asciutto",
+    "dryNormal": "Asciugatura normale",
+    "dryDelicate": "Asciugatura delicata",
+    "dryHeavy": "Asciugatura resistenti",
+    "timeDry": "A tempo",
+    "airWash": "Lavaggio ad aria"
+  },
+  "notConfigured": {
+    "message": "Collega SmartThings nelle impostazioni per monitorare lavatrice e asciugatrice.",
+    "goToSettings": "Vai alle Impostazioni"
+  },
+  "tile": {
+    "idle": "Tutto fermo",
+    "running": "{{count}} in funzione",
+    "finished": "Ciclo finito!"
+  }
+}

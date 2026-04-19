@@ -1,0 +1,1 @@
+ALTER TABLE `blink_credentials` ADD `hardware_id` text;

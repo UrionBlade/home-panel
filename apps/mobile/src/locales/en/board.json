@@ -1,0 +1,37 @@
+{
+  "title": "Board",
+  "subtitle": "Your sticky notes",
+  "empty": {
+    "title": "The board is empty",
+    "body": "Add your first sticky note to get started"
+  },
+  "actions": {
+    "add": "New sticky note",
+    "edit": "Edit",
+    "delete": "Delete",
+    "done": "Done"
+  },
+  "fields": {
+    "title": "Title",
+    "titlePlaceholder": "Sticky note title",
+    "body": "Content",
+    "bodyPlaceholder": "Write something...",
+    "color": "Color"
+  },
+  "colors": {
+    "amber": "Amber",
+    "terracotta": "Terracotta",
+    "sage": "Sage",
+    "sand": "Sand",
+    "mauve": "Mauve",
+    "ochre": "Ochre"
+  },
+  "confirm": {
+    "delete": "Delete this sticky note?"
+  },
+  "tile": {
+    "count_one": "{{count}} sticky note",
+    "count_other": "{{count}} sticky notes",
+    "empty": "No sticky notes"
+  }
+}

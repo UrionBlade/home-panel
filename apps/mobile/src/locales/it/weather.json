@@ -1,0 +1,66 @@
+{
+  "title": "Meteo",
+  "subtitle": "Previsioni locali",
+  "now": "Adesso",
+  "aria": {
+    "openDetail": "Apri dettaglio meteo"
+  },
+  "sections": {
+    "now": "Adesso",
+    "forecast": "Prossimi 7 giorni"
+  },
+  "conditions": {
+    "clearDay": "Sereno",
+    "clearNight": "Sereno",
+    "cloudy": "Nuvoloso",
+    "partlyCloudy": "Parzialmente nuvoloso",
+    "rain": "Pioggia",
+    "snow": "Neve",
+    "thunderstorm": "Temporale",
+    "fog": "Nebbia"
+  },
+  "metrics": {
+    "feelsLike": "Percepita",
+    "humidity": "Umidità",
+    "wind": "Vento",
+    "windDirection": "Direzione vento",
+    "pressure": "Pressione",
+    "precipitation": "Precipitazioni",
+    "precipProbability": "Prob. precipitazioni",
+    "maxWind": "Vento max",
+    "tempMax": "Massima",
+    "tempMin": "Minima"
+  },
+  "alerts": {
+    "info": "Avviso",
+    "warning": "Allerta",
+    "severe": "Allerta grave",
+    "validUntil": "Valido fino a {{time}}"
+  },
+  "actions": {
+    "refresh": "Aggiorna",
+    "lastUpdate": "Ultimo aggiornamento"
+  },
+  "settings": {
+    "locations": "Località",
+    "add": "Aggiungi",
+    "noLocations": "Nessuna località configurata.",
+    "addLocation": "Aggiungi località",
+    "editLocation": "Modifica località",
+    "cannotDeleteLast": "Non puoi eliminare l'unica località",
+    "fields": {
+      "name": "Nome",
+      "latitude": "Latitudine",
+      "longitude": "Longitudine"
+    },
+    "errors": {
+      "nameRequired": "Il nome è obbligatorio",
+      "latitudeRange": "Latitudine deve essere tra -90 e 90",
+      "longitudeRange": "Longitudine deve essere tra -180 e 180"
+    }
+  },
+  "empty": {
+    "title": "Nessun dato meteo",
+    "body": "Non è stato possibile recuperare le previsioni. Riprova più tardi."
+  }
+}

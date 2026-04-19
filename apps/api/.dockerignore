@@ -1,0 +1,7 @@
+node_modules
+dist
+.turbo
+data
+*.sqlite
+.env
+.env.local

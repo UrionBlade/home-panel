@@ -1,0 +1,25 @@
+{
+  "title": "Display",
+  "nightMode": {
+    "title": "Night mode",
+    "enabled": "Enable night mode",
+    "start": "Start time",
+    "end": "End time",
+    "brightness": "Night brightness"
+  },
+  "screensaver": {
+    "title": "Screensaver",
+    "enabled": "Enable photo screensaver",
+    "idleMinutes": "Idle minutes",
+    "refreshPhotos": "Refresh photos",
+    "photosRefreshed": "Photos refreshed",
+    "noPhotos": "No photos found"
+  },
+  "actions": {
+    "testScreensaver": "Test screensaver",
+    "testNightMode": "Test night mode (30s)"
+  },
+  "aria": {
+    "screensaver": "Screensaver - tap to dismiss"
+  }
+}

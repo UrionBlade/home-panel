@@ -1,0 +1,60 @@
+{
+  "title": "Timer & Sveglie",
+  "subtitle": "Countdown e sveglie",
+  "alarm": {
+    "noDayHint": "Nessun giorno = sveglia singola"
+  },
+  "timer": {
+    "labelPlaceholder": "Pasta, Torta..."
+  },
+  "timers": {
+    "title": "Timer attivi",
+    "empty": "Nessun timer attivo",
+    "finished": "Tempo scaduto!",
+    "addMinute": "+1 min",
+    "pause": "Pausa",
+    "resume": "Riprendi",
+    "dismiss": "Ferma",
+    "custom": "Personalizzato",
+    "setTimer": "Imposta timer",
+    "hours": "Ore",
+    "minutes": "Minuti",
+    "seconds": "Secondi"
+  },
+  "alarms": {
+    "title": "Sveglie",
+    "empty": "Nessuna sveglia",
+    "add": "Nuova sveglia",
+    "edit": "Modifica sveglia",
+    "editTitle": "Modifica sveglia",
+    "delete": "Elimina sveglia",
+    "label": "Nome",
+    "time": "Ora",
+    "days": "Giorni",
+    "enabled": "Attiva",
+    "sound": "Suono",
+    "fired": "Sveglia!"
+  },
+  "days": {
+    "0": "Dom",
+    "1": "Lun",
+    "2": "Mar",
+    "3": "Mer",
+    "4": "Gio",
+    "5": "Ven",
+    "6": "Sab"
+  },
+  "tile": {
+    "noTimers": "Nessun timer",
+    "nextAlarm": "Prossima sveglia",
+    "running": "{{count}} attivi"
+  },
+  "quick": {
+    "1": "1 min",
+    "3": "3 min",
+    "5": "5 min",
+    "10": "10 min",
+    "15": "15 min",
+    "30": "30 min"
+  }
+}

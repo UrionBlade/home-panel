@@ -1,0 +1,42 @@
+{
+  "title": "Famiglia",
+  "subtitle": "Persone e animali di casa",
+  "empty": {
+    "title": "Nessun membro ancora",
+    "body": "Aggiungi le persone e gli animali della tua famiglia"
+  },
+  "actions": {
+    "addHuman": "Aggiungi persona",
+    "addPet": "Aggiungi animale",
+    "edit": "Modifica",
+    "delete": "Elimina"
+  },
+  "fields": {
+    "displayName": "Nome",
+    "displayNamePlaceholder": "Es. Matteo",
+    "avatarUrl": "URL avatar (opzionale)",
+    "accentColor": "Colore identificativo",
+    "birthDate": "Data di nascita",
+    "role": "Ruolo",
+    "rolePlaceholder": "Es. papà, mamma, figlio…",
+    "species": "Specie",
+    "speciesPlaceholder": "Es. cane, gatto…",
+    "breed": "Razza",
+    "breedPlaceholder": "Es. Border Collie",
+    "weightKg": "Peso (kg)",
+    "veterinaryNotes": "Note veterinarie"
+  },
+  "errors": {
+    "displayNameRequired": "Il nome è obbligatorio",
+    "createFailed": "Impossibile creare il membro",
+    "updateFailed": "Impossibile salvare le modifiche",
+    "deleteFailed": "Impossibile eliminare"
+  },
+  "confirm": {
+    "delete": "Eliminare {{name}} dalla famiglia?"
+  },
+  "kindLabel": {
+    "human": "Persona",
+    "pet": "Animale"
+  }
+}

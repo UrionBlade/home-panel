@@ -1,0 +1,84 @@
+{
+  "title": "Calendario",
+  "subtitle": "Eventi della famiglia",
+  "views": {
+    "today": "Oggi",
+    "agenda": "Agenda",
+    "month": "Mese",
+    "week": "Settimana"
+  },
+  "actions": {
+    "addEvent": "Nuovo evento",
+    "edit": "Modifica",
+    "delete": "Elimina"
+  },
+  "createEvent": "Crea evento",
+  "agenda": {
+    "empty30days": "Nessun evento nei prossimi 30 giorni"
+  },
+  "aria": {
+    "section": "Sezione",
+    "view": "Vista calendario"
+  },
+  "fields": {
+    "title": "Titolo",
+    "description": "Descrizione",
+    "startsAt": "Inizio",
+    "endsAt": "Fine",
+    "allDay": "Tutto il giorno",
+    "location": "Luogo",
+    "category": "Categoria",
+    "attendees": "Partecipanti",
+    "recurrence": "Ricorrenza",
+    "reminder": "Promemoria"
+  },
+  "recurrence": {
+    "none": "Nessuna",
+    "daily": "Ogni giorno",
+    "weekly": "Settimanale",
+    "monthly": "Mensile",
+    "yearly": "Annuale"
+  },
+  "reminders": {
+    "none": "Nessuno",
+    "15": "15 minuti prima",
+    "60": "1 ora prima",
+    "1440": "1 giorno prima"
+  },
+  "today": {
+    "noEvents": "Oggi non hai eventi in programma",
+    "header": "Eventi di oggi"
+  },
+  "tile": {
+    "title": "Oggi",
+    "noEvents": "Nessun evento oggi",
+    "moreCount": "+{{count}} altri"
+  },
+  "errors": {
+    "titleRequired": "Il titolo è obbligatorio",
+    "endBeforeStart": "La fine deve essere dopo l'inizio"
+  },
+  "sources": {
+    "title": "Calendari esterni",
+    "add": "Aggiungi calendario",
+    "name": "Nome",
+    "url": "URL (ICS o CalDAV)",
+    "type": "Tipo",
+    "color": "Colore",
+    "syncInterval": "Sincronizza ogni (minuti)",
+    "lastSync": "Ultima sincronizzazione",
+    "syncNow": "Sincronizza ora",
+    "syncing": "Sincronizzazione...",
+    "syncError": "Errore sincronizzazione",
+    "neverSynced": "Mai sincronizzato",
+    "empty": "Nessun calendario esterno configurato",
+    "urlPlaceholder": "https://calendar.google.com/calendar/ical/xxx/basic.ics",
+    "delete": "Rimuovere questo calendario?",
+    "deleteConfirm": "Elimina",
+    "ics": "ICS (URL diretto)",
+    "caldav": "CalDAV",
+    "enabled": "Attivo",
+    "disabled": "Disattivato",
+    "googleHelp": "Per Google Calendar: Impostazioni \u2192 Calendario \u2192 Indirizzo segreto in formato iCal"
+  }
+}

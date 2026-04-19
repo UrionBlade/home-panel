@@ -1,0 +1,45 @@
+{
+  "title": "Telecamere",
+  "subtitle": "Blink",
+  "setup": {
+    "title": "Configura Blink",
+    "body": "Inserisci le credenziali del tuo account Blink per collegare le telecamere",
+    "email": "Email",
+    "password": "Password",
+    "connect": "Collega",
+    "disclaimer": "Le credenziali vengono salvate in modo sicuro sul tuo server locale"
+  },
+  "status": {
+    "online": "Online",
+    "offline": "Offline",
+    "notConfigured": "Non configurato"
+  },
+  "actions": {
+    "sync": "Sincronizza",
+    "disconnect": "Disconnetti",
+    "deleteClip": "Elimina clip"
+  },
+  "clips": {
+    "title": "Clip recenti",
+    "empty": "Nessun clip registrato",
+    "duration": "{{seconds}}s"
+  },
+  "videoUnavailable": "Video non disponibile",
+  "tile": {
+    "count_one": "{{count}} telecamera",
+    "count_other": "{{count}} telecamere",
+    "notConfigured": "Non configurato"
+  },
+  "notConfigured": {
+    "message": "Nessuna telecamera configurata. Collega i tuoi account nelle impostazioni.",
+    "goToSettings": "Vai alle Impostazioni"
+  },
+  "confirm": {
+    "disconnect": "Disconnettere l'account Blink?",
+    "deleteClip": "Eliminare questo clip?"
+  },
+  "errors": {
+    "setupFailed": "Errore di connessione a Blink",
+    "syncFailed": "Sincronizzazione fallita"
+  }
+}

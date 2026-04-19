@@ -1,0 +1,42 @@
+{
+  "title": "Family",
+  "subtitle": "People and pets at home",
+  "empty": {
+    "title": "No members yet",
+    "body": "Add the people and pets in your family"
+  },
+  "actions": {
+    "addHuman": "Add person",
+    "addPet": "Add pet",
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "fields": {
+    "displayName": "Name",
+    "displayNamePlaceholder": "E.g. John",
+    "avatarUrl": "Avatar URL (optional)",
+    "accentColor": "Accent color",
+    "birthDate": "Date of birth",
+    "role": "Role",
+    "rolePlaceholder": "E.g. dad, mom, son...",
+    "species": "Species",
+    "speciesPlaceholder": "E.g. dog, cat...",
+    "breed": "Breed",
+    "breedPlaceholder": "E.g. Border Collie",
+    "weightKg": "Weight (kg)",
+    "veterinaryNotes": "Veterinary notes"
+  },
+  "errors": {
+    "displayNameRequired": "Name is required",
+    "createFailed": "Could not create member",
+    "updateFailed": "Could not save changes",
+    "deleteFailed": "Could not delete"
+  },
+  "confirm": {
+    "delete": "Remove {{name}} from the family?"
+  },
+  "kindLabel": {
+    "human": "Person",
+    "pet": "Pet"
+  }
+}
