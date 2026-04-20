@@ -1,13 +1,13 @@
-// Voice engine nativo: usa SFSpeechRecognizer (Apple) via Swift FFI.
+// Native voice engine: uses SFSpeechRecognizer (Apple) via Swift FFI.
 //
-// Flusso:
-//   1. Frontend chiama `voice_start_continuous`
-//   2. Rust chiama Swift `ios_voice_start_listening()` → streaming recognition
-//   3. Swift rileva "ok casa" nei partial results, cattura il comando
-//   4. Rust fa polling ogni 200ms con `ios_voice_poll_command()` e
-//      `ios_voice_poll_status()`, ed emette eventi Tauri al frontend
-//   5. Frontend riceve `voice:command` → lo parsa ed esegue
-//   6. TTS via `ios_voice_speak()` per la risposta
+// Flow:
+//   1. Frontend calls `voice_start_continuous`
+//   2. Rust calls Swift `ios_voice_start_listening()` → streaming recognition
+//   3. Swift detects "ok casa" in partial results, captures the command
+//   4. Rust polls every 200ms with `ios_voice_poll_command()` and
+//      `ios_voice_poll_status()`, and emits Tauri events to the frontend
+//   5. Frontend receives `voice:command` → parses and executes it
+//   6. TTS via `ios_voice_speak()` for the response
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{AppHandle, Emitter};
@@ -17,7 +17,7 @@ use std::ffi::{CStr, CString};
 
 static RUNNING: AtomicBool = AtomicBool::new(false);
 
-// --- FFI verso Swift (solo iOS) ---
+// --- FFI to Swift (iOS only) ---
 #[cfg(target_os = "ios")]
 extern "C" {
     fn ios_voice_request_mic_permission() -> bool;
@@ -32,7 +32,7 @@ extern "C" {
 
 // --- Tauri Commands ---
 
-/// Richiede permesso microfono + riconoscimento vocale.
+/// Requests microphone + speech recognition permission.
 #[tauri::command]
 pub async fn voice_request_permission() -> Result<bool, String> {
     #[cfg(target_os = "ios")]
@@ -50,8 +50,8 @@ pub async fn voice_request_permission() -> Result<bool, String> {
     }
 }
 
-/// Non serve più il modello Whisper — SFSpeechRecognizer è nativo.
-/// Restituisce sempre true per compatibilità col frontend.
+/// Whisper model is no longer needed — SFSpeechRecognizer is native.
+/// Always returns true for frontend compatibility.
 #[tauri::command]
 pub fn voice_model_exists() -> Result<bool, String> {
     Ok(true)
@@ -64,18 +64,18 @@ pub fn voice_model_path() -> Result<String, String> {
 
 #[tauri::command]
 pub async fn voice_download_model() -> Result<(), String> {
-    // Noop — SFSpeechRecognizer non ha bisogno di modelli da scaricare.
+    // Noop — SFSpeechRecognizer does not need any models to download.
     Ok(())
 }
 
 #[tauri::command]
 pub fn voice_init_whisper() -> Result<(), String> {
-    // Noop — non usiamo più Whisper.
+    // Noop — Whisper is no longer used.
     Ok(())
 }
 
-/// Avvia il riconoscimento vocale streaming e un loop di polling
-/// che emette eventi Tauri quando Swift rileva comandi.
+/// Starts streaming speech recognition and a polling loop
+/// that emits Tauri events when Swift detects commands.
 #[tauri::command]
 pub fn voice_start_continuous(app: AppHandle) -> Result<(), String> {
     if RUNNING.load(Ordering::SeqCst) {
@@ -85,10 +85,10 @@ pub fn voice_start_continuous(app: AppHandle) -> Result<(), String> {
 
     #[cfg(target_os = "ios")]
     {
-        // Avvia il riconoscimento Swift (sul main thread tramite dispatch)
+        // Start Swift recognition (on main thread via dispatch)
         unsafe { ios_voice_start_listening() };
 
-        // Loop di polling in background
+        // Background polling loop
         let app_clone = app.clone();
         std::thread::spawn(move || {
             while RUNNING.load(Ordering::SeqCst) {
@@ -109,7 +109,7 @@ pub fn voice_start_continuous(app: AppHandle) -> Result<(), String> {
                         }
                     }
 
-                    // Poll comandi
+                    // Poll commands
                     let cmd_ptr = ios_voice_poll_command();
                     if !cmd_ptr.is_null() {
                         if let Ok(cmd) = CStr::from_ptr(cmd_ptr).to_str() {
@@ -135,7 +135,7 @@ pub fn voice_start_continuous(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// Ferma il riconoscimento vocale.
+/// Stops speech recognition.
 #[tauri::command]
 pub fn voice_stop_continuous() -> Result<(), String> {
     RUNNING.store(false, Ordering::SeqCst);
@@ -148,17 +148,17 @@ pub fn voice_stop_continuous() -> Result<(), String> {
     Ok(())
 }
 
-/// Cattura un singolo comando (push-to-talk).
+/// Captures a single command (push-to-talk).
 #[tauri::command]
 pub fn voice_listen(app: AppHandle, duration_secs: Option<u64>) -> Result<(), String> {
     let _ = duration_secs;
-    // Per push-to-talk usiamo lo stesso meccanismo — il riconoscimento
-    // streaming è già attivo, basta che l'utente parli.
+    // For push-to-talk we use the same mechanism — streaming recognition
+    // is already active, the user just needs to speak.
     let _ = app.emit("voice:status", "listening");
     Ok(())
 }
 
-/// TTS: pronuncia il testo in italiano.
+/// TTS: speaks the given text in Italian.
 #[tauri::command]
 pub fn voice_speak(text: String) -> Result<(), String> {
     #[cfg(target_os = "ios")]
@@ -173,7 +173,7 @@ pub fn voice_speak(text: String) -> Result<(), String> {
     Ok(())
 }
 
-/// Interrompe TTS.
+/// Stops TTS.
 #[tauri::command]
 pub fn voice_stop_speaking() -> Result<(), String> {
     #[cfg(target_os = "ios")]

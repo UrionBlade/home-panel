@@ -68,7 +68,7 @@ export function TimerOverlay() {
     };
   }, []);
 
-  // Audio + registrazione store quando overlay attivo
+  // Audio + store registration when overlay is active
   useEffect(() => {
     if (!overlay) return;
     primeAudio();

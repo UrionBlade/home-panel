@@ -33,7 +33,7 @@ function listPhotos(): string[] {
       .filter((f) => PHOTO_EXTENSIONS.has(extname(f).toLowerCase()))
       .sort();
   } catch {
-    // Directory non esiste o non leggibile
+    // Directory does not exist or is not readable
     files = [];
   }
   photosCache = { files, ts: Date.now() };

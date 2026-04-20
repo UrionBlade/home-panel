@@ -32,7 +32,7 @@ export function CreateAlarmModal({ open, onClose, alarm }: AlarmFormModalProps) 
   const [minute, setMinute] = useState("0");
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
 
-  // Sincronizza lo stato quando cambia alarm (apre in edit) o viene aperta in create
+  // Sync state when the alarm changes (opened for edit) or when opened for create
   useEffect(() => {
     if (!open) return;
     if (alarm) {

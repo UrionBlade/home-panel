@@ -19,9 +19,33 @@ const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID ?? "";
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET ?? "";
 const REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI ?? "http://localhost:1420/spotify-callback";
 
-/* ---- PKCE in-memory store (short-lived during auth flow) ---- */
+/* ---- PKCE in-memory store (indexed by state, TTL 10 min) ---- */
 
-let pendingCodeVerifier: string | null = null;
+const PKCE_TTL_MS = 10 * 60 * 1000;
+
+interface PkceEntry {
+  verifier: string;
+  expiresAt: number;
+}
+
+const pendingPkce = new Map<string, PkceEntry>();
+
+function setPendingPkce(state: string, verifier: string) {
+  // Purge expired
+  const now = Date.now();
+  for (const [k, v] of pendingPkce) {
+    if (v.expiresAt < now) pendingPkce.delete(k);
+  }
+  pendingPkce.set(state, { verifier, expiresAt: now + PKCE_TTL_MS });
+}
+
+function takePendingPkce(state: string): string | null {
+  const entry = pendingPkce.get(state);
+  if (!entry) return null;
+  pendingPkce.delete(state);
+  if (entry.expiresAt < Date.now()) return null;
+  return entry.verifier;
+}
 
 /* ---- PKCE helpers ---- */
 
@@ -267,7 +291,8 @@ export const spotifyRouter = new Hono()
 
     const verifier = generateCodeVerifier();
     const challenge = await generateCodeChallenge(verifier);
-    pendingCodeVerifier = verifier;
+    const state = crypto.randomUUID();
+    setPendingPkce(state, verifier);
 
     const params = new URLSearchParams({
       response_type: "code",
@@ -284,30 +309,35 @@ export const spotifyRouter = new Hono()
       redirect_uri: REDIRECT_URI,
       code_challenge_method: "S256",
       code_challenge: challenge,
-      state: crypto.randomUUID(),
+      state,
     });
 
-    return c.json({ url: `${SPOTIFY_ACCOUNTS}/authorize?${params}` });
+    return c.json({ url: `${SPOTIFY_ACCOUNTS}/authorize?${params}`, state });
   })
 
   /* ----- callback (PKCE step 2) ----- */
   .post("/callback", async (c) => {
-    const body = (await c.req.json().catch(() => null)) as { code: string } | null;
+    const body = (await c.req.json().catch(() => null)) as {
+      code: string;
+      state?: string;
+    } | null;
 
     if (!body?.code) {
       return c.json({ error: "authorization code obbligatorio" }, 400);
     }
-    if (!pendingCodeVerifier) {
+    if (!body.state) {
+      return c.json({ error: "state obbligatorio" }, 400);
+    }
+
+    const verifier = takePendingPkce(body.state);
+    if (!verifier) {
       return c.json(
         {
-          error: "Nessun flusso OAuth in attesa. Richiedi prima /auth-url.",
+          error: "Flusso OAuth scaduto o non trovato. Richiedi di nuovo /auth-url.",
         },
         400,
       );
     }
-
-    const verifier = pendingCodeVerifier;
-    pendingCodeVerifier = null;
 
     const tokenParams = new URLSearchParams({
       grant_type: "authorization_code",
@@ -377,7 +407,7 @@ export const spotifyRouter = new Hono()
 
   /* ----- logout ----- */
   .delete("/credentials", (c) => {
-    pendingCodeVerifier = null;
+    pendingPkce.clear();
     db.delete(spotifyCredentials).run();
     return c.json({ ok: true });
   })

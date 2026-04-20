@@ -126,7 +126,7 @@ const RULES: SeedRule[] = [
       anchorDate: "2026-01-06",
     },
   },
-  // VETRO E LATTINE: ogni 14gg dal 13 gennaio 2026 (martedì, sfasato di 7gg dal secco)
+  // GLASS & CANS: every 14 days from Jan 13 2026 (Tuesday, offset 7 days from dry)
   {
     id: "rule-vetro-besozzo-2026",
     wasteTypeId: "vetro_lattine",

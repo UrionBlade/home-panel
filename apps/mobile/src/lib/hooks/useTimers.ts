@@ -18,7 +18,13 @@ export function useTimers() {
   return useQuery({
     queryKey: TIMERS_KEY,
     queryFn: () => apiClient.get<Timer[]>("/api/v1/timers/timers"),
-    refetchInterval: 1000,
+    // 1s polling only while timers are active: reduces API load
+    // from 1 req/s to 0 req/s when the list is empty or all are paused/finished.
+    // `timer:finished` events via SSE still notify changes.
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      return data?.some((t) => t.status === "running") ? 1000 : false;
+    },
   });
 }
 

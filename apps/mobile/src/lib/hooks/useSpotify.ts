@@ -143,17 +143,27 @@ export function useSpotifyTransfer() {
   });
 }
 
+const SPOTIFY_PKCE_STATE_KEY = "home-panel:spotify-pkce-state";
+
 export function useSpotifyAuthUrl() {
   return useMutation({
-    mutationFn: () => apiClient.get<{ url: string }>("/api/v1/spotify/auth-url"),
+    mutationFn: async () => {
+      const res = await apiClient.get<{ url: string; state: string }>("/api/v1/spotify/auth-url");
+      // Persist state in sessionStorage for the PKCE flow (survives the Spotify redirect)
+      sessionStorage.setItem(SPOTIFY_PKCE_STATE_KEY, res.state);
+      return res;
+    },
   });
 }
 
 export function useSpotifyCallback() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (code: string) =>
-      apiClient.post<{ ok: boolean }>("/api/v1/spotify/callback", { code }),
+    mutationFn: (code: string) => {
+      const state = sessionStorage.getItem(SPOTIFY_PKCE_STATE_KEY);
+      sessionStorage.removeItem(SPOTIFY_PKCE_STATE_KEY);
+      return apiClient.post<{ ok: boolean }>("/api/v1/spotify/callback", { code, state });
+    },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: SPOTIFY_STATUS_KEY });
       void qc.invalidateQueries({ queryKey: SPOTIFY_PLAYBACK_KEY });

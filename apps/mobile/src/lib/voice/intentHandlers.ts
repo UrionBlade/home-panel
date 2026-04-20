@@ -238,7 +238,8 @@ export async function handleIntent(command: ParsedCommand): Promise<string> {
         await apiClient.delete(`/api/v1/shopping/items/by-name?name=${encodeURIComponent(name)}`);
         invalidate(["shopping"]);
         return vt("shopping.removed", { name });
-      } catch {
+      } catch (err) {
+        console.warn("[voice] remove_from_shopping:", err);
         return vt("shopping.notFound", { name });
       }
     }
@@ -395,7 +396,8 @@ export async function handleIntent(command: ParsedCommand): Promise<string> {
           })
           .join(", ");
         return vt("timer.multipleList", { count: timers.length, list });
-      } catch {
+      } catch (err) {
+        console.warn("[voice] stop_timer:", err);
         return vt("timer.stopFailed");
       }
     }
@@ -485,7 +487,8 @@ export async function handleIntent(command: ParsedCommand): Promise<string> {
       try {
         await apiClient.put("/api/v1/spotify/playback/play", {});
         return vt("music.played");
-      } catch {
+      } catch (err) {
+        console.warn("[voice] music_play:", err);
         return vt("music.playFailed");
       }
     }
@@ -494,7 +497,8 @@ export async function handleIntent(command: ParsedCommand): Promise<string> {
       try {
         await apiClient.put("/api/v1/spotify/playback/pause");
         return vt("music.paused");
-      } catch {
+      } catch (err) {
+        console.warn("[voice] music_pause:", err);
         return vt("music.pauseFailed");
       }
     }
@@ -503,7 +507,8 @@ export async function handleIntent(command: ParsedCommand): Promise<string> {
       try {
         await apiClient.post("/api/v1/spotify/playback/next");
         return vt("music.next");
-      } catch {
+      } catch (err) {
+        console.warn("[voice] music_next:", err);
         return vt("music.nextFailed");
       }
     }
@@ -512,7 +517,8 @@ export async function handleIntent(command: ParsedCommand): Promise<string> {
       try {
         await apiClient.post("/api/v1/spotify/playback/previous");
         return vt("music.previous");
-      } catch {
+      } catch (err) {
+        console.warn("[voice] music_previous:", err);
         return vt("music.previousFailed");
       }
     }
@@ -537,7 +543,8 @@ export async function handleIntent(command: ParsedCommand): Promise<string> {
         }
         await apiClient.put("/api/v1/spotify/playback/volume", { volumePercent });
         return vt("music.volumeAt", { percent: volumePercent });
-      } catch {
+      } catch (err) {
+        console.warn("[voice] music_volume:", err);
         return vt("music.volumeFailed");
       }
     }

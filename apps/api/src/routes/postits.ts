@@ -30,7 +30,7 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-/** Filler patterns comuni nel parlato italiano. */
+/** Common filler patterns in Italian speech. */
 const FILLER_RE = /^(ricordami\s+di|ricordati\s+di|nota:\s*|appunto:\s*|memo:\s*)/i;
 
 export const postitsRouter = new Hono()
@@ -62,7 +62,7 @@ export const postitsRouter = new Hono()
     const rotation = Math.round((Math.random() * 16 - 8) * 100) / 100;
     const zIndex = getMaxZIndex() + 1;
     const now = new Date().toISOString();
-    // Posizione random entro area sicura (10%-80%)
+    // Random position within the safe area (10%-80%)
     const posX = Math.round((0.1 + Math.random() * 0.7) * 1000) / 1000;
     const posY = Math.round((0.1 + Math.random() * 0.7) * 1000) / 1000;
 
@@ -114,7 +114,7 @@ export const postitsRouter = new Hono()
       updates.posY = clamp(body.posY, 0, 1);
     }
 
-    // Verifica che almeno uno tra title/body resti non-vuoto
+    // Ensure at least one of title/body remains non-empty
     const finalTitle = updates.title !== undefined ? updates.title : existing.title;
     const finalBody = updates.body !== undefined ? updates.body : existing.body;
     if (!finalTitle && !finalBody) {
@@ -167,7 +167,7 @@ export const postitsRouter = new Hono()
       return c.json({ error: "text obbligatorio" }, 400);
     }
 
-    // Pulizia filler
+    // Strip fillers
     let cleaned = body.text.trim().replace(FILLER_RE, "").trim();
     if (!cleaned) cleaned = body.text.trim();
 
@@ -178,12 +178,12 @@ export const postitsRouter = new Hono()
       title = cleaned;
       bodyText = null;
     } else {
-      // Prima frase (fino a 30 char) come titolo
+      // First sentence (up to 30 chars) as title
       const sentenceEnd = cleaned.search(/[.!?]\s/);
       if (sentenceEnd !== -1 && sentenceEnd <= 30) {
         title = cleaned.slice(0, sentenceEnd + 1);
       } else {
-        // Tronca a 30 char al boundary parola più vicino
+        // Truncate at 30 chars on the nearest word boundary
         const truncated = cleaned.slice(0, 30);
         const lastSpace = truncated.lastIndexOf(" ");
         title = lastSpace > 10 ? `${truncated.slice(0, lastSpace)}...` : `${truncated}...`;

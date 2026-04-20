@@ -16,8 +16,14 @@ import {
   fetchGialloZafferanoFeed,
   searchGialloZafferano,
 } from "../lib/giallo-zafferano.js";
+import { assertPublicUrl } from "../lib/url-safety.js";
 
 const VALID_DIFFICULTIES: RecipeDifficulty[] = ["facile", "medio", "difficile"];
+
+/** Escapes SQLite wildcards `%` `_` and `\` for use in LIKE with ESCAPE '\\' */
+function escapeLikePattern(raw: string): string {
+  return raw.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
+}
 
 function parseJsonStringArray(raw: string): string[] {
   try {
@@ -30,10 +36,10 @@ function parseJsonStringArray(raw: string): string[] {
 }
 
 /**
- * Normalizza il campo `steps` salvato in DB.
- * Storicamente era `string[]`; dalla milestone "rich recipes" è
- * `RecipeStep[]` con `{ text, images }`. Per backward-compat accettiamo
- * entrambi i formati e mappiamo le stringhe a step senza immagini.
+ * Normalizes the `steps` field stored in the DB.
+ * Historically it was `string[]`; since the "rich recipes" milestone it is
+ * `RecipeStep[]` with `{ text, images }`. For backward compatibility we
+ * accept both formats and map strings to steps without images.
  */
 function parseStepsJson(raw: string): RecipeStep[] {
   try {
@@ -62,9 +68,9 @@ function parseStepsJson(raw: string): RecipeStep[] {
 }
 
 /**
- * Inverso di `parseStepsJson`: accetta input misto string|RecipeStep
- * (per retrocompatibilità del payload API) e restituisce sempre
- * `RecipeStep[]` da serializzare in DB.
+ * Inverse of `parseStepsJson`: accepts mixed string|RecipeStep input
+ * (for API payload backward compatibility) and always returns
+ * `RecipeStep[]` to be serialized to the DB.
  */
 function normalizeIncomingSteps(input: Array<string | RecipeStep> | undefined): RecipeStep[] {
   if (!Array.isArray(input)) return [];
@@ -122,12 +128,13 @@ export const recipesRouter = new Hono()
       conditions.push(eq(recipes.favorite, true));
     }
     if (tag) {
-      // tags è JSON array, cerchiamo con LIKE
-      conditions.push(like(recipes.tags, `%"${tag}"%`));
+      // tags is a JSON array, search with LIKE (SQLite wildcard escaped)
+      conditions.push(like(recipes.tags, `%"${escapeLikePattern(tag)}"%`));
     }
     if (q) {
+      const esc = escapeLikePattern(q);
       conditions.push(
-        sql`(${recipes.title} LIKE ${`%${q}%`} OR ${recipes.description} LIKE ${`%${q}%`})`,
+        sql`(${recipes.title} LIKE ${`%${esc}%`} ESCAPE '\\' OR ${recipes.description} LIKE ${`%${esc}%`} ESCAPE '\\')`,
       );
     }
 
@@ -266,7 +273,7 @@ export const recipesRouter = new Hono()
     return c.json(rowToRecipe(updated));
   })
 
-  /* ----- ultime ricette dal feed RSS di giallozafferano.it ----- */
+  /* ----- latest recipes from the giallozafferano.it RSS feed ----- */
   .get("/gz/feed", async (c) => {
     try {
       const items = await fetchGialloZafferanoFeed();
@@ -277,7 +284,7 @@ export const recipesRouter = new Hono()
     }
   })
 
-  /* ----- dettaglio ricetta giallozafferano (scraping completo) ----- */
+  /* ----- giallozafferano recipe details (full scraping) ----- */
   .get("/gz/details", async (c) => {
     const url = c.req.query("url")?.trim();
     if (!url) {
@@ -295,7 +302,7 @@ export const recipesRouter = new Hono()
     }
   })
 
-  /* ----- search su giallozafferano.it ----- */
+  /* ----- search on giallozafferano.it ----- */
   .get("/gz/search", async (c) => {
     const q = c.req.query("q")?.trim();
     if (!q) {
@@ -319,18 +326,35 @@ export const recipesRouter = new Hono()
 
     const url = body.url.trim();
 
+    // SSRF guard: validate scheme + host is not private/loopback/metadata
+    let safeUrl: URL;
+    try {
+      safeUrl = await assertPublicUrl(url);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "URL non valido";
+      return c.json({ error: `URL non consentito: ${msg}` }, 400);
+    }
+
     let html: string;
     try {
-      const response = await fetch(url, {
+      const response = await fetch(safeUrl.toString(), {
         headers: {
           "User-Agent":
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           Accept: "text/html,application/xhtml+xml",
           "Accept-Language": "it-IT,it;q=0.9,en;q=0.5",
         },
+        redirect: "manual", // avoid redirects to internal hosts
         signal: AbortSignal.timeout(12000),
       });
+      if (response.status >= 300 && response.status < 400) {
+        return c.json({ error: "Redirect non consentito" }, 400);
+      }
       html = await response.text();
+      // Cap size to avoid OOM and ReDoS
+      if (html.length > 5_000_000) {
+        return c.json({ error: "Pagina troppo grande" }, 413);
+      }
     } catch {
       return c.json({ error: "Impossibile raggiungere la pagina" }, 400);
     }
@@ -487,8 +511,8 @@ export const recipesRouter = new Hono()
     return c.json(result);
   })
 
-  /* ----- single (DEVE essere DOPO /gz/* e /import-url per evitare
-   *        che `:id` intercetti rotte statiche come "gz") ----- */
+  /* ----- single (MUST be AFTER /gz/* and /import-url to avoid
+   *        `:id` intercepting static routes like "gz") ----- */
   .get("/:id", (c) => {
     const id = c.req.param("id");
     const row = db.select().from(recipes).where(eq(recipes.id, id)).get();

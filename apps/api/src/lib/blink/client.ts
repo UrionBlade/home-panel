@@ -1,6 +1,6 @@
 /**
- * Client Blink con OAuth 2.0 PKCE (basato su blinkpy).
- * Supporta 2FA: login in 2 step se Blink richiede PIN.
+ * Blink client with OAuth 2.0 PKCE (based on blinkpy).
+ * Supports 2FA: 2-step login if Blink requires a PIN.
  */
 
 import { createHash, randomBytes } from "node:crypto";
@@ -95,7 +95,7 @@ export interface BlinkClipInfo {
   thumbnailUrl: string;
 }
 
-/** Stato intermedio salvato quando serve 2FA. */
+/** Intermediate state saved when 2FA is required. */
 export interface BlinkPending2FA {
   csrfToken: string;
   codeVerifier: string;
@@ -191,7 +191,7 @@ export async function blinkLogin(email: string, password: string): Promise<Blink
     throw new Error("Credenziali Blink non valide. Verifica email e password.");
   }
 
-  // 2FA richiesto
+  // 2FA required
   if (loginRes.status === 412) {
     return {
       ok: false,
@@ -217,7 +217,7 @@ export async function blinkLogin(email: string, password: string): Promise<Blink
     throw new Error(`Login Blink fallito (${loginRes.status})`);
   }
 
-  // Login OK senza 2FA → completa il flusso
+  // Login OK without 2FA → complete the flow
   return { ok: true, session: await completeOAuth(jar, verifier, hardwareId) };
 }
 
@@ -420,16 +420,16 @@ export async function blinkArmNetwork(
 }
 
 /**
- * Sveglia la camera e aggiorna il thumbnail. Blink internamente avvia
+ * Wakes the camera and refreshes the thumbnail. Blink internally starts
  * a brief liveview that refreshes the image. The new thumbnail is
- * disponibile dopo qualche secondo via blinkListCameras.
+ * available after a few seconds via blinkListCameras.
  */
 export async function blinkRequestThumbnail(
   session: BlinkSession,
   networkId: string,
   cameraId: string,
 ): Promise<void> {
-  // L'endpoint "new image" forza la camera a catturare un nuovo thumbnail
+  // The "new image" endpoint forces the camera to capture a new thumbnail
   await blinkApi<unknown>(
     session,
     `/api/v1/accounts/${session.accountId}/networks/${networkId}/cameras/${cameraId}/thumbnail`,

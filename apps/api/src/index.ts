@@ -3,7 +3,6 @@ import { serve } from "@hono/node-server";
 import "dotenv/config";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { logger } from "hono/logger";
 import { seedBesozzo2026 } from "./db/seed-besozzo-2026.js";
 import { seedBesozzoLocation } from "./db/seed-besozzo-location.js";
 import { seedEventCategories } from "./db/seed-event-categories.js";
@@ -23,12 +22,12 @@ import { recipesRouter } from "./routes/recipes.js";
 import { shoppingRouter } from "./routes/shopping.js";
 import { spotifyRouter } from "./routes/spotify.js";
 import { sseRouter } from "./routes/sse.js";
-import { timersRouter } from "./routes/timers.js";
+import { startTimersScheduler, timersRouter } from "./routes/timers.js";
 import { voiceRouter } from "./routes/voice.js";
 import { wasteRouter } from "./routes/waste.js";
 import { weatherRouter } from "./routes/weather.js";
 
-// Seeds idempotenti all'avvio
+// Idempotent seeds on startup
 seedProductCatalog();
 seedEventCategories();
 seedBesozzo2026();
@@ -47,7 +46,21 @@ const allowedOrigins = (
   .map((s) => s.trim())
   .filter(Boolean);
 
-app.use("*", logger());
+// Custom logger: masks ?token= to avoid leaks in logs/proxy/Referer
+app.use("*", async (c, next) => {
+  const start = Date.now();
+  const rawPath = c.req.path;
+  const hasToken = c.req.query("token") !== undefined;
+  const maskedPath = hasToken
+    ? `${rawPath}?${new URL(c.req.url).searchParams
+        .toString()
+        .replace(/token=[^&]*/g, "token=***")}`
+    : rawPath;
+  console.log(`<-- ${c.req.method} ${maskedPath}`);
+  await next();
+  const ms = Date.now() - start;
+  console.log(`--> ${c.req.method} ${maskedPath} ${c.res.status} ${ms}ms`);
+});
 app.use(
   "*",
   cors({
@@ -62,7 +75,7 @@ app.use(
   }),
 );
 
-// /health è esente da auth (healthcheck Docker, Tailscale)
+// /health is exempt from auth (Docker healthcheck, Tailscale)
 app.get("/health", (c) => {
   const body: HealthResponse = {
     status: "ok",
@@ -72,13 +85,13 @@ app.get("/health", (c) => {
   return c.json(body);
 });
 
-// Tutto sotto /api/* richiede Bearer token, TRANNE il proxy media Blink e SSE
+// Everything under /api/* requires Bearer token, EXCEPT the Blink media proxy and SSE
 app.use("/api/*", async (c, next) => {
-  // Il proxy Blink è usato da <img>/<video> che non possono aggiungere header Auth
+  // The Blink proxy is used by <img>/<video> which cannot add Auth headers
   if (c.req.path === `/api/${API_VERSION}/blink/proxy`) {
     return next();
   }
-  // SSE: EventSource non supporta header custom, usa ?token= query param
+  // SSE: EventSource does not support custom headers, uses ?token= query param
   if (c.req.path === `/api/${API_VERSION}/sse`) {
     const token = c.req.query("token");
     if (!token || token !== process.env.API_TOKEN) {
@@ -111,4 +124,5 @@ const hostname = process.env.HOST ?? "0.0.0.0";
 serve({ fetch: app.fetch, port, hostname }, (info) => {
   console.log(`API in ascolto su http://${info.address}:${info.port}`);
   startSyncScheduler();
+  startTimersScheduler();
 });

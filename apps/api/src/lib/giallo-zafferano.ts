@@ -1,21 +1,21 @@
 /**
- * Scraper giallozafferano.it per la ricerca ricette.
+ * Scraper for giallozafferano.it recipe search.
  *
- * Replica il comportamento del vecchio `gialloZafferanoService` del
- * repo home-panel, ma lato server (niente CORS, niente DOMParser).
+ * Replicates the behavior of the old `gialloZafferanoService` from the
+ * home-panel repo, but server-side (no CORS, no DOMParser).
  *
- * Strategia:
- *  - `searchGialloZafferano(query)` scarica la pagina
- *    `https://www.giallozafferano.it/ricerca-ricette/<query>/` e parse i
- *    blocchi `<article class="gz-card …">` con regex (nessuna dipendenza
- *    external: the structure is simple and stable).
- *  - I risultati di ricerca usano `gz-card-horizontal gz-card-search`
+ * Strategy:
+ *  - `searchGialloZafferano(query)` downloads the page
+ *    `https://www.giallozafferano.it/ricerca-ricette/<query>/` and parses
+ *    `<article class="gz-card …">` blocks with regex (no external
+ *    dependency: the structure is simple and stable).
+ *  - Search results use `gz-card-horizontal gz-card-search`
  *    (title <h2>, description, time, difficulty, rating). The
  *    "vertical" cards are recommendation carousels: we skip them because
- *    rumorose, salvo la pagina non ne abbia altre.
+ *    they are noisy, unless the page has no others.
  *  - Details (ingredients / steps / times) are handled by
- *    `/api/v1/recipes/import-url` tramite JSON-LD `@type=Recipe`, che
- *    GZ espone su ogni ricetta.
+ *    `/api/v1/recipes/import-url` via JSON-LD `@type=Recipe`, which
+ *    GZ exposes on every recipe.
  */
 
 import type {
@@ -35,14 +35,14 @@ const USER_AGENT =
 const FETCH_TIMEOUT_MS = 12_000;
 const MAX_RESULTS = 30;
 
-// Match di un singolo `<article class="…gz-card…">…</article>`.
+// Match a single `<article class="…gz-card…">…</article>`.
 // Lazy match to avoid spanning across adjacent cards.
 const ARTICLE_BLOCK_RE =
   /<article[^>]*class="([^"]*\bgz-card\b[^"]*)"[^>]*>([\s\S]*?)<\/article>/gi;
 
 const HREF_RE = /<a[^>]+href="([^"]+)"/i;
 // Horizontal cards have the title in <h2 class="gz-title"><a>...</a></h2>
-// su quelli verticali `<h4 class="gz-title …">…</h4>`. Catturiamo entrambi.
+// vertical ones use `<h4 class="gz-title …">…</h4>`. We capture both.
 const TITLE_RE = /<h[234][^>]*class="[^"]*\bgz-title\b[^"]*"[^>]*>([\s\S]*?)<\/h[234]>/i;
 const IMG_SRC_RE = /<img[^>]+src="([^"]+)"/i;
 const IMG_DATA_SRC_RE = /<img[^>]+data-(?:lazy-)?src="([^"]+)"/i;
@@ -80,13 +80,13 @@ interface ParsedStats {
 }
 
 /**
- * Scansiona tutti i `li.gz-single-data-recipe` di un card e classifica
- * il contenuto in base all'icona svg usata:
- *  - `voto-*`        → rating (es. "4,3")
- *  - `commento-*`    → numero commenti
- *  - `tempo-*`       → tempo totale ("35 min")
+ * Scans all `li.gz-single-data-recipe` in a card and classifies
+ * the content based on the svg icon used:
+ *  - `voto-*`        → rating (e.g. "4,3")
+ *  - `commento-*`    → comment count
+ *  - `tempo-*`       → total time ("35 min")
  *  - `difficolta-*`  → textual difficulty ("Facile" / "Media" / "Difficile")
- *  - altri (kcal, …) ignorati
+ *  - others (kcal, …) ignored
  */
 function parseStats(cardHtml: string): ParsedStats {
   const stats: ParsedStats = {
@@ -115,7 +115,7 @@ function parseStats(cardHtml: string): ParsedStats {
       continue;
     }
     if (/^tempo/i.test(iconId) && stats.totalTimeMinutes === null) {
-      // GZ scrive "35 min" oppure "1 h" / "1 h 20 min".
+      // GZ writes "35 min" or "1 h" / "1 h 20 min".
       const hoursMatch = text.match(/(\d+)\s*h/i);
       const minsMatch = text.match(/(\d+)\s*min/i);
       const hours = hoursMatch?.[1] ? Number(hoursMatch[1]) : 0;
@@ -134,8 +134,14 @@ function parseStats(cardHtml: string): ParsedStats {
 }
 
 /**
- * Esegue fetch con header User-Agent da browser e timeout esplicito.
- * Alcune pagine GZ rispondono con 403 per UA "bot".
+ * HTML size limit (5 MB): protects against ReDoS on malformed pages
+ * and OOM if GZ returns anomalous data.
+ */
+const MAX_HTML_BYTES = 5_000_000;
+
+/**
+ * Performs a fetch with a browser User-Agent header and explicit timeout.
+ * Some GZ pages respond with 403 to "bot" UAs.
  */
 async function fetchHtml(url: string): Promise<string> {
   const res = await fetch(url, {
@@ -149,7 +155,11 @@ async function fetchHtml(url: string): Promise<string> {
   if (!res.ok) {
     throw new Error(`GZ HTTP ${res.status}`);
   }
-  return res.text();
+  const text = await res.text();
+  if (text.length > MAX_HTML_BYTES) {
+    throw new Error(`GZ HTML troppo grande: ${text.length} bytes`);
+  }
+  return text;
 }
 
 interface ParsedCard extends GialloZafferanoSearchResult {
@@ -201,14 +211,13 @@ function parseCard(classes: string, body: string): ParsedCard | null {
 }
 
 /**
- * Cerca ricette su giallozafferano.it.
+ * Searches recipes on giallozafferano.it.
  *
- * @param query testo libero (es. "carbonara", "pollo al curry")
- * @returns lista di risultati uniformi; array vuoto se nessun match.
+ * @param query free text (e.g. "carbonara", "pollo al curry")
+ * @returns list of uniform results; empty array if no matches.
  *
- * Strategia di ordinamento: prima i card `gz-card-search` (risultati
- * principali della SERP), poi eventuali card "vertical" come fallback.
- * De-duplicazione per URL canonico.
+ * Sort strategy: `gz-card-search` cards first (main SERP results),
+ * then any "vertical" cards as a fallback. De-duplicated by canonical URL.
  */
 export async function searchGialloZafferano(query: string): Promise<GialloZafferanoSearchResult[]> {
   const trimmed = query.trim();
@@ -232,7 +241,7 @@ export async function searchGialloZafferano(query: string): Promise<GialloZaffer
     if (collected.length >= MAX_RESULTS * 2) break;
   }
 
-  // Primary first, mantenendo l'ordine d'apparizione all'interno di ogni gruppo.
+  // Primary first, preserving appearance order within each group.
   collected.sort((a, b) => Number(b.primary) - Number(a.primary));
 
   return collected.slice(0, MAX_RESULTS).map(({ primary: _p, ...rest }) => rest);
@@ -258,12 +267,12 @@ function unwrapCdata(raw: string): string {
 }
 
 /**
- * Scarica le ultime ricette pubblicate via RSS feed di GZ.
+ * Downloads the latest published recipes via the GZ RSS feed.
  *
- * Ritorna i dati nello stesso shape di `searchGialloZafferano` per
- * permettere al frontend di usare lo stesso componente card. I campi
- * `totalTimeMinutes` / `difficulty` / `rating` / `comments` non sono
- * presenti nel feed e restano `null`.
+ * Returns data in the same shape as `searchGialloZafferano` so the
+ * frontend can use the same card component. The fields
+ * `totalTimeMinutes` / `difficulty` / `rating` / `comments` are not
+ * present in the feed and remain `null`.
  */
 export async function fetchGialloZafferanoFeed(): Promise<GialloZafferanoSearchResult[]> {
   const res = await fetch(FEED_URL, {
@@ -305,7 +314,7 @@ export async function fetchGialloZafferanoFeed(): Promise<GialloZafferanoSearchR
       item.match(MEDIA_THUMB_RE)?.[1] ??
       descUnwrapped.match(CONTENT_IMG_RE)?.[1] ??
       null;
-    // Scarta immagini "strip" (multi-step) e data-uri.
+    // Discard "strip" (multi-step) images and data-uris.
     if (imageUrl && /_strip_/.test(imageUrl)) imageUrl = null;
     if (imageUrl?.startsWith("data:")) imageUrl = null;
 
@@ -341,10 +350,10 @@ const INGREDIENTS_DL_RE =
 const INGREDIENT_DD_RE = /<dd[^>]*class="[^"]*\bgz-ingredient\b[^"]*"[^>]*>([\s\S]*?)<\/dd>/gi;
 
 // Match a single step block: from the opening div up to the
-// prossimo div di step, oppure fino al prossimo <h2>/<section>/<footer>.
+// next step div, or up to the next <h2>/<section>/<footer>.
 // Use lookahead because steps contain nested divs (img-container)
 // that we cannot balance with pure regex.
-// `(?![-a-z])` evita falsi positivi su "gz-content-recipe-step-img" /
+// `(?![-a-z])` avoids false positives on "gz-content-recipe-step-img" /
 // "gz-content-recipe-step-img-container" which are nested divs with
 // a class name that starts the same way.
 const STEP_DIV_RE =
@@ -375,8 +384,8 @@ function parseIsoDuration(iso: string): number | null {
 }
 
 /**
- * Converte URL relative (es. `/images/...`) in assolute usando
- * l'host principale GZ.
+ * Converts relative URLs (e.g. `/images/...`) into absolute ones using
+ * the main GZ host.
  */
 function toAbsoluteUrl(url: string): string {
   if (!url) return "";
@@ -387,8 +396,8 @@ function toAbsoluteUrl(url: string): string {
 }
 
 /**
- * Estrae ricetta dal primo blocco JSON-LD di tipo Recipe (se presente).
- * Fonte primaria per titolo/descrizione/tempi/porzioni/foto hero.
+ * Extracts the recipe from the first JSON-LD block of type Recipe (if present).
+ * Primary source for title/description/times/servings/hero photo.
  */
 function extractJsonLdRecipe(html: string): Record<string, unknown> | null {
   for (const m of html.matchAll(JSON_LD_SCRIPT_RE)) {
@@ -419,7 +428,7 @@ function extractJsonLdRecipe(html: string): Record<string, unknown> | null {
 }
 
 /**
- * Parse della `<dl class="gz-list-ingredients">` estraendo nome e
+ * Parses `<dl class="gz-list-ingredients">` extracting name and
  * quantity for each ingredient. The name is in the inner <a> or in
  * the <dd> text, the quantity in the next <span>.
  */
@@ -433,7 +442,7 @@ function parseIngredients(html: string): GialloZafferanoIngredient[] {
     const dd = m[1];
     if (!dd) continue;
 
-    // Nome: primo <a>…</a> (oppure prima riga di testo non-span)
+    // Name: first <a>…</a> (or first non-span line of text)
     const anchorMatch = dd.match(/<a[^>]*>([\s\S]*?)<\/a>/i);
     const name = anchorMatch?.[1] ? stripHtml(anchorMatch[1]) : "";
     if (!name) continue;
@@ -451,9 +460,9 @@ function parseIngredients(html: string): GialloZafferanoIngredient[] {
 }
 
 /**
- * Parse dei blocchi `<div class="gz-content-recipe-step">`. Ogni blocco
+ * Parses `<div class="gz-content-recipe-step">` blocks. Each block
  * may have 0..N images (typically 1 horizontal strip) and a <p>
- * con il testo del passo. I numeri degli step sono rimossi dal testo
+ * with the step text. Step numbers are removed from the text
  * because the <span class="num-step">N</span> badges create noise.
  */
 function parseSteps(html: string): GialloZafferanoStep[] {
@@ -465,7 +474,7 @@ function parseSteps(html: string): GialloZafferanoStep[] {
 
   const steps: GialloZafferanoStep[] = [];
   matches.forEach((body) => {
-    // Testo dal primo <p>
+    // Text from the first <p>
     const pMatch = body.match(STEP_P_RE);
     const rawP = pMatch?.[1] ?? "";
     // Remove num-step badges that are often numbers mixed in the text.
@@ -476,7 +485,7 @@ function parseSteps(html: string): GialloZafferanoStep[] {
     const text = stripHtml(cleanedP);
     if (!text || text.length < 10) return;
 
-    // Immagini: tutte le <img> dentro il blocco (dedup, no data: URIs).
+    // Images: all <img> within the block (dedup, no data: URIs).
     const images: string[] = [];
     for (const im of body.matchAll(STEP_IMG_RE)) {
       const src = im[1];
@@ -485,7 +494,7 @@ function parseSteps(html: string): GialloZafferanoStep[] {
       if (abs && !images.includes(abs)) images.push(abs);
     }
 
-    // Index progressivo DOPO il filtro su testo vuoto.
+    // Progressive index AFTER the empty-text filter.
     steps.push({ index: steps.length + 1, text, images });
   });
 
@@ -493,8 +502,8 @@ function parseSteps(html: string): GialloZafferanoStep[] {
 }
 
 /**
- * Estrae le sezioni titolate (Conservazione, Consiglio, Note, ecc.)
- * mappandole nei campi `notes` / `tips` / `conservation`.
+ * Extracts titled sections (Conservazione, Consiglio, Note, etc.)
+ * mapping them to the `notes` / `tips` / `conservation` fields.
  */
 function parseNamedSections(html: string): {
   notes: string | null;
@@ -539,13 +548,13 @@ function parseIntroDescription(html: string): string | null {
 }
 
 /**
- * Scarica una pagina ricetta di giallozafferano.it e la parsifica
+ * Downloads a giallozafferano.it recipe page and parses it
  * fully (ingredients with quantities, steps with images,
- * sezioni "Conservazione"/"Consiglio"/"Note").
+ * "Conservazione"/"Consiglio"/"Note" sections).
  *
  * Strategy: JSON-LD = source of truth for title/times/photo; HTML = source of truth
  * for ingredients with separate quantities and steps with images, which
- * non sono esposti nel JSON-LD.
+ * are not exposed in JSON-LD.
  */
 export async function fetchGialloZafferanoDetails(
   url: string,
@@ -557,7 +566,7 @@ export async function fetchGialloZafferanoDetails(
 
   const ld = extractJsonLdRecipe(html);
 
-  // --- Titolo / descrizione / foto -----------------------------------
+  // --- Title / description / photo -----------------------------------
   const titleFromLd = typeof ld?.name === "string" ? (ld.name as string).trim() : "";
   const descFromLd =
     typeof ld?.description === "string" ? stripHtml(ld.description as string) : null;
@@ -599,12 +608,12 @@ export async function fetchGialloZafferanoDetails(
   const category = typeof ld?.recipeCategory === "string" ? (ld.recipeCategory as string) : null;
 
   // Difficulty: on GZ it's in the keywords or from SERP scraping.
-  // deriviamo dall'HTML se presente, altrimenti null.
+  // Derive from HTML if present, otherwise null.
   let difficulty: string | null = null;
   const diffMatch = html.match(/difficolt[àa]\s*<[^>]*>[^<]*<[^>]*>\s*<[^>]*>([^<]+)/i);
   if (diffMatch?.[1]) difficulty = diffMatch[1].trim();
 
-  // --- Ingredienti / passi / sezioni ---------------------------------
+  // --- Ingredients / steps / sections ---------------------------------
   const ingredients = parseIngredients(html);
   const steps = parseSteps(html);
   const named = parseNamedSections(html);

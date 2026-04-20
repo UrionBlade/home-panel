@@ -21,19 +21,31 @@ const NightModeContext = createContext<NightModeContextValue>({
   setForceNight: () => {},
 });
 
-const POLL_INTERVAL_MS = 60_000;
-
+/** Update aligned to the next whole minute to avoid drift. */
 export function NightModeProvider({ children }: { children: ReactNode }) {
   const { data: settings } = useKioskSettings();
   const [forceNight, setForceNight] = useState<boolean | null>(null);
   const [currentHour, setCurrentHour] = useState(() => new Date().getHours());
 
-  // Poll the current hour every 60s
+  // Tick every minute aligned to :00 to stay in sync with the clock
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentHour(new Date().getHours());
-    }, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const tick = () => setCurrentHour(new Date().getHours());
+
+    const now = new Date();
+    const msToNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+
+    timeoutId = setTimeout(() => {
+      tick();
+      intervalId = setInterval(tick, 60_000);
+    }, msToNextMinute);
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      if (intervalId) clearInterval(intervalId);
+    };
   }, []);
 
   const isNight = useMemo(() => {

@@ -1,10 +1,10 @@
 // Voice plugin — SFSpeechRecognizer + AVSpeechSynthesizer.
 //
-// REGOLE:
-// 1. AVAudioEngine + tap PERMANENTI — mai fermati
-// 2. Solo request + task ciclano
-// 3. MAI chiamare endAudio() durante restart — solo cancel()
-// 4. Nuova request assegnata PRIMA di cancellare il vecchio task
+// RULES:
+// 1. AVAudioEngine + tap are PERMANENT — never stopped
+// 2. Only request + task cycle
+// 3. NEVER call endAudio() during restart — only cancel()
+// 4. New request assigned BEFORE cancelling the old task
 
 import Foundation
 import AVFoundation
@@ -98,7 +98,7 @@ public func ios_voice_poll_log() -> UnsafePointer<CChar>? {
 }
 
 // ---------------------------------------------------------------------------
-// MARK: - Engine (permanente)
+// MARK: - Engine (permanent)
 // ---------------------------------------------------------------------------
 
 private func startEngine() {
@@ -126,9 +126,9 @@ private func startEngine() {
     gAudioEngine = engine
     let format = engine.inputNode.outputFormat(forBus: 0)
 
-    // Tap PERMANENTE
+    // PERMANENT tap
     engine.inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
-        // Legge il global ogni volta — quando è nil i buffer vanno persi (OK)
+        // Reads the global each time — when nil the buffers are dropped (OK)
         gRecognitionRequest?.append(buffer)
     }
 
@@ -147,7 +147,7 @@ private func startEngine() {
 private func stopEverything() {
     gIsRunning = false
     gRestartTimer?.invalidate(); gRestartTimer = nil
-    // Per lo shutdown TOTALE usiamo endAudio (graceful)
+    // For TOTAL shutdown we use endAudio (graceful)
     gRecognitionRequest?.endAudio()
     gRecognitionRequest = nil
     gRecognitionTask?.cancel()
@@ -170,8 +170,8 @@ private func startRecognitionSession() {
 
     gRestartTimer?.invalidate()
 
-    // REGOLA: nuova request PRIMA, cancel vecchio task DOPO.
-    // Così il tap ha sempre una destinazione valida.
+    // RULE: new request FIRST, cancel old task AFTER.
+    // This way the tap always has a valid destination.
     let newRequest = SFSpeechAudioBufferRecognitionRequest()
     newRequest.shouldReportPartialResults = true
     if #available(iOS 13, *) {
@@ -180,15 +180,15 @@ private func startRecognitionSession() {
         }
     }
 
-    // Swap atomico
+    // Atomic swap
     let oldTask = gRecognitionTask
     let oldRequest = gRecognitionRequest
-    gRecognitionRequest = newRequest  // tap inizia a mandare qui
+    gRecognitionRequest = newRequest  // tap starts sending here
     gRecognitionTask = nil
 
-    // REGOLA: solo cancel(), MAI endAudio() durante restart
+    // RULE: only cancel(), NEVER endAudio() during restart
     oldTask?.cancel()
-    _ = oldRequest  // lascia che ARC lo deallochi
+    _ = oldRequest  // let ARC deallocate it
 
     var heardWake = false
     var lastText = ""
@@ -197,12 +197,12 @@ private func startRecognitionSession() {
 
     voiceLog("session started")
 
-    // Guard: questa request è "la nostra". Se arriva un callback per
-    // una request vecchia, lo ignoriamo.
+    // Guard: this request is "ours". If a callback arrives for
+    // an old request, we ignore it.
     let thisRequest = newRequest
 
     gRecognitionTask = recognizer.recognitionTask(with: newRequest) { result, error in
-        // Ignora callback stale
+        // Ignore stale callbacks
         guard gRecognitionRequest === thisRequest else { return }
 
         if let result = result {
@@ -216,7 +216,7 @@ private func startRecognitionSession() {
 
             voiceLog("'\(original)'")
 
-            // Cerca wake word
+            // Look for the wake word
             var wakeEnd: String.Index? = nil
             for ww in kWakeWords {
                 if let range = lower.range(of: ww) {
@@ -279,14 +279,14 @@ private func startRecognitionSession() {
             let nsErr = error as NSError
             silenceTimer?.invalidate(); silenceTimer = nil
 
-            // 203 = cancelled by us — atteso e ignorato
+            // 203 = cancelled by us — expected and ignored
             if nsErr.code == 203 { return }
 
             voiceLog("err \(nsErr.code)")
             heardWake = false
 
-            // 1110 = no speech: NORMALE se l'utente è in silenzio.
-            // Restart VELOCE (0.3s) — delay lunghi peggiorano.
+            // 1110 = no speech: NORMAL if the user is silent.
+            // FAST restart (0.3s) — long delays make it worse.
             let delay: TimeInterval = (nsErr.code == 1110) ? 0.3 : 1.0
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                 if gIsRunning { startRecognitionSession() }
@@ -294,7 +294,7 @@ private func startRecognitionSession() {
         }
     }
 
-    // Timer 55s per riciclare prima del limite Apple di ~60s
+    // 55s timer to recycle before Apple's ~60s limit
     gRestartTimer = Timer.scheduledTimer(withTimeInterval: 55, repeats: false) { _ in
         if gIsRunning {
             voiceLog("55s recycle")
@@ -328,8 +328,8 @@ public func ios_voice_speak(_ text: UnsafePointer<CChar>) {
     DispatchQueue.main.async {
         voiceLog("TTS: '\(s)'")
 
-        // REGOLA: solo cancel(), MAI endAudio()
-        // Nil la request così il tap manda buffer a nil (persi, OK)
+        // RULE: only cancel(), NEVER endAudio()
+        // Nil the request so the tap sends buffers to nil (dropped, OK)
         gRecognitionRequest = nil
         gRecognitionTask?.cancel()
         gRecognitionTask = nil
@@ -343,7 +343,7 @@ public func ios_voice_speak(_ text: UnsafePointer<CChar>) {
 
         gSpeechDelegate!.onFinish = {
             voiceLog("TTS done, restart recognition")
-            // Delay breve — NON riconfigurare audio session
+            // Brief delay — do NOT reconfigure the audio session
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 if gIsRunning {
                     startRecognitionSession()

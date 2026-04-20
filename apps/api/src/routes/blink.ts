@@ -68,9 +68,9 @@ function getSession(): BlinkSession | null {
 }
 
 /**
- * Tenta un refresh del token OAuth Blink. Se riesce aggiorna il DB e
- * restituisce la nuova sessione. Se fallisce restituisce null
- * (l'utente dovrà rifare il login).
+ * Attempts a Blink OAuth token refresh. On success updates the DB and
+ * returns the new session. On failure returns null
+ * (the user will need to log in again).
  */
 async function tryRefreshSession(session: BlinkSession): Promise<BlinkSession | null> {
   if (!session.refreshToken || !session.hardwareId) return null;
@@ -82,7 +82,7 @@ async function tryRefreshSession(session: BlinkSession): Promise<BlinkSession | 
       accessToken: refreshed.accessToken,
       refreshToken: refreshed.refreshToken,
     };
-    // Persisti i nuovi token
+    // Persist the new tokens
     const now = new Date().toISOString();
     db.update(blinkCredentials)
       .set({
@@ -101,8 +101,8 @@ async function tryRefreshSession(session: BlinkSession): Promise<BlinkSession | 
 }
 
 /**
- * Esegue una fetch autenticata con Blink; se riceve 401 prova un
- * refresh token automatico e ripete la richiesta una volta sola.
+ * Performs an authenticated Blink fetch; on 401 attempts an automatic
+ * token refresh and retries the request once.
  */
 async function blinkFetchWithRetry(
   url: string,
@@ -123,9 +123,28 @@ async function blinkFetchWithRetry(
   return { response: res, session };
 }
 
-/* ---- Stato 2FA in memoria (vive solo per la durata del setup) ---- */
+/* ---- In-memory 2FA state with TTL to avoid indefinite leak ---- */
+const PENDING_2FA_TTL_MS = 5 * 60 * 1000; // 5 minutes
 let pending2FA: BlinkPending2FA | null = null;
 let pendingEmail: string | null = null;
+let pending2FATimer: NodeJS.Timeout | null = null;
+
+function setPending2FA(pending: BlinkPending2FA | null, email: string | null) {
+  if (pending2FATimer) {
+    clearTimeout(pending2FATimer);
+    pending2FATimer = null;
+  }
+  pending2FA = pending;
+  pendingEmail = email;
+  if (pending) {
+    pending2FATimer = setTimeout(() => {
+      pending2FA = null;
+      pendingEmail = null;
+      pending2FATimer = null;
+      console.warn("[blink] pending 2FA scaduto dopo 5 minuti");
+    }, PENDING_2FA_TTL_MS);
+  }
+}
 
 export const blinkRouter = new Hono()
   /* ----- status ----- */
@@ -151,15 +170,13 @@ export const blinkRouter = new Hono()
       const result = await blinkLogin(body.email, body.password);
 
       if (!result.ok) {
-        // 2FA richiesto — salva stato e chiedi PIN
-        pending2FA = result.pending;
-        pendingEmail = body.email;
+        // 2FA required — save state and ask for PIN
+        setPending2FA(result.pending, body.email);
         return c.json({ needs2FA: true, message: "Inserisci il PIN ricevuto via SMS/email" }, 200);
       }
 
-      // Login OK senza 2FA
-      pending2FA = null;
-      pendingEmail = null;
+      // Login OK without 2FA
+      setPending2FA(null, null);
       await saveSession(body.email, result.session);
       syncCamerasAndClips(result.session).catch((e) =>
         console.error("[blink] sync after setup:", e),
@@ -170,8 +187,7 @@ export const blinkRouter = new Hono()
         201,
       );
     } catch (err) {
-      pending2FA = null;
-      pendingEmail = null;
+      setPending2FA(null, null);
       const msg = err instanceof Error ? err.message : "Login fallito";
       console.error("[blink] login failed:", msg);
       return c.json({ error: msg }, 400);
@@ -189,8 +205,7 @@ export const blinkRouter = new Hono()
     try {
       const session = await blinkVerify2FA(body.pin, pending2FA);
       const email = pendingEmail;
-      pending2FA = null;
-      pendingEmail = null;
+      setPending2FA(null, null);
 
       await saveSession(email, session);
       syncCamerasAndClips(session).catch((e) => console.error("[blink] sync after 2FA:", e));
@@ -205,8 +220,7 @@ export const blinkRouter = new Hono()
 
   /* ----- credentials delete ----- */
   .delete("/credentials", (c) => {
-    pending2FA = null;
-    pendingEmail = null;
+    setPending2FA(null, null);
     db.delete(blinkCredentials).run();
     db.delete(blinkMotionClips).run();
     db.delete(blinkCameras).run();
@@ -400,7 +414,7 @@ async function syncCamerasAndClips(session: BlinkSession) {
     }
   }
 
-  // Raccogli ID camere nel DB
+  // Collect camera IDs in the DB
   const cameraIds = new Set(
     db
       .select({ id: blinkCameras.id })
@@ -412,7 +426,7 @@ async function syncCamerasAndClips(session: BlinkSession) {
   const remoteClips = await blinkListMedia(session);
   let newClips = 0;
   for (const clip of remoteClips) {
-    // Auto-crea camera se non esiste (es. videocitofono non in homescreen)
+    // Auto-create camera if it doesn't exist (e.g. doorbell not on homescreen)
     if (!cameraIds.has(clip.cameraId)) {
       db.insert(blinkCameras)
         .values({

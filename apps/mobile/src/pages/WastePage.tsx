@@ -24,6 +24,17 @@ import { useT } from "../lib/useT";
 
 /* ---- helpers ---- */
 
+/**
+ * YYYY-MM-DD in timezone locale (non UTC). Allineato col backend `todayUTC`
+ * che ora usa anch'esso componenti locali per la chiave giornaliera.
+ */
+function localIsoDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function getWeekRange(): { from: string; to: string } {
   const now = new Date();
   const from = new Date(now);
@@ -31,8 +42,8 @@ function getWeekRange(): { from: string; to: string } {
   const to = new Date(from);
   to.setDate(from.getDate() + 13); // 2 weeks
   return {
-    from: from.toISOString().slice(0, 10),
-    to: to.toISOString().slice(0, 10),
+    from: localIsoDate(from),
+    to: localIsoDate(to),
   };
 }
 
@@ -43,11 +54,11 @@ function formatDayLabel(dateStr: string): string {
 }
 
 function isToday(dateStr: string): boolean {
-  return dateStr === new Date().toISOString().slice(0, 10);
+  return dateStr === localIsoDate(new Date());
 }
 
 function isPast(dateStr: string): boolean {
-  return dateStr < new Date().toISOString().slice(0, 10);
+  return dateStr < localIsoDate(new Date());
 }
 
 function getWeekdayLabels(): string[] {

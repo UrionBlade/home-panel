@@ -47,8 +47,23 @@ function toTimer(t: TimerState): Timer {
   };
 }
 
-/* Background check: ogni secondo verifica timer scaduti */
-setInterval(() => {
+/* Background scheduler: explicitly started by index.ts to avoid
+ * accumulating intervals on hot-reload and to allow cleanup in tests. */
+let timerTickInterval: NodeJS.Timeout | null = null;
+let alarmTickInterval: NodeJS.Timeout | null = null;
+const firedAlarms = new Set<string>();
+
+function parseDaysOfWeek(raw: string): number[] {
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed.filter((n) => typeof n === "number") as number[]) : [];
+  } catch {
+    console.warn("[timers] daysOfWeek malformato:", raw);
+    return [];
+  }
+}
+
+function tickTimers(): void {
   for (const t of timers.values()) {
     if (t.status !== "running") continue;
     if (computeRemaining(t) <= 0) {
@@ -61,29 +76,25 @@ setInterval(() => {
       });
     }
   }
-}, 1000);
+}
 
-/* Background check: ogni 30s controlla se un alarm deve scattare */
-const firedAlarms = new Set<string>();
-setInterval(() => {
+function tickAlarms(): void {
   const now = new Date();
   const h = now.getHours();
   const m = now.getMinutes();
-  const dow = now.getDay(); // 0=dom
+  const dow = now.getDay(); // 0=Sun
 
   const rows = db.select().from(alarms).all();
   for (const row of rows) {
     if (!row.enabled) continue;
     if (row.hour !== h || row.minute !== m) continue;
 
-    const days: number[] = JSON.parse(row.daysOfWeek);
+    const days = parseDaysOfWeek(row.daysOfWeek);
     if (days.length > 0 && !days.includes(dow)) continue;
 
-    // Evita di sparare più volte nello stesso minuto
     const key = `${row.id}:${h}:${m}`;
     if (firedAlarms.has(key)) continue;
     firedAlarms.add(key);
-    // Pulisci dopo 2 min
     setTimeout(() => firedAlarms.delete(key), 120_000);
 
     const alarm = rowToAlarm(row);
@@ -92,12 +103,39 @@ setInterval(() => {
       payload: alarm,
     });
 
-    // One-shot: disabilita dopo lo scatto
     if (days.length === 0) {
       db.update(alarms).set({ enabled: false }).where(eq(alarms.id, row.id)).run();
     }
   }
-}, 30_000);
+}
+
+export function startTimersScheduler(): () => void {
+  if (timerTickInterval || alarmTickInterval) {
+    // Scheduler already started: nothing to do
+    return () => {};
+  }
+  timerTickInterval = setInterval(() => {
+    try {
+      tickTimers();
+    } catch (err) {
+      console.error("[timers] tick error:", err);
+    }
+  }, 1000);
+  alarmTickInterval = setInterval(() => {
+    try {
+      tickAlarms();
+    } catch (err) {
+      console.error("[timers] alarm tick error:", err);
+    }
+  }, 30_000);
+  return () => {
+    if (timerTickInterval) clearInterval(timerTickInterval);
+    if (alarmTickInterval) clearInterval(alarmTickInterval);
+    timerTickInterval = null;
+    alarmTickInterval = null;
+    firedAlarms.clear();
+  };
+}
 
 /* ─────────────────────── Alarm helpers ─────────────────────── */
 
@@ -107,7 +145,7 @@ function rowToAlarm(row: AlarmRow): Alarm {
     label: row.label,
     hour: row.hour,
     minute: row.minute,
-    daysOfWeek: JSON.parse(row.daysOfWeek),
+    daysOfWeek: parseDaysOfWeek(row.daysOfWeek),
     enabled: row.enabled,
     sound: row.sound,
     createdAt: row.createdAt,
@@ -123,7 +161,7 @@ export const timersRouter = new Hono()
     for (const t of timers.values()) {
       list.push(toTimer(t));
     }
-    // Ordina: running first, poi paused, poi finished, poi per remaining desc
+    // Sort: running first, then paused, then finished, then by remaining desc
     list.sort((a, b) => {
       const order = { running: 0, paused: 1, finished: 2 };
       const d = order[a.status] - order[b.status];
@@ -157,7 +195,7 @@ export const timersRouter = new Hono()
     const t = timers.get(c.req.param("id"));
     if (!t) return c.json({ error: "not_found" }, 404);
     if (t.status !== "running") return c.json({ error: "Timer non in esecuzione" }, 400);
-    // Accumula elapsed
+    // Accumulate elapsed
     t.elapsedMs += Date.now() - (t.startedAt ?? Date.now());
     t.startedAt = null;
     t.status = "paused";
@@ -273,10 +311,10 @@ export const timersRouter = new Hono()
 
     for (const row of rows) {
       const alarmMinutes = row.hour * 60 + row.minute;
-      const days: number[] = JSON.parse(row.daysOfWeek);
+      const days = parseDaysOfWeek(row.daysOfWeek);
 
       if (days.length === 0) {
-        // One-shot: calcola quanti minuti mancano
+        // One-shot: compute minutes remaining
         let delta = alarmMinutes - nowMinutes;
         if (delta <= 0) delta += 24 * 60;
         if (delta < bestDelta) {
@@ -284,7 +322,7 @@ export const timersRouter = new Hono()
           best = row;
         }
       } else {
-        // Ricorrente: trova il prossimo giorno
+        // Recurring: find the next matching day
         for (let offset = 0; offset < 7; offset++) {
           const checkDow = (nowDow + offset) % 7;
           if (!days.includes(checkDow)) continue;

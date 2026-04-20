@@ -1,16 +1,16 @@
 /**
- * Client vocale nativo per Tauri iOS.
+ * Native voice client for Tauri iOS.
  *
- * Usa i comandi Tauri per:
- *  - Cattura audio via AVAudioEngine (Swift FFI)
+ * Uses Tauri commands for:
+ *  - Audio capture via AVAudioEngine (Swift FFI)
  *  - STT via whisper-rs (Rust, on-device)
  *  - TTS via AVSpeechSynthesizer (Swift FFI)
- *  - Wake word "Ok casa" rilevato dal transcript Whisper
+ *  - Wake word "Ok casa" detected from the Whisper transcript
  *
- * Ascolta gli eventi Tauri:
- *  - `voice:status` → aggiornamento stato
- *  - `voice:command` → comando dopo wake word
- *  - `voice:error` → errore
+ * Listens to Tauri events:
+ *  - `voice:status` → status update
+ *  - `voice:command` → command after wake word
+ *  - `voice:error` → error
  */
 
 import type { VoiceStatus } from "@home-panel/shared";
@@ -112,7 +112,7 @@ class NativeVoiceClient {
     if (!this.supported) return;
     if (this.running) return;
 
-    // Chiedi permesso microfono
+    // Request microphone permission
     console.log("[nativeVoice] richiedo permesso microfono...");
     const granted = await this.requestPermission();
     console.log("[nativeVoice] permesso microfono:", granted);
@@ -122,7 +122,7 @@ class NativeVoiceClient {
       return;
     }
 
-    // Controlla modello
+    // Check model
     console.log("[nativeVoice] controllo modello...");
     const exists = await this.modelExists();
     console.log("[nativeVoice] modello esiste:", exists);
@@ -132,7 +132,7 @@ class NativeVoiceClient {
       return;
     }
 
-    // Inizializza Whisper
+    // Initialize Whisper
     console.log("[nativeVoice] inizializzo Whisper...");
     try {
       await this.initWhisper();
@@ -143,12 +143,13 @@ class NativeVoiceClient {
       return;
     }
 
-    // Registra listener eventi
+    // Register event listeners (cleanup first to avoid accumulation on restart)
     console.log("[nativeVoice] setup event listeners...");
+    this.cleanupListeners();
     await this.setupEventListeners();
     console.log("[nativeVoice] listeners registrati:", this.unlisteners.length);
 
-    // Avvia ciclo continuo
+    // Start continuous loop
     this.running = true;
     this.setStatus("idle");
     console.log("[nativeVoice] avvio voice_start_continuous...");

@@ -76,7 +76,7 @@ function buildCollectionCalendar(from: Date, to: Date): CollectionMap {
     }
     if (exc.replacementDate) {
       const target = exc.replacementDate;
-      // Solo se nel range
+      // Only if within the range
       const targetDate = new Date(`${target}T00:00:00Z`);
       if (targetDate >= from && targetDate <= to) {
         if (!map[target]) map[target] = new Set();
@@ -88,10 +88,21 @@ function buildCollectionCalendar(from: Date, to: Date): CollectionMap {
   return map;
 }
 
+/**
+ * "Today" in the server's local timezone (typically Europe/Rome
+ * in production) aligned to the UTC calendar at 00:00 so it can be used
+ * as a stable YYYY-MM-DD string key, consistent with the frontend which
+ * uses `new Date().toISOString().slice(0, 10)` after local conversion.
+ *
+ * Rationale: the user sees "today" in local time. Using `setUTCHours(0)`
+ * without correction causes mismatches after local midnight (but before
+ * 00:00 UTC in positive-offset timezones). Here we use getFullYear/Month/Date
+ * which return local components, then build a UTC Date with the same
+ * components for stable string-based comparisons.
+ */
 function todayUTC(): Date {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  return d;
+  const now = new Date();
+  return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0));
 }
 
 function tomorrowUTC(): Date {

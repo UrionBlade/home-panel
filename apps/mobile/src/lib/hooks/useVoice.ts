@@ -13,8 +13,8 @@ interface VoiceState {
 }
 
 /**
- * Hook vocale unificato: usa il client nativo (Tauri iOS con Whisper)
- * se disponibile, altrimenti cade sul Web Speech API (browser dev).
+ * Unified voice hook: uses the native client (Tauri iOS with Whisper)
+ * when available, otherwise falls back to the Web Speech API (browser dev).
  */
 export function useVoice(enabled = false) {
   const [state, setState] = useState<VoiceState>({
@@ -59,7 +59,8 @@ export function useVoice(enabled = false) {
         await new Promise((r) => setTimeout(r, Math.max(response.length * 60, 2000)));
       }
       if (hasJokeSound) playJokeSound();
-    } catch {
+    } catch (err) {
+      console.error("[useVoice] handleIntent error:", err);
       const errorMsg = "Si è verificato un errore";
       setState((prev) => ({ ...prev, status: "error", response: errorMsg }));
       await speakFn(errorMsg);
@@ -72,57 +73,48 @@ export function useVoice(enabled = false) {
     processingRef.current = false;
   }, []);
 
-  // --- Native path (Tauri iOS) ---
+  // Subscribe once for the hook lifecycle (stable callbacks).
+  // Avoids re-subscribing Tauri listeners on every `enabled` change.
+  // `isNative` is a stable (cached) getter so it does not belong in deps.
   useEffect(() => {
-    console.log("[useVoice] effect native, isNative:", isNative, "enabled:", enabled);
-    if (!isNative) return;
-
-    nativeVoiceClient.subscribe(
-      (status) => {
-        console.log("[useVoice] native status:", status);
-        setState((prev) => ({ ...prev, status }));
-      },
-      (command) => {
-        console.log("[useVoice] native command:", command);
-        if (!processingRef.current) {
-          void processTranscript(command);
-        }
-      },
-    );
-
-    if (enabled) {
-      console.log("[useVoice] avvio nativeVoiceClient.start()...");
-      void nativeVoiceClient.start();
+    if (nativeVoiceClient.supported) {
+      nativeVoiceClient.subscribe(
+        (status) => setState((prev) => ({ ...prev, status })),
+        (command) => {
+          if (!processingRef.current) void processTranscript(command);
+        },
+      );
     } else {
-      console.log("[useVoice] voice non abilitata, skip start");
+      voiceClient.subscribe(
+        (status) => setState((prev) => ({ ...prev, status })),
+        (text) => {
+          if (!processingRef.current) void processTranscript(text);
+        },
+      );
     }
+  }, [processTranscript]);
 
-    return () => {
-      void nativeVoiceClient.stop();
-    };
-  }, [enabled, processTranscript]);
-
-  // --- Web Speech fallback (browser / dev) ---
+  // Start/stop driven by `enabled`: cleanup calls stop ONLY if started.
   useEffect(() => {
-    if (isNative) return;
+    if (!enabled) return;
 
-    voiceClient.subscribe(
-      (status) => setState((prev) => ({ ...prev, status })),
-      (text) => {
-        if (!processingRef.current) {
-          void processTranscript(text);
-        }
-      },
-    );
-
-    if (enabled && voiceClient.supported) {
+    let cancelled = false;
+    if (nativeVoiceClient.supported) {
+      void nativeVoiceClient.start();
+    } else if (voiceClient.supported) {
       voiceClient.start();
     }
 
     return () => {
-      voiceClient.stop();
+      if (cancelled) return;
+      cancelled = true;
+      if (nativeVoiceClient.supported) {
+        void nativeVoiceClient.stop();
+      } else {
+        voiceClient.stop();
+      }
     };
-  }, [enabled, processTranscript]);
+  }, [enabled]);
 
   const pushToTalk = useCallback(() => {
     if (nativeVoiceClient.supported) {

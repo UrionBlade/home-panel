@@ -1,10 +1,10 @@
 /**
- * Logica di sincronizzazione calendari esterni (ICS/CalDAV).
- * - Fetch ICS da URL
- * - Parse con ics-parser
- * - Upsert eventi nel database (match per externalId + sourceId)
- * - Rimuovi eventi non più presenti nel feed remoto
- * - Scheduler periodico
+ * External calendar sync logic (ICS/CalDAV).
+ * - Fetch ICS from URL
+ * - Parse with ics-parser
+ * - Upsert events in the database (match by externalId + sourceId)
+ * - Remove events no longer present in the remote feed
+ * - Periodic scheduler
  */
 
 import { randomUUID } from "node:crypto";
@@ -84,11 +84,11 @@ export async function syncSource(source: CalendarSourceRow): Promise<void> {
         .where(and(eq(events.sourceId, source.id), notInArray(events.externalId, seenExternalIds)))
         .run();
     } else {
-      // Feed vuoto: rimuovi tutti gli eventi di questa source
+      // Empty feed: remove all events of this source
       db.delete(events).where(eq(events.sourceId, source.id)).run();
     }
 
-    // Aggiorna stato sync
+    // Update sync state
     db.update(calendarSources)
       .set({ lastSyncAt: now, lastSyncError: null })
       .where(eq(calendarSources.id, source.id))
@@ -108,7 +108,7 @@ let schedulerTimer: ReturnType<typeof setInterval> | null = null;
 export function startSyncScheduler(): void {
   if (schedulerTimer) return;
 
-  // Controlla ogni minuto se qualche source deve essere sincronizzata
+  // Check every minute whether any source needs to be synced
   schedulerTimer = setInterval(() => {
     const sources = db
       .select()
@@ -126,7 +126,7 @@ export function startSyncScheduler(): void {
     }
   }, 60_000);
 
-  // Sync iniziale di tutte le source abilitate
+  // Initial sync of all enabled sources
   const sources = db.select().from(calendarSources).where(eq(calendarSources.enabled, true)).all();
   for (const source of sources) {
     void syncSource(source);

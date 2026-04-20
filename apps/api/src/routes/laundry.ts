@@ -14,16 +14,16 @@ import { smartthingsConfig } from "../db/schema.js";
 
 const ST_BASE = "https://api.smartthings.com/v1";
 
-/* ---- Cache in-memory per il polling ---- */
+/* ---- In-memory cache for polling ---- */
 let applianceCache: LaundryAppliance[] = [];
 let lastPoll = 0;
 const POLL_INTERVAL = 30_000; // 30s
 
-/* ---- Helpers SmartThings ---- */
+/* ---- SmartThings helpers ---- */
 
 function getConfig() {
   const row = db.select().from(smartthingsConfig).get();
-  // Fallback a env var se non configurato dalla UI
+  // Fall back to env var if not configured from the UI
   if (!row?.pat && process.env.SMARTTHINGS_PAT) {
     return {
       ...(row ?? { id: 1, washerDeviceId: null, dryerDeviceId: null, updatedAt: "" }),
@@ -97,7 +97,7 @@ async function fetchDeviceStatus(
     const modeState = main[modeCapability];
     const powerReport = main.powerConsumptionReport;
 
-    // Campi base
+    // Base fields
     const machineState = (opState?.machineState?.value as string) ?? "stop";
     const jobState = (opState?.[jobKey]?.value as string) ?? "none";
     const completionTime = (opState?.completionTime?.value as string) ?? null;
@@ -105,11 +105,11 @@ async function fetchDeviceStatus(
     const remoteControlEnabled = remoteCtrl?.remoteControlEnabled?.value === "true";
     const timestamp = opState?.machineState?.timestamp ?? new Date().toISOString();
 
-    // Programma / modo
+    // Program / mode
     const mode =
       (modeState?.washerMode?.value as string) ?? (modeState?.dryerMode?.value as string) ?? null;
 
-    // Campi solo lavatrice
+    // Washer-only fields
     const waterTemp = main.washerWaterTemperature;
     const spinLvl = main.washerSpinLevel;
     const rinse = main.washerRinseCycles;
@@ -118,7 +118,7 @@ async function fetchDeviceStatus(
     const rinseCyclesRaw = rinse?.washerRinseCycles?.value;
     const rinseCycles = typeof rinseCyclesRaw === "number" ? rinseCyclesRaw : null;
 
-    // Consumo energetico
+    // Energy consumption
     let energyWh: number | null = null;
     const powerVal = powerReport?.powerConsumption?.value;
     if (
@@ -151,7 +151,7 @@ async function fetchDeviceStatus(
   }
 }
 
-/** Auto-discovery: se il PAT c'è ma i device non sono assegnati, cerca e assegna */
+/** Auto-discovery: if the PAT exists but devices are not assigned, search and assign */
 async function autoAssignDevices(pat: string): Promise<{
   washerDeviceId: string | null;
   dryerDeviceId: string | null;
@@ -202,7 +202,7 @@ async function pollAppliances(): Promise<LaundryAppliance[]> {
   const config = getConfig();
   if (!config?.pat) return [];
 
-  // Auto-assign se mancano device IDs
+  // Auto-assign if device IDs are missing
   let { washerDeviceId, dryerDeviceId } = {
     washerDeviceId: config.washerDeviceId,
     dryerDeviceId: config.dryerDeviceId,
@@ -231,12 +231,21 @@ async function getCachedAppliances(): Promise<LaundryAppliance[]> {
   const now = Date.now();
   if (now - lastPoll > POLL_INTERVAL) {
     if (!pollPromise) {
-      pollPromise = pollAppliances().finally(() => {
-        pollPromise = null;
-      });
+      // Capture the local promise, update cache + lastPoll ONLY on completion
+      // to prevent concurrent requests from seeing lastPoll updated
+      // before the fetch finishes.
+      const current = pollAppliances()
+        .then((result) => {
+          applianceCache = result;
+          lastPoll = Date.now();
+          return result;
+        })
+        .finally(() => {
+          pollPromise = null;
+        });
+      pollPromise = current;
     }
-    applianceCache = await pollPromise;
-    lastPoll = now;
+    return pollPromise;
   }
   return applianceCache;
 }
@@ -245,7 +254,7 @@ async function getCachedAppliances(): Promise<LaundryAppliance[]> {
 
 export const laundryRouter = new Hono()
 
-  /* Stato corrente lavatrice/asciugatrice */
+  /* Current washer/dryer state */
   .get("/status", async (c) => {
     const config = getConfig();
     if (!config?.pat) {
@@ -255,14 +264,14 @@ export const laundryRouter = new Hono()
     return c.json<LaundryStatus>({ configured: true, appliances });
   })
 
-  /* Forza refresh (invalida cache) */
+  /* Force refresh (invalidate cache) */
   .post("/refresh", async (c) => {
     applianceCache = await pollAppliances();
     lastPoll = Date.now();
     return c.json({ ok: true, appliances: applianceCache });
   })
 
-  /* Config SmartThings */
+  /* SmartThings config */
   .get("/config", (c) => {
     const config = getConfig();
     return c.json<SmartThingsConfig>({
@@ -272,14 +281,14 @@ export const laundryRouter = new Hono()
     });
   })
 
-  /* Setup PAT */
+  /* PAT setup */
   .post("/config", async (c) => {
     const body = (await c.req.json().catch(() => null)) as SmartThingsSetupInput | null;
     if (!body?.pat?.trim()) {
       return c.json({ error: "pat required" }, 400);
     }
 
-    // Verifica che il PAT sia valido
+    // Verify the PAT is valid
     try {
       await stFetch(body.pat.trim(), "/devices?capability=washerOperatingState");
     } catch {
@@ -304,7 +313,7 @@ export const laundryRouter = new Hono()
     return c.json({ ok: true });
   })
 
-  /* Disconnetti (cancella config) */
+  /* Disconnect (clear config) */
   .delete("/config", (c) => {
     db.delete(smartthingsConfig).run();
     applianceCache = [];
@@ -312,7 +321,7 @@ export const laundryRouter = new Hono()
     return c.json({ ok: true });
   })
 
-  /* Lista device SmartThings (per selezione lavatrice/asciugatrice) */
+  /* List SmartThings devices (for washer/dryer selection) */
   .get("/devices", async (c) => {
     const config = getConfig();
     if (!config?.pat) {
@@ -346,7 +355,7 @@ export const laundryRouter = new Hono()
     return c.json(devices);
   })
 
-  /* Assegna device lavatrice/asciugatrice */
+  /* Assign washer/dryer devices */
   .patch("/config/devices", async (c) => {
     const config = getConfig();
     if (!config?.pat) {
@@ -366,14 +375,14 @@ export const laundryRouter = new Hono()
 
     db.update(smartthingsConfig).set(updates).run();
 
-    // Reset cache per forzare nuovo poll
+    // Reset cache to force a new poll
     applianceCache = [];
     lastPoll = 0;
 
     return c.json({ ok: true });
   })
 
-  /* Invia comando (start/stop/pause) a un dispositivo */
+  /* Send command (start/stop/pause) to a device */
   .post("/command", async (c) => {
     const config = getConfig();
     if (!config?.pat) {
@@ -396,7 +405,7 @@ export const laundryRouter = new Hono()
       return c.json({ error: `command '${body.command}' non supportato` }, 400);
     }
 
-    // Determina se è lavatrice o asciugatrice
+    // Determine whether it's a washer or dryer
     const isWasher = body.deviceId === config.washerDeviceId;
     const capability = isWasher
       ? mappedCommand.capability
@@ -413,7 +422,7 @@ export const laundryRouter = new Hono()
         ],
       });
 
-      // Invalida cache per refresh immediato
+      // Invalidate cache for immediate refresh
       applianceCache = [];
       lastPoll = 0;
 

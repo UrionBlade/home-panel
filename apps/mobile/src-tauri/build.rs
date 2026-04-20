@@ -4,8 +4,8 @@ use std::process::Command;
 fn main() {
     tauri_build::build();
 
-    // Su iOS, compila i file Swift in una libreria statica che Rust
-    // può linkare (i simboli `@_cdecl` vengono esposti come extern "C").
+    // On iOS, compile the Swift files into a static library that Rust
+    // can link (the `@_cdecl` symbols are exposed as extern "C").
     let target = env::var("TARGET").unwrap_or_default();
     if target.contains("apple-ios") && !target.contains("sim") {
         let sdk = "iphoneos";
@@ -22,7 +22,7 @@ fn main() {
         .unwrap();
         let sdk_path = sdk_path.trim();
 
-        // Compila tutti i file Swift insieme in una singola libreria statica.
+        // Compile all Swift files together into a single static library.
         let status = Command::new("swiftc")
             .args([
                 "ios/KioskPlugin.swift",
@@ -41,7 +41,7 @@ fn main() {
 
         println!("cargo:rustc-link-search=native={out_dir}");
         println!("cargo:rustc-link-lib=static=ios_plugins");
-        // Frameworks per i plugin Swift
+        // Frameworks for the Swift plugins
         println!("cargo:rustc-link-lib=framework=AVFoundation");
         println!("cargo:rustc-link-lib=framework=Speech");
         println!("cargo:rerun-if-changed=ios/KioskPlugin.swift");
