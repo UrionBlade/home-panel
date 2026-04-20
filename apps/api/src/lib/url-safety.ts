@@ -52,7 +52,9 @@ export async function assertPublicUrl(raw: string, opts: SafeUrlOptions = {}): P
     throw new Error(`Schema non permesso: ${url.protocol}`);
   }
 
-  const hostname = url.hostname;
+  // IPv6 literals in URLs are wrapped in brackets (e.g. `[::1]`); strip them
+  // so `isIP` / DNS resolver receive the bare address.
+  const hostname = url.hostname.replace(/^\[|\]$/g, "");
 
   // If the host is a literal IP, check it directly
   if (isIP(hostname)) {
