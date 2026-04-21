@@ -11,6 +11,7 @@ import { i18next } from "../i18n";
 import { primeAudio } from "../timers/alertSound";
 import { dismissActiveAlert, hasActiveAlert } from "../timers/alertStore";
 import { nativeVoiceClient } from "./nativeVoiceClient";
+import { handleTvIntent, isTvIntent } from "./tvIntents";
 import { voiceClient } from "./voiceClient";
 
 type VoiceVars = Record<string, string | number>;
@@ -219,6 +220,13 @@ function stopSpeaking() {
  * e restituisce una risposta vocale localizzata.
  */
 export async function handleIntent(command: ParsedCommand): Promise<string> {
+  /* Device-specific dispatch — runs before the central switch so device
+   * integrations can live in their own module without growing this file. */
+  if (isTvIntent(command.intent)) {
+    const tvResponse = await handleTvIntent(command, _queryClient);
+    if (tvResponse !== null) return tvResponse;
+  }
+
   switch (command.intent) {
     // ==== SPESA ====
     case "add_to_shopping": {
@@ -558,5 +566,18 @@ export async function handleIntent(command: ParsedCommand): Promise<string> {
       }
       stopSpeaking();
       return vt("cancel.cancelled");
+
+    /* TV intents are handled above via handleTvIntent; fallthrough here means
+     * the TV handler returned null, which should not happen. */
+    case "tv_power_on":
+    case "tv_power_off":
+    case "tv_volume_up":
+    case "tv_volume_down":
+    case "tv_volume_set":
+    case "tv_mute":
+    case "tv_unmute":
+    case "tv_launch_app":
+    case "tv_input_set":
+      return vt("errors.generic");
   }
 }

@@ -5,6 +5,7 @@ import { LaundryTile } from "../components/home-tiles/LaundryTile";
 import { ShoppingTile } from "../components/home-tiles/ShoppingTile";
 import { TimerTile } from "../components/home-tiles/TimerTile";
 import { TodayEventsTile } from "../components/home-tiles/TodayEventsTile";
+import { TvTile } from "../components/home-tiles/TvTile";
 import { WasteTile } from "../components/home-tiles/WasteTile";
 import { WeatherTile } from "../components/home-tiles/WeatherTile";
 import { Clock } from "../components/layout/Clock";
@@ -31,6 +32,7 @@ const tiles = [
   { key: "board", Component: BoardTile, span: "" },
   { key: "cameras", Component: CamerasTile, span: "" },
   { key: "laundry", Component: LaundryTile, span: "" },
+  { key: "tv", Component: TvTile, span: "" },
 ];
 
 const containerVariants = {

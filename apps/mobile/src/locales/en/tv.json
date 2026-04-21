@@ -1,0 +1,52 @@
+{
+  "title": "TV",
+  "tile": {
+    "notConfigured": "Set up the TV",
+    "notConfiguredHint": "Connect your Samsung from settings",
+    "off": "TV off",
+    "powerOn": "Power on",
+    "powerOff": "Power off",
+    "input": "Source",
+    "volume": "Volume",
+    "muted": "Muted",
+    "unmuted": "Unmute",
+    "shortcuts": "Shortcuts",
+    "openingApp": "Opening {{name}}…"
+  },
+  "settings": {
+    "sectionTitle": "Samsung TV",
+    "connectedSmartThings": "Connected to SmartThings",
+    "notConnectedSmartThings": "Connect SmartThings first (Laundry section).",
+    "boundLabel": "Bound TV",
+    "noneBound": "No TV selected",
+    "pickTv": "Pick TV",
+    "changeTv": "Change TV",
+    "unbindTv": "Unbind TV",
+    "confirmUnbind": "Unbind the TV?",
+    "testConnection": "Test connection",
+    "testOk": "TV reachable — state: {{state}}",
+    "testOkOn": "on",
+    "testOkOff": "off",
+    "testFail": "TV unreachable. Check the network and SmartThings token.",
+    "loadingDevices": "Searching TVs in account…",
+    "noDevices": "No TV found in this SmartThings account.",
+    "warnNetworkWakeTitle": "Remote power on",
+    "warnNetworkWakeBody": "To turn the TV on remotely, enable 'Network Standby' on the TV (Settings → General → Device Care)."
+  },
+  "presets": {
+    "title": "Launch app",
+    "netflix": "Netflix",
+    "youtube": "YouTube",
+    "prime": "Prime Video",
+    "disney": "Disney+",
+    "raiplay": "RaiPlay"
+  },
+  "toast": {
+    "powerOnSuccess": "TV on",
+    "powerOffSuccess": "TV off",
+    "muted": "Audio muted",
+    "unmuted": "Audio on",
+    "inputChanged": "Source: {{source}}",
+    "error": "Operation failed"
+  }
+}

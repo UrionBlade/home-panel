@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FamilyManager } from "../components/family/FamilyManager";
 import { PageContainer } from "../components/layout/PageContainer";
@@ -9,6 +9,7 @@ import { CalendarSourcesSettings } from "../components/settings/CalendarSourcesS
 import { CameraSettings } from "../components/settings/CameraSettings";
 import { KioskSettings } from "../components/settings/KioskSettings";
 import { LaundrySettings } from "../components/settings/LaundrySettings";
+import { TvSettings } from "../components/settings/TvSettings";
 import { VoiceSettings } from "../components/settings/VoiceSettings";
 import { WeatherSettings } from "../components/settings/WeatherSettings";
 import { useT } from "../lib/useT";
@@ -49,7 +50,20 @@ const PRESET_COLORS = [
 export function SettingsPage() {
   const { t } = useT("settings");
   const { i18n } = useTranslation();
-  const [tab, setTab] = useState<SettingsTab>("appearance");
+  const [tab, setTab] = useState<SettingsTab>(() => {
+    if (typeof window !== "undefined" && window.location.hash === "#tv") return "devices";
+    return "appearance";
+  });
+
+  /* Switch to devices tab if the hash is updated after mount (e.g. tile tap). */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    function onHashChange() {
+      if (window.location.hash === "#tv") setTab("devices");
+    }
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
   const mode = useThemeStore((s) => s.mode);
   const setMode = useThemeStore((s) => s.setMode);
   const accentColor = useThemeStore((s) => s.accentColor);
@@ -120,6 +134,7 @@ export function SettingsPage() {
         <>
           <CameraSettings />
           <LaundrySettings />
+          <TvSettings />
         </>
       )}
 

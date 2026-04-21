@@ -29,6 +29,7 @@ A home dashboard designed for a wall-mounted iPad (or any tablet/browser). Manag
 | **Cameras** | Blink (live view, motion clips, arm/disarm). Ready for CloudPlus/Taioho |
 | **Music** | Spotify Connect — player, search, playlists, device picker, shuffle/repeat |
 | **Laundry** | Samsung washer/dryer via SmartThings — cycle status, live countdown, remote commands, sound notification on completion |
+| **TV** | Samsung Smart TV via SmartThings — power, volume, mute, input switch, launch apps (Netflix/YouTube/Prime/Disney+). Voice-controlled |
 | **Timers** | Multiple timers with persistent alarms |
 | **Recipes** | Recipe book with URL import (GialloZafferano, etc.) |
 | **Board** | Draggable colored sticky notes |
@@ -102,7 +103,7 @@ The API runs on port 3000 with persistent SQLite in `./data/`.
 | Service | How to configure |
 |---|---|
 | **Spotify** | Create an app at [developer.spotify.com](https://developer.spotify.com/dashboard), add `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` to `apps/api/.env` |
-| **SmartThings** | Generate a PAT at [account.smartthings.com/tokens](https://account.smartthings.com/tokens), add `SMARTTHINGS_PAT` to `apps/api/.env` |
+| **SmartThings** | Generate a PAT at [account.smartthings.com/tokens](https://account.smartthings.com/tokens) with `r:devices:*`, `x:devices:*`, `r:locations:*` scopes; add `SMARTTHINGS_PAT` to `apps/api/.env`. Shared by the Laundry and TV features. For remote TV power-on, enable "Network Standby" on the TV (Settings → General → Device Care). |
 | **Blink cameras** | Configure from the UI: Settings > Cameras |
 | **Google Calendar** | Add ICS feed from the UI: Settings > Calendar sources |
 

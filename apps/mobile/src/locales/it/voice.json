@@ -169,6 +169,43 @@
       "stoppedAlert": "Fermato",
       "cancelled": "Ok, annullato"
     },
+    "tv": {
+      "powerOn": {
+        "success": ["Ho acceso la tv", "Tv accesa", "Ecco, è accesa"]
+      },
+      "powerOff": {
+        "success": ["Tv spenta", "Ho spento la tv", "Fatto, è spenta"]
+      },
+      "volumeUp": {
+        "success": ["Ho alzato il volume", "Volume su", "Più forte"]
+      },
+      "volumeDown": {
+        "success": ["Ho abbassato il volume", "Volume giù", "Più piano"]
+      },
+      "volumeSet": {
+        "success": ["Volume impostato a {{level}}", "Ok, volume a {{level}}"],
+        "outOfRange": "Il volume deve essere tra 0 e 100"
+      },
+      "mute": {
+        "success": ["Audio mutato", "Ho mutato la tv", "Silenzio"]
+      },
+      "unmute": {
+        "success": ["Audio riattivato", "Ho tolto il muto", "Suono di nuovo attivo"]
+      },
+      "appLaunched": ["Apro {{name}}", "Ok, faccio partire {{name}}", "{{name}} in arrivo"],
+      "inputSet": {
+        "success": ["Sorgente {{source}}", "Passato a {{source}}"],
+        "unsupported": "Questa sorgente non è disponibile sulla tua tv"
+      },
+      "notConfigured": [
+        "La tv non è ancora configurata, vai nelle impostazioni",
+        "Prima devi collegare la tv dalle impostazioni"
+      ],
+      "upstreamError": [
+        "Non riesco a raggiungere la tv in questo momento",
+        "La tv non risponde, riprova tra un attimo"
+      ]
+    },
     "errors": {
       "generic": "Si è verificato un errore"
     }

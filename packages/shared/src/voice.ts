@@ -48,7 +48,16 @@ export type VoiceIntent =
   | "music_pause"
   | "music_next"
   | "music_previous"
-  | "music_volume";
+  | "music_volume"
+  | "tv_power_on"
+  | "tv_power_off"
+  | "tv_volume_up"
+  | "tv_volume_down"
+  | "tv_volume_set"
+  | "tv_mute"
+  | "tv_unmute"
+  | "tv_launch_app"
+  | "tv_input_set";
 
 export interface ParsedCommand {
   intent: VoiceIntent;

@@ -169,6 +169,43 @@
       "stoppedAlert": "Stopped",
       "cancelled": "Ok, cancelled"
     },
+    "tv": {
+      "powerOn": {
+        "success": ["Tv on", "Turned the tv on", "Tv is on"]
+      },
+      "powerOff": {
+        "success": ["Tv off", "Turned the tv off", "Tv is off"]
+      },
+      "volumeUp": {
+        "success": ["Volume up", "Turned it up", "Louder"]
+      },
+      "volumeDown": {
+        "success": ["Volume down", "Turned it down", "Softer"]
+      },
+      "volumeSet": {
+        "success": ["Volume at {{level}}", "Ok, volume {{level}}"],
+        "outOfRange": "Volume must be between 0 and 100"
+      },
+      "mute": {
+        "success": ["Muted", "Audio muted", "Silence"]
+      },
+      "unmute": {
+        "success": ["Audio on", "Sound back", "Unmuted"]
+      },
+      "appLaunched": ["Opening {{name}}", "Launching {{name}}", "{{name}} coming up"],
+      "inputSet": {
+        "success": ["Source {{source}}", "Switched to {{source}}"],
+        "unsupported": "That source is not available on your tv"
+      },
+      "notConfigured": [
+        "The tv is not set up yet, check the settings",
+        "You need to connect the tv from settings first"
+      ],
+      "upstreamError": [
+        "I can't reach the tv right now",
+        "The tv is not responding, try again in a moment"
+      ]
+    },
     "errors": {
       "generic": "Something went wrong"
     }

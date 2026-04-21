@@ -14,6 +14,7 @@ type Namespace =
   | "shopping"
   | "timers"
   | "calendar"
+  | "tv"
   | "voice"
   | "waste"
   | "weather";

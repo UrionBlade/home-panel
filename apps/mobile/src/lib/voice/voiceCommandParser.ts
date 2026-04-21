@@ -1,4 +1,5 @@
 import type { ParsedCommand, VoiceIntent } from "@home-panel/shared";
+import { matchTvIntent } from "./tvIntents";
 
 /**
  * Parser vocale fuzzy per italiano.
@@ -657,6 +658,10 @@ export function parseVoiceCommand(text: string): ParsedCommand | null {
   if (/che ore sono/.test(normalized) || /che ora (è|e)/.test(normalized)) {
     return { intent: "what_time", entities: {}, confidence: 1, raw: text.trim() };
   }
+
+  /* Device-specific matchers (evaluated before the generic keyword scoring). */
+  const tv = matchTvIntent(text);
+  if (tv) return tv;
 
   let bestIntent: VoiceIntent | null = null;
   let bestScore = 0;

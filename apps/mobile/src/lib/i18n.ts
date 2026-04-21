@@ -14,6 +14,7 @@ import recipesEn from "../locales/en/recipes.json";
 import settingsEn from "../locales/en/settings.json";
 import shoppingEn from "../locales/en/shopping.json";
 import timersEn from "../locales/en/timers.json";
+import tvEn from "../locales/en/tv.json";
 import voiceEn from "../locales/en/voice.json";
 import wasteEn from "../locales/en/waste.json";
 import weatherEn from "../locales/en/weather.json";
@@ -30,6 +31,7 @@ import recipesIt from "../locales/it/recipes.json";
 import settingsIt from "../locales/it/settings.json";
 import shoppingIt from "../locales/it/shopping.json";
 import timersIt from "../locales/it/timers.json";
+import tvIt from "../locales/it/tv.json";
 import voiceIt from "../locales/it/voice.json";
 import wasteIt from "../locales/it/waste.json";
 import weatherIt from "../locales/it/weather.json";
@@ -57,6 +59,7 @@ void i18next
       "cameras",
       "recipes",
       "waste",
+      "tv",
     ],
     resources: {
       it: {
@@ -76,6 +79,7 @@ void i18next
         voice: voiceIt,
         waste: wasteIt,
         weather: weatherIt,
+        tv: tvIt,
       },
       en: {
         board: boardEn,
@@ -94,6 +98,7 @@ void i18next
         voice: voiceEn,
         waste: wasteEn,
         weather: weatherEn,
+        tv: tvEn,
       },
     },
     interpolation: {

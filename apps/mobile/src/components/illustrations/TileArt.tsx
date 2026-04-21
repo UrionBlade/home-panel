@@ -495,6 +495,67 @@ export function LaundryArt({ size = 180, className }: ArtProps) {
   );
 }
 
+export function TvArt({ size = 180, className }: ArtProps) {
+  return (
+    <svg
+      viewBox="0 0 200 200"
+      width={size}
+      height={size}
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <radialGradient id="tv-body" cx="0.35" cy="0.3">
+          <stop offset="0%" stopColor="#4A4A52" />
+          <stop offset="60%" stopColor="#2B2B30" />
+          <stop offset="100%" stopColor="#141418" />
+        </radialGradient>
+        <linearGradient id="tv-screen" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#2A3B5B" />
+          <stop offset="55%" stopColor="#14223E" />
+          <stop offset="100%" stopColor="#0A1428" />
+        </linearGradient>
+        <radialGradient id="tv-glow" cx="0.3" cy="0.35">
+          <stop offset="0%" stopColor="#F5B800" stopOpacity="0.5" />
+          <stop offset="60%" stopColor="#E87461" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="#E87461" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id="tv-stand" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#2B2B30" />
+          <stop offset="100%" stopColor="#0E0E12" />
+        </linearGradient>
+      </defs>
+      {/* Ground shadow */}
+      <ellipse cx="100" cy="190" rx="78" ry="5" fill="#000" opacity="0.22" />
+      {/* Stand */}
+      <path
+        d="M 75 175 L 125 175 L 140 185 Q 140 188 136 188 L 64 188 Q 60 188 60 185 Z"
+        fill="url(#tv-stand)"
+      />
+      <rect x="92" y="150" width="16" height="28" rx="3" fill="url(#tv-stand)" />
+      {/* Chassis */}
+      <rect x="20" y="42" width="160" height="110" rx="10" fill="url(#tv-body)" />
+      {/* Screen bezel */}
+      <rect x="26" y="48" width="148" height="98" rx="4" fill="#0A0A0E" />
+      {/* Screen */}
+      <rect x="30" y="52" width="140" height="90" rx="3" fill="url(#tv-screen)" />
+      {/* Warm content glow */}
+      <rect x="30" y="52" width="140" height="90" rx="3" fill="url(#tv-glow)" />
+      {/* Abstract picture shapes — a sunset-ish silhouette */}
+      <circle cx="72" cy="96" r="16" fill="#F5B800" opacity="0.85" />
+      <path
+        d="M 30 142 L 30 122 Q 52 108 80 120 Q 108 132 140 116 Q 160 108 170 118 L 170 142 Z"
+        fill="#0D1B2E"
+        opacity="0.8"
+      />
+      {/* Screen glass highlight */}
+      <path d="M 34 54 L 70 54 L 44 120 L 34 120 Z" fill="#FFFFFF" opacity="0.08" />
+      {/* Brand speck */}
+      <circle cx="100" cy="160" r="1.5" fill="#E87461" opacity="0.85" />
+    </svg>
+  );
+}
+
 export function RecipeArt({ size = 180, className }: ArtProps) {
   return (
     <svg

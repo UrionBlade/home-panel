@@ -41,44 +41,45 @@
 
 ## 7. Frontend hooks
 
-- [ ] 7.1 Create `apps/mobile/src/lib/hooks/useTv.ts` with all hooks listed in `specs/tv-ui/spec.md`. Use the shared `apiClient` wrapper already in use by `useLaundry` / `useBlink` (consult those files for convention).
-- [ ] 7.2 `useTvStatus` adaptive refetchInterval: 15s when power=on, 30s when power=off, disabled when status returns 404.
-- [ ] 7.3 Mutations invalidate `['tv','status']` on success.
+- [x] 7.1 Create `apps/mobile/src/lib/hooks/useTv.ts` with all hooks listed in `specs/tv-ui/spec.md`. Use the shared `apiClient` wrapper already in use by `useLaundry` / `useBlink` (consult those files for convention).
+- [x] 7.2 `useTvStatus` adaptive refetchInterval: 15s when power=on, 30s when power=off, disabled when status returns 404.
+- [x] 7.3 Mutations invalidate `['tv','status']` on success.
 
 ## 8. Settings UI
 
-- [ ] 8.1 Create `apps/mobile/src/components/settings/TvSettings.tsx` per `specs/tv-ui/spec.md` Requirement "Settings page includes TV binding section". Reuse patterns from `LaundrySettings.tsx` and `CameraSettings.tsx`.
-- [ ] 8.2 Integrate in `SettingsPage.tsx` ordering: after Blink, before general appearance settings.
-- [ ] 8.3 Anchor support: scrolling to `#tv` hash scrolls the section into view.
-- [ ] 8.4 Implement the "Test connessione" button (calls refetch of status and shows success/failure toast).
-- [ ] 8.5 Show the "Attivazione tramite rete" warning callout.
+- [x] 8.1 Create `apps/mobile/src/components/settings/TvSettings.tsx` per `specs/tv-ui/spec.md` Requirement "Settings page includes TV binding section". Reuse patterns from `LaundrySettings.tsx` and `CameraSettings.tsx`.
+- [x] 8.2 Integrate in `SettingsPage.tsx` ordering: after Blink, before general appearance settings. (Placed under the `devices` tab, after LaundrySettings.)
+- [x] 8.3 Anchor support: scrolling to `#tv` hash scrolls the section into view. (SettingsPage auto-selects the `devices` tab when the hash is `#tv`.)
+- [x] 8.4 Implement the "Test connessione" button (calls refetch of status and shows success/failure toast).
+- [x] 8.5 Show the "Attivazione tramite rete" warning callout.
 
 ## 9. Home tile
 
-- [ ] 9.1 Create `apps/mobile/src/components/home-tiles/TvTile.tsx` with the three states per `specs/tv-ui/spec.md`.
-- [ ] 9.2 Preset buttons: fetch from `/tv/apps/presets`, render 4 slots. Icon via Phosphor mapping (e.g., `Play` for generic, branded where available via design tokens).
-- [ ] 9.3 Volume slider uses debounced mutation (300ms) to avoid spamming the API during drag.
-- [ ] 9.4 Register the tile in `HomePage.tsx` in a sensible position in the mosaic (suggested: alongside music / camera tiles).
+- [x] 9.1 Create `apps/mobile/src/components/home-tiles/TvTile.tsx` with the three states per `specs/tv-ui/spec.md`.
+- [x] 9.2 Preset buttons: fetch from `/tv/apps/presets`, render 4 slots. Icon via Phosphor mapping (e.g., `Play` for generic, branded where available via design tokens).
+- [x] 9.3 Volume slider uses debounced mutation (300ms) to avoid spamming the API during drag. **DEVIATION**: implemented as `−` / `+` buttons triggering `delta: up/down` mutations instead of a draggable slider. Rationale: the home tile has limited vertical room and a bare step-control matches the Samsung Q6 stepper behaviour better; debouncing becomes moot with discrete taps. A full draggable slider can be added in a future dedicated TV detail page.
+- [x] 9.4 Register the tile in `HomePage.tsx` in a sensible position in the mosaic (suggested: alongside music / camera tiles).
+- [x] 9.5 Custom SVG illustration `TvArt` added to `TileArt.tsx` to match the 3D claymorphism style of the other tiles (user feedback: Phosphor icon was off-style).
 
 ## 10. Voice intents
 
-- [ ] 10.1 Create `apps/mobile/src/lib/voice/tvIntents.ts` exporting `tvIntentPatterns` (regex + keyword patterns per `specs/tv-voice-intents/spec.md`) and `tvIntentHandlers` (handler functions per intent).
-- [ ] 10.2 Register `tvIntentPatterns` in the main `voiceCommandParser` module; register `tvIntentHandlers` in `intentHandlers.ts`.
-- [ ] 10.3 Italian number parsing: `"venti"` → 20, `"trenta"` → 30, etc., for `tv_volume_set`. Reuse existing number-word utility if present; otherwise add a minimal one in `lib/voice/numberWords.ts` (0-100 coverage is enough).
-- [ ] 10.4 All voice responses routed via `vt(...)` / `vtArray(...)` — NO hardcoded strings in intent handlers.
+- [x] 10.1 Create `apps/mobile/src/lib/voice/tvIntents.ts` exporting `tvIntentPatterns` (regex + keyword patterns per `specs/tv-voice-intents/spec.md`) and `tvIntentHandlers` (handler functions per intent). **DEVIATION**: exported `matchTvIntent(text)` and `handleTvIntent(command, qc)` instead of the original `tvIntentPatterns` / `tvIntentHandlers` arrays. Rationale: the existing `voiceCommandParser` has no generic registration system (it uses a private `RULES` array + exact-phrase shortcuts); matching the codebase convention by exposing a simple matcher-hook function is cleaner than inventing a plugin framework for a single device.
+- [x] 10.2 Register `tvIntentPatterns` in the main `voiceCommandParser` module; register `tvIntentHandlers` in `intentHandlers.ts`. (Implemented as: parser calls `matchTvIntent(text)` before its keyword loop; `handleIntent` calls `handleTvIntent(command, _queryClient)` before its switch.)
+- [x] 10.3 Italian number parsing: `"venti"` → 20, `"trenta"` → 30, etc., for `tv_volume_set`. Created `apps/mobile/src/lib/voice/numberWords.ts` with 0-100 coverage (units, teens, tens, compounds like ventuno/ventotto).
+- [x] 10.4 All voice responses routed via `vt(...)` / `vtArray(...)` — NO hardcoded strings in intent handlers.
 
 ## 11. i18n
 
-- [ ] 11.1 Create `apps/mobile/src/locales/it/tv.json` with UI copy for TvTile + TvSettings + toasts.
-- [ ] 11.2 Create `apps/mobile/src/locales/en/tv.json` with identical key structure.
-- [ ] 11.3 Add `tv` section to `apps/mobile/src/locales/it/settings.json` and `en/settings.json` (section title, binding status labels, button labels).
-- [ ] 11.4 Extend `apps/mobile/src/locales/it/voice.json` and `en/voice.json` with `voice.responses.tv.*` per `specs/tv-voice-intents/spec.md` (minimum 2 variants per key; no "Casa"/"Home" self-naming).
-- [ ] 11.5 Register the `tv` namespace in the i18next config.
+- [x] 11.1 Create `apps/mobile/src/locales/it/tv.json` with UI copy for TvTile + TvSettings + toasts.
+- [x] 11.2 Create `apps/mobile/src/locales/en/tv.json` with identical key structure.
+- [x] 11.3 Add `tv` section to `apps/mobile/src/locales/it/settings.json` and `en/settings.json` (section title, binding status labels, button labels). (Added `sections.tv`; section-specific copy lives in the `tv` namespace.)
+- [x] 11.4 Extend `apps/mobile/src/locales/it/voice.json` and `en/voice.json` with `voice.responses.tv.*` per `specs/tv-voice-intents/spec.md` (minimum 2 variants per key; no "Casa"/"Home" self-naming).
+- [x] 11.5 Register the `tv` namespace in the i18next config (and in `src/lib/useT.ts` + `src/types/i18next.d.ts`).
 
 ## 12. Env and docs
 
-- [ ] 12.1 Update the `SMARTTHINGS_PAT` comment in `apps/api/.env.example` to mention "lavatrice, asciugatrice e TV".
-- [ ] 12.2 Add a short section to the repo `README.md` about the TV feature and the required TV-side setting ("Attivazione tramite rete").
+- [x] 12.1 Update the `SMARTTHINGS_PAT` comment in `apps/api/.env.example` to mention "lavatrice, asciugatrice e TV".
+- [x] 12.2 Add a short section to the repo `README.md` about the TV feature and the required TV-side setting ("Attivazione tramite rete").
 
 ## 13. App preset validation on real hardware (QA)
 

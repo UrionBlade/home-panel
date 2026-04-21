@@ -1,0 +1,52 @@
+{
+  "title": "TV",
+  "tile": {
+    "notConfigured": "Imposta la TV",
+    "notConfiguredHint": "Collega la tua Samsung dalle impostazioni",
+    "off": "TV spenta",
+    "powerOn": "Accendi",
+    "powerOff": "Spegni",
+    "input": "Sorgente",
+    "volume": "Volume",
+    "muted": "Muta",
+    "unmuted": "Riattiva audio",
+    "shortcuts": "Shortcut",
+    "openingApp": "Apro {{name}}…"
+  },
+  "settings": {
+    "sectionTitle": "TV Samsung",
+    "connectedSmartThings": "Connesso a SmartThings",
+    "notConnectedSmartThings": "Prima collega SmartThings (sezione Lavatrice).",
+    "boundLabel": "TV collegata",
+    "noneBound": "Nessuna TV selezionata",
+    "pickTv": "Scegli TV",
+    "changeTv": "Cambia TV",
+    "unbindTv": "Scollega TV",
+    "confirmUnbind": "Vuoi davvero scollegare la TV?",
+    "testConnection": "Test connessione",
+    "testOk": "TV raggiungibile — stato: {{state}}",
+    "testOkOn": "accesa",
+    "testOkOff": "spenta",
+    "testFail": "TV non raggiungibile. Controlla rete e token SmartThings.",
+    "loadingDevices": "Cerco TV nell'account…",
+    "noDevices": "Nessun TV trovato in questo account SmartThings.",
+    "warnNetworkWakeTitle": "Accensione remota",
+    "warnNetworkWakeBody": "Per accendere la TV a distanza, sulla TV deve essere attiva l'opzione 'Attivazione tramite rete' (Impostazioni → Generali → Gestione dispositivo)."
+  },
+  "presets": {
+    "title": "Apri app",
+    "netflix": "Netflix",
+    "youtube": "YouTube",
+    "prime": "Prime Video",
+    "disney": "Disney+",
+    "raiplay": "RaiPlay"
+  },
+  "toast": {
+    "powerOnSuccess": "TV accesa",
+    "powerOffSuccess": "TV spenta",
+    "muted": "Audio mutato",
+    "unmuted": "Audio riattivato",
+    "inputChanged": "Sorgente: {{source}}",
+    "error": "Operazione non riuscita"
+  }
+}

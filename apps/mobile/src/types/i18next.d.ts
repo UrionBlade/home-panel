@@ -11,6 +11,7 @@ import type recipesIt from "../locales/it/recipes.json";
 import type settingsIt from "../locales/it/settings.json";
 import type shoppingIt from "../locales/it/shopping.json";
 import type timersIt from "../locales/it/timers.json";
+import type tvIt from "../locales/it/tv.json";
 import type voiceIt from "../locales/it/voice.json";
 import type wasteIt from "../locales/it/waste.json";
 import type weatherIt from "../locales/it/weather.json";
@@ -35,6 +36,7 @@ declare module "i18next" {
       voice: typeof voiceIt;
       waste: typeof wasteIt;
       weather: typeof weatherIt;
+      tv: typeof tvIt;
     };
   }
 }
