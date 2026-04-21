@@ -20,6 +20,7 @@ export * from "./recipes.js";
 export * from "./shopping.js";
 export * from "./spotify.js";
 export * from "./timers.js";
+export * from "./tv.js";
 export * from "./voice.js";
 export * from "./waste.js";
 export * from "./weather.js";

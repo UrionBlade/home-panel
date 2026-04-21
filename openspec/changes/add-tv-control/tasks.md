@@ -15,29 +15,29 @@
 
 ## 3. TV SmartThings wrapper
 
-- [ ] 3.1 Create `apps/api/src/lib/smartthings/tv.ts` that exposes typed helpers built on top of the shared client: `readTvStatus(pat, deviceId): Promise<TvStatus>`, `sendPower(pat, deviceId, on)`, `sendSetVolume(pat, deviceId, level)`, `sendVolumeUp(pat, deviceId)`, `sendVolumeDown(pat, deviceId)`, `sendMute/sendUnmute`, `sendSetInput(pat, deviceId, source)`, `sendLaunchApp(pat, deviceId, appId)`, `sendPlayback(pat, deviceId, command)`.
-- [ ] 3.2 `readTvStatus` must parse the SmartThings `status.components.main` shape and return `{ power, volume, muted, input, supportedInputs, supportedPlaybackCommands, lastUpdatedAt }` with the correct default fallbacks when fields are null.
-- [ ] 3.3 Add the in-memory cache (`cache`, `TTL_MS = 10_000`, `getStatus(pat, deviceId, force?)`, `invalidateCache()`) either inside `tv.ts` or in a sibling `tv-cache.ts`.
+- [x] 3.1 Create `apps/api/src/lib/smartthings/tv.ts` that exposes typed helpers built on top of the shared client: `readTvStatus(pat, deviceId): Promise<TvStatus>`, `sendPower(pat, deviceId, on)`, `sendSetVolume(pat, deviceId, level)`, `sendVolumeUp(pat, deviceId)`, `sendVolumeDown(pat, deviceId)`, `sendMute/sendUnmute`, `sendSetInput(pat, deviceId, source)`, `sendLaunchApp(pat, deviceId, appId)`, `sendPlayback(pat, deviceId, command)`.
+- [x] 3.2 `readTvStatus` must parse the SmartThings `status.components.main` shape and return `{ power, volume, muted, input, supportedInputs, supportedPlaybackCommands, lastUpdatedAt }` with the correct default fallbacks when fields are null.
+- [x] 3.3 Add the in-memory cache (`cache`, `TTL_MS = 10_000`, `getStatus(pat, deviceId, force?)`, `invalidateCache()`) either inside `tv.ts` or in a sibling `tv-cache.ts`.
 
 ## 4. Shared types
 
-- [ ] 4.1 Create `packages/shared/src/tv.ts` exporting: `TvStatus`, `TvPowerInput`, `TvVolumeInput`, `TvMuteInput`, `TvInputSelectInput`, `TvAppLaunchInput`, `TvPlaybackInput`, `TvAppPreset`, `TvConfig`, `TvDeviceSummary`. Match the shapes defined in `specs/tv-control/spec.md`.
-- [ ] 4.2 Export the new module from `packages/shared/src/index.ts`.
-- [ ] 4.3 `pnpm biome check` + `pnpm typecheck` pass at the monorepo root.
+- [x] 4.1 Create `packages/shared/src/tv.ts` exporting: `TvStatus`, `TvPowerInput`, `TvVolumeInput`, `TvMuteInput`, `TvInputSelectInput`, `TvAppLaunchInput`, `TvPlaybackInput`, `TvAppPreset`, `TvConfig`, `TvDeviceSummary`. Match the shapes defined in `specs/tv-control/spec.md`.
+- [x] 4.2 Export the new module from `packages/shared/src/index.ts`.
+- [x] 4.3 `pnpm biome check` + `pnpm typecheck` pass at the monorepo root.
 
 ## 5. App preset catalog
 
-- [ ] 5.1 Define `TV_APP_PRESETS` constant in `apps/api/src/lib/smartthings/tv-presets.ts` with `{ key, label, icon, appId }[]`. Seed with best-guess values for Netflix, YouTube, Prime, Disney+, RaiPlay from design.md.
-- [ ] 5.2 Export `getPresetByKey(key)` helper.
+- [x] 5.1 Define `TV_APP_PRESETS` constant in `apps/api/src/lib/smartthings/tv-presets.ts` with `{ key, label, icon, appId }[]`. Seed with best-guess values for Netflix, YouTube, Prime, Disney+, RaiPlay from design.md.
+- [x] 5.2 Export `getPresetByKey(key)` helper.
 
 ## 6. TV route module
 
-- [ ] 6.1 Create `apps/api/src/routes/tv.ts` (Hono router). Mount under `/tv` in `apps/api/src/index.ts` after the API token middleware.
-- [ ] 6.2 Implement `GET /tv/devices`, `GET /tv/status`, `PATCH /tv/config`, `POST /tv/power`, `POST /tv/volume`, `POST /tv/mute`, `POST /tv/input`, `POST /tv/app`, `POST /tv/playback`, `GET /tv/apps/presets` following the contracts in `specs/tv-control/spec.md`.
-- [ ] 6.3 Input validation per spec (bool/number ranges, exactly-one-of level|delta, input source validated against device status, playback command validated against supportedPlaybackCommands).
-- [ ] 6.4 Error mapping per spec (401 upstream → 502, 5xx upstream → 502 retryable, timeout → 502 retryable). Log with `console.error` prefixed `[tv]`.
-- [ ] 6.5 Each mutation route invokes `invalidateCache()` on success before returning.
-- [ ] 6.6 Manual smoke test via curl/httpie with the real PAT: `GET /tv/devices` returns the Samsung Q6, `PATCH /tv/config` binds it, `GET /tv/status` returns valid data, `POST /tv/power { on: true }` turns the TV on.
+- [x] 6.1 Create `apps/api/src/routes/tv.ts` (Hono router). Mount under `/tv` in `apps/api/src/index.ts` after the API token middleware.
+- [x] 6.2 Implement `GET /tv/devices`, `GET /tv/status`, `PATCH /tv/config`, `POST /tv/power`, `POST /tv/volume`, `POST /tv/mute`, `POST /tv/input`, `POST /tv/app`, `POST /tv/playback`, `GET /tv/apps/presets` following the contracts in `specs/tv-control/spec.md`. (Also added `GET /tv/config` for frontend state and `POST /tv/refresh` as a forced-invalidate escape hatch — not in the spec but small and useful.)
+- [x] 6.3 Input validation per spec (bool/number ranges, exactly-one-of level|delta, input source validated against device status, playback command validated against supportedPlaybackCommands).
+- [x] 6.4 Error mapping per spec (401 upstream → 502, 5xx upstream → 502 retryable, timeout → 502 retryable). Log with `console.error` prefixed `[tv]`.
+- [x] 6.5 Each mutation route invokes `invalidateCache()` on success before returning.
+- [x] 6.6 Manual smoke test via curl: `GET /tv/devices` returned the Samsung Q6; `PATCH /tv/config` bound it; `GET /tv/status` returned `{power:"off", volume:5, muted:false, input:"HDMI2", supportedInputs:["digitalTv","HDMI2"], supportedPlaybackCommands:[...7...]}`; `GET /tv/apps/presets` returned all 5 presets. `POST /tv/power` SKIPPED to avoid turning on the user's TV during autonomous execution — validated in group 14.
 
 ## 7. Frontend hooks
 
