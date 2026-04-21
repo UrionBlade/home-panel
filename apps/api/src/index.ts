@@ -1,8 +1,10 @@
 import { API_VERSION, type HealthResponse } from "@home-panel/shared";
 import { serve } from "@hono/node-server";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import "dotenv/config";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { db } from "./db/client.js";
 import { seedBesozzo2026 } from "./db/seed-besozzo-2026.js";
 import { seedBesozzoLocation } from "./db/seed-besozzo-location.js";
 import { seedEventCategories } from "./db/seed-event-categories.js";
@@ -28,6 +30,9 @@ import { tvRouter } from "./routes/tv.js";
 import { voiceRouter } from "./routes/voice.js";
 import { wasteRouter } from "./routes/waste.js";
 import { weatherRouter } from "./routes/weather.js";
+
+// Apply pending migrations before any DB access (seeds, routes, etc.)
+migrate(db, { migrationsFolder: "./drizzle" });
 
 // Idempotent seeds on startup
 seedProductCatalog();
