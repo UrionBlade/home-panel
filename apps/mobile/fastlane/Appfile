@@ -1,0 +1,2 @@
+app_identifier "com.matteopoli.homepanel"
+team_id ENV["IOS_TEAM_ID"] || "JB3JURZ8UG"

@@ -1,0 +1,113 @@
+# Fastlane runs on macOS (locally or in CI) and does four things in order:
+# 1. Provision a throwaway keychain with our Distribution certificate and
+#    install the App Store provisioning profile.
+# 2. Stamp the Info.plist CFBundleVersion so each upload is monotonically
+#    increasing (TestFlight rejects duplicate build numbers).
+# 3. Run the Tauri iOS build, which produces an .ipa ready for the store.
+# 4. Upload to TestFlight via the App Store Connect API key.
+#
+# Required env variables (provided by the workflow):
+#   IOS_P12_BASE64                - distribution cert .p12, base64-encoded
+#   IOS_P12_PASSWORD              - password chosen at .p12 export time
+#   IOS_PROVISIONING_PROFILE_BASE64 - App Store provisioning profile, base64
+#   ASC_API_KEY_BASE64            - App Store Connect API key .p8, base64
+#   ASC_API_KEY_ID                - API key id (10 chars)
+#   ASC_API_KEY_ISSUER_ID         - API key issuer uuid
+#   IOS_TEAM_ID                   - Apple developer team id
+#
+# Build number strategy: use GITHUB_RUN_NUMBER (strictly increasing per repo).
+# Fallback to current unix timestamp for local runs.
+
+default_platform(:ios)
+
+IOS_PROJECT_ROOT = File.expand_path("..", __dir__)
+REPO_ROOT = File.expand_path("../..", IOS_PROJECT_ROOT)
+TAURI_IOS_ROOT = File.join(IOS_PROJECT_ROOT, "src-tauri", "gen", "apple")
+INFO_PLIST = File.join(TAURI_IOS_ROOT, "mobile_iOS", "Info.plist")
+
+platform :ios do
+  desc "Build and upload a new TestFlight build"
+  lane :release do
+    setup_signing
+    stamp_build_number
+    build_tauri_ios
+    upload_build
+  end
+
+  desc "Just set up signing — useful for debugging in CI"
+  lane :signing do
+    setup_signing
+  end
+
+  private_lane :setup_signing do
+    # A dedicated, ephemeral keychain avoids leaving secrets in the default one.
+    keychain_name = "home-panel-ci.keychain-db"
+    keychain_password = SecureRandom.hex(16)
+
+    # Delete any leftover keychain from a previous failed run.
+    sh("security delete-keychain #{keychain_name} 2>/dev/null || true")
+
+    create_keychain(
+      name: keychain_name,
+      password: keychain_password,
+      default_keychain: false,
+      unlock: true,
+      timeout: 1800,
+      lock_when_sleeps: false,
+    )
+
+    p12_path = "/tmp/ios_distribution.p12"
+    File.binwrite(p12_path, Base64.decode64(ENV.fetch("IOS_P12_BASE64")))
+
+    import_certificate(
+      certificate_path: p12_path,
+      certificate_password: ENV.fetch("IOS_P12_PASSWORD"),
+      keychain_name: keychain_name,
+      keychain_password: keychain_password,
+    )
+
+    profile_path = "/tmp/HomePanel_AppStore.mobileprovision"
+    File.binwrite(profile_path, Base64.decode64(ENV.fetch("IOS_PROVISIONING_PROFILE_BASE64")))
+
+    install_provisioning_profile(path: profile_path)
+
+    File.delete(p12_path) if File.exist?(p12_path)
+  end
+
+  private_lane :stamp_build_number do
+    build_number = ENV["GITHUB_RUN_NUMBER"] || Time.now.to_i.to_s
+    UI.message("Setting CFBundleVersion to #{build_number}")
+    sh("/usr/libexec/PlistBuddy -c 'Set :CFBundleVersion #{build_number}' '#{INFO_PLIST}'")
+  end
+
+  private_lane :build_tauri_ios do
+    Dir.chdir(IOS_PROJECT_ROOT) do
+      sh("pnpm tauri ios build --export-method app-store")
+    end
+  end
+
+  private_lane :upload_build do
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_API_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_API_KEY_ISSUER_ID"),
+      key_content: Base64.decode64(ENV.fetch("ASC_API_KEY_BASE64")),
+      is_key_content_base64: false,
+      duration: 1200,
+      in_house: false,
+    )
+
+    # Tauri writes the final .ipa under gen/apple/build/arm64/.
+    ipa_glob = File.join(TAURI_IOS_ROOT, "build", "**", "*.ipa")
+    ipa_path = Dir.glob(ipa_glob).max_by { |f| File.mtime(f) }
+    UI.user_error!("No .ipa produced under #{ipa_glob}") if ipa_path.nil?
+    UI.message("Uploading #{ipa_path}")
+
+    upload_to_testflight(
+      api_key: api_key,
+      ipa: ipa_path,
+      skip_waiting_for_build_processing: true,
+      skip_submission: true,
+      changelog: "Automated build from commit #{ENV['GITHUB_SHA'] || 'local'}",
+    )
+  end
+end
