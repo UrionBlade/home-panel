@@ -96,7 +96,7 @@ platform :ios do
 
   private_lane :build_tauri_ios do
     Dir.chdir(IOS_PROJECT_ROOT) do
-      sh("pnpm tauri ios build --export-method app-store")
+      sh("pnpm tauri ios build --export-method app-store-connect")
     end
   end
 
