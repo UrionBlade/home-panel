@@ -62,34 +62,7 @@ export function VoiceSettings() {
       </div>
 
       {/* Available commands */}
-      <div className="rounded-md bg-surface border border-border">
-        <button
-          type="button"
-          onClick={() => setCommandsOpen(!commandsOpen)}
-          className="flex items-center justify-between w-full p-4 text-left"
-        >
-          <span className="font-medium">{t("commands.title")}</span>
-          {commandsOpen ? (
-            <CaretUp size={20} weight="duotone" />
-          ) : (
-            <CaretDown size={20} weight="duotone" />
-          )}
-        </button>
-        {commandsOpen && (
-          <ul className="px-4 pb-4 flex flex-col gap-2 text-sm text-text-muted">
-            <li>{t("commands.addShopping")}</li>
-            <li>{t("commands.removeShopping")}</li>
-            <li>{t("commands.readShopping")}</li>
-            <li>{t("commands.addEvent")}</li>
-            <li>{t("commands.readTodayEvents")}</li>
-            <li>{t("commands.readWaste")}</li>
-            <li>{t("commands.readWeather")}</li>
-            <li>{t("commands.addPostit")}</li>
-            <li>{t("commands.morning")}</li>
-            <li>{t("commands.night")}</li>
-          </ul>
-        )}
-      </div>
+      <VoiceCommandsList open={commandsOpen} onToggle={() => setCommandsOpen(!commandsOpen)} />
 
       <button
         type="button"
@@ -100,5 +73,51 @@ export function VoiceSettings() {
         Mostra log vocale
       </button>
     </section>
+  );
+}
+
+/* ------------------------------------------------------------------------ */
+/*  Commands list — grouped by category from voice.commands.categories.*     */
+/* ------------------------------------------------------------------------ */
+
+interface Category {
+  title: string;
+  items: string[];
+}
+
+function VoiceCommandsList({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  const { t } = useT("voice");
+  const categories = t("commands.categories", { returnObjects: true }) as Record<string, Category>;
+  const hint = t("commands.hint");
+
+  return (
+    <div className="rounded-md bg-surface border border-border">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex items-center justify-between w-full p-4 text-left"
+        aria-expanded={open}
+      >
+        <span className="font-medium">{t("commands.title")}</span>
+        {open ? <CaretUp size={20} weight="duotone" /> : <CaretDown size={20} weight="duotone" />}
+      </button>
+      {open && (
+        <div className="px-4 pb-4 flex flex-col gap-5">
+          <p className="text-xs text-text-muted leading-snug">{hint}</p>
+          {Object.entries(categories).map(([key, cat]) => (
+            <div key={key} className="flex flex-col gap-1.5">
+              <h3 className="label-mono text-text-muted">{cat.title}</h3>
+              <ul className="flex flex-col gap-1.5 text-sm">
+                {cat.items.map((item) => (
+                  <li key={item} className="text-text-muted leading-snug">
+                    <span className="text-text">“{item}”</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

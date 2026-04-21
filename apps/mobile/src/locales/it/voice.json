@@ -14,16 +14,89 @@
   },
   "commands": {
     "title": "Comandi disponibili",
-    "addShopping": "\"Aggiungi [prodotto] alla spesa\"",
-    "removeShopping": "\"Togli [prodotto] dalla spesa\"",
-    "readShopping": "\"Cosa c'è nella spesa?\"",
-    "addEvent": "\"Aggiungi [evento] al calendario\"",
-    "readTodayEvents": "\"Che eventi ho oggi?\"",
-    "readWaste": "\"Cosa porto fuori stasera?\"",
-    "readWeather": "\"Che tempo fa?\"",
-    "addPostit": "\"Nota: [testo]\"",
-    "morning": "\"Buongiorno\" (routine mattina)",
-    "night": "\"Buonanotte\" (routine sera)"
+    "hint": "Di' \"Ok Casa\" seguito da una di queste frasi. Le parole tra parentesi quadre sono variabili.",
+    "categories": {
+      "shopping": {
+        "title": "Spesa",
+        "items": [
+          "Aggiungi [prodotto] alla spesa",
+          "Togli [prodotto] dalla spesa",
+          "Cosa c'è nella spesa?"
+        ]
+      },
+      "calendar": {
+        "title": "Calendario",
+        "items": ["Aggiungi [evento] al calendario", "Che eventi ho oggi?", "Che eventi ho domani?"]
+      },
+      "weather": {
+        "title": "Meteo",
+        "items": ["Che tempo fa?", "Che tempo farà domani?"]
+      },
+      "waste": {
+        "title": "Rifiuti",
+        "items": ["Cosa porto fuori stasera?", "Cosa porto fuori domani?"]
+      },
+      "timer": {
+        "title": "Timer",
+        "items": [
+          "Timer [durata] (es. \"timer 5 minuti\", \"timer mezz'ora\")",
+          "Ferma il timer",
+          "Annulla il primo timer / tutti i timer"
+        ]
+      },
+      "board": {
+        "title": "Bacheca",
+        "items": ["Nota: [testo]", "Ricordami di [testo]"]
+      },
+      "recipes": {
+        "title": "Ricette",
+        "items": ["Cerca la ricetta di [piatto]"]
+      },
+      "routines": {
+        "title": "Routine",
+        "items": ["Buongiorno — riepilogo della giornata", "Buonanotte — chiudi tutto"]
+      },
+      "datetime": {
+        "title": "Orologio",
+        "items": ["Che ore sono?", "Che giorno è oggi?"]
+      },
+      "music": {
+        "title": "Musica (Spotify)",
+        "items": [
+          "Metti la musica",
+          "Metti in pausa / Pausa la musica",
+          "Prossima canzone",
+          "Canzone precedente",
+          "Volume musica al [numero] (es. \"volume al cinquanta\")"
+        ]
+      },
+      "tv": {
+        "title": "TV Samsung",
+        "items": [
+          "Accendi la TV / Spegni la TV",
+          "Alza il volume / Abbassa il volume",
+          "Volume a [numero] (es. \"volume a venti\")",
+          "Muta la TV / Togli il muto",
+          "Metti Netflix / YouTube / Prime / Disney+ / RaiPlay",
+          "Passa a HDMI 2 / Passa alla TV digitale"
+        ]
+      },
+      "conversation": {
+        "title": "Conversazione",
+        "items": [
+          "Ciao",
+          "Come stai?",
+          "Grazie",
+          "Raccontami una barzelletta",
+          "Sei bravissima",
+          "Chi sei?"
+        ]
+      },
+      "control": {
+        "title": "Controllo",
+        "items": ["Cosa puoi fare? / Aiuto", "Annulla / Basta / Stop"]
+      }
+    }
   },
   "privacy": {
     "active": "Microfono attivo",

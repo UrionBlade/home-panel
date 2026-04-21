@@ -14,16 +14,93 @@
   },
   "commands": {
     "title": "Available commands",
-    "addShopping": "\"Add [item] to the shopping list\"",
-    "removeShopping": "\"Remove [item] from the shopping list\"",
-    "readShopping": "\"What's on the shopping list?\"",
-    "addEvent": "\"Add [event] to the calendar\"",
-    "readTodayEvents": "\"What events do I have today?\"",
-    "readWaste": "\"What goes out tonight?\"",
-    "readWeather": "\"What's the weather like?\"",
-    "addPostit": "\"Note: [text]\"",
-    "morning": "\"Good morning\" (morning routine)",
-    "night": "\"Good night\" (evening routine)"
+    "hint": "Say \"Ok Home\" followed by one of these phrases. Words in square brackets are variables.",
+    "categories": {
+      "shopping": {
+        "title": "Shopping",
+        "items": [
+          "Add [item] to the shopping list",
+          "Remove [item] from the shopping list",
+          "What's on the shopping list?"
+        ]
+      },
+      "calendar": {
+        "title": "Calendar",
+        "items": [
+          "Add [event] to the calendar",
+          "What events do I have today?",
+          "What events do I have tomorrow?"
+        ]
+      },
+      "weather": {
+        "title": "Weather",
+        "items": ["What's the weather like?", "What will the weather be tomorrow?"]
+      },
+      "waste": {
+        "title": "Waste",
+        "items": ["What goes out tonight?", "What goes out tomorrow?"]
+      },
+      "timer": {
+        "title": "Timer",
+        "items": [
+          "Timer [duration] (e.g. \"timer 5 minutes\", \"timer half an hour\")",
+          "Stop the timer",
+          "Cancel the first timer / all timers"
+        ]
+      },
+      "board": {
+        "title": "Board",
+        "items": ["Note: [text]", "Remind me to [text]"]
+      },
+      "recipes": {
+        "title": "Recipes",
+        "items": ["Find the recipe for [dish]"]
+      },
+      "routines": {
+        "title": "Routines",
+        "items": ["Good morning — daily briefing", "Good night — wind down"]
+      },
+      "datetime": {
+        "title": "Clock",
+        "items": ["What time is it?", "What day is it today?"]
+      },
+      "music": {
+        "title": "Music (Spotify)",
+        "items": [
+          "Play music",
+          "Pause the music",
+          "Next song",
+          "Previous song",
+          "Music volume to [number] (e.g. \"volume to fifty\")"
+        ]
+      },
+      "tv": {
+        "title": "Samsung TV",
+        "items": [
+          "Turn on the TV / Turn off the TV",
+          "Volume up / Volume down",
+          "Volume to [number] (e.g. \"volume to twenty\")",
+          "Mute the TV / Unmute",
+          "Play Netflix / YouTube / Prime / Disney+ / RaiPlay",
+          "Switch to HDMI 2 / Switch to digital TV"
+        ]
+      },
+      "conversation": {
+        "title": "Conversation",
+        "items": [
+          "Hi",
+          "How are you?",
+          "Thank you",
+          "Tell me a joke",
+          "You're awesome",
+          "Who are you?"
+        ]
+      },
+      "control": {
+        "title": "Control",
+        "items": ["What can you do? / Help", "Cancel / Stop"]
+      }
+    }
   },
   "privacy": {
     "active": "Microphone active",
