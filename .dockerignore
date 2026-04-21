@@ -1,0 +1,43 @@
+# Build outputs
+**/node_modules
+**/dist
+**/build
+**/.output
+**/.turbo
+**/.next
+**/.vite
+
+# Tauri / mobile artifacts (not needed for API image)
+apps/mobile/src-tauri/target
+apps/mobile/src-tauri/gen
+apps/mobile/dist-tauri
+apps/mobile/*.log
+
+# Runtime data (SQLite, etc.)
+apps/api/data
+**/*.sqlite
+**/*.sqlite-shm
+**/*.sqlite-wal
+
+# Secrets
+**/.env
+**/.env.local
+**/.env.*.local
+!**/.env.example
+
+# VCS / IDE / OS
+.git
+.github
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs
+
+# Docs / planning
+openspec
+*.md
+!README.md

@@ -1,22 +1,29 @@
-# Compose pensato per Synology DSM (Container Manager / Portainer).
-# Su Synology:
-#   1. Clona la repo in /volume1/docker/home-panel
-#   2. Crea la cartella dati: mkdir -p /volume1/docker/home-panel/data
-#   3. docker compose up -d --build
-#   4. Esponi la porta 3000 dietro il reverse proxy DSM (Control Panel → Login Portal → Advanced → Reverse Proxy)
-#      o tramite Tailscale Funnel / Cloudflare Tunnel per l'accesso fuori casa.
+# Compose for Synology DSM (Container Manager).
+#
+# Expected layout on the NAS:
+#   /volume1/docker/home-panel/
+#   ├── docker-compose.yml        (this file, kept in sync by CI)
+#   ├── apps/api/.env             (secrets, NEVER committed)
+#   └── data/                     (SQLite DB, created on first run)
+#
+# On first deploy:
+#   1. mkdir -p /volume1/docker/home-panel/data
+#   2. Put secrets in /volume1/docker/home-panel/apps/api/.env
+#   3. docker compose up -d
+#
+# CI keeps the image up-to-date:
+#   docker compose pull && docker compose up -d
 
 services:
   api:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
-    image: home-panel-api:latest
+    image: ${API_IMAGE:-ghcr.io/urionblade/home-panel-api:latest}
     container_name: home-panel-api
     restart: unless-stopped
+    env_file:
+      - ./apps/api/.env
     environment:
       NODE_ENV: production
-      PORT: 3000
+      PORT: "3000"
       HOST: 0.0.0.0
       DATABASE_URL: /data/home-panel.sqlite
     ports:
