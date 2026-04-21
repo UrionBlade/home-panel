@@ -11,56 +11,15 @@ import type {
 import { Hono } from "hono";
 import { db } from "../db/client.js";
 import { smartthingsConfig } from "../db/schema.js";
-
-const ST_BASE = "https://api.smartthings.com/v1";
+import { getSmartThingsConfig, stFetch, stPost } from "../lib/smartthings/client.js";
 
 /* ---- In-memory cache for polling ---- */
 let applianceCache: LaundryAppliance[] = [];
 let lastPoll = 0;
 const POLL_INTERVAL = 30_000; // 30s
 
-/* ---- SmartThings helpers ---- */
-
-function getConfig() {
-  const row = db.select().from(smartthingsConfig).get();
-  // Fall back to env var if not configured from the UI
-  if (!row?.pat && process.env.SMARTTHINGS_PAT) {
-    return {
-      ...(row ?? { id: 1, washerDeviceId: null, dryerDeviceId: null, updatedAt: "" }),
-      pat: process.env.SMARTTHINGS_PAT,
-    };
-  }
-  return row;
-}
-
-function stHeaders(pat: string) {
-  return {
-    Authorization: `Bearer ${pat}`,
-    Accept: "application/json",
-  };
-}
-
-async function stFetch<T>(pat: string, path: string): Promise<T> {
-  const res = await fetch(`${ST_BASE}${path}`, { headers: stHeaders(pat) });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`SmartThings ${res.status}: ${body}`);
-  }
-  return res.json() as Promise<T>;
-}
-
-async function stPost<T>(pat: string, path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${ST_BASE}${path}`, {
-    method: "POST",
-    headers: { ...stHeaders(pat), "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`SmartThings ${res.status}: ${text}`);
-  }
-  return res.json() as Promise<T>;
-}
+/* Local alias preserving the historical helper name inside this module. */
+const getConfig = getSmartThingsConfig;
 
 function detectType(capabilities: string[]): LaundryApplianceType | "unknown" {
   if (capabilities.includes("washerOperatingState")) return "washer";

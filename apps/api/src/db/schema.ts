@@ -358,6 +358,7 @@ export const smartthingsConfig = sqliteTable("smartthings_config", {
   pat: text("pat"),
   washerDeviceId: text("washer_device_id"),
   dryerDeviceId: text("dryer_device_id"),
+  tvDeviceId: text("tv_device_id"),
   updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
 });
 export type SmartThingsConfigRow = typeof smartthingsConfig.$inferSelect;

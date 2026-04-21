@@ -1,0 +1,1 @@
+ALTER TABLE `smartthings_config` ADD `tv_device_id` text;
