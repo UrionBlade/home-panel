@@ -29,28 +29,36 @@ export function LaundryTile() {
         }}
       />
 
-      <div className="relative flex items-center gap-4 h-full z-10">
-        <div className="flex flex-col justify-between h-full min-w-0 flex-1">
-          <span className="label-mono text-text-muted">{t("title")}</span>
-          {hasActivity ? (
-            <div className="flex items-baseline gap-2">
-              <span className="font-display text-5xl font-black tabular-nums leading-none text-text">
-                {activeCount}
-              </span>
-              <span className="text-sm font-medium text-text-muted truncate">
-                {finished.length > 0
-                  ? t("tile.finished")
-                  : t("tile.running", { count: running.length })}
-              </span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <WashingMachineIcon size={20} weight="duotone" className="text-text-subtle" />
-              <span className="text-sm font-medium text-text-muted">{t("tile.idle")}</span>
-            </div>
-          )}
-        </div>
-        <LaundryArt size={110} className="shrink-0 pointer-events-none select-none anim-drift" />
+      <LaundryArt
+        size={74}
+        className="absolute top-2 right-2 pointer-events-none select-none opacity-90 anim-drift"
+      />
+      <div className="relative flex flex-col justify-between h-full z-10 pr-20 md:pr-24">
+        <span className="label-mono text-accent" style={{ fontWeight: 900 }}>
+          {t("title")}
+        </span>
+        {hasActivity ? (
+          <div className="flex items-baseline gap-2">
+            <span
+              className="font-display font-black tabular-nums leading-none text-text"
+              style={{ fontSize: "clamp(3.5rem, 7vw, 5.75rem)" }}
+            >
+              {activeCount}
+            </span>
+            <span className="text-sm font-medium text-text-muted truncate">
+              {finished.length > 0
+                ? t("tile.finished")
+                : t("tile.running", { count: running.length })}
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <WashingMachineIcon size={20} weight="duotone" className="text-text-subtle" />
+            <span className="font-display text-xl italic text-text-muted leading-tight">
+              {t("tile.idle")}
+            </span>
+          </div>
+        )}
       </div>
     </Tile>
   );

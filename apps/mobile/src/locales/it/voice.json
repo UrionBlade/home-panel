@@ -117,6 +117,22 @@
     "active": "Voce attiva",
     "indicator": "Indicatore vocale"
   },
+  "pill": {
+    "prefix": "Prova:",
+    "examples": [
+      "accendi la tv",
+      "quanto manca alla lavatrice?",
+      "aggiungi latte alla spesa",
+      "che eventi ho oggi?",
+      "timer cinque minuti",
+      "buongiorno",
+      "metti Netflix",
+      "cosa porto fuori stasera?"
+    ],
+    "open": "Apri elenco comandi",
+    "longPressHint": "Tieni premuto per parlare",
+    "listening": "Sto ascoltando…"
+  },
   "responses": {
     "shopping": {
       "dontUnderstandAdd": "Non ho capito cosa aggiungere alla spesa",

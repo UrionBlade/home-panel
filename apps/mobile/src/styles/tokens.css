@@ -338,6 +338,32 @@ h6,
   }
 }
 
+/* Voice invitation pill — slow meditative breath while idle. */
+@keyframes voice-breath {
+  0%,
+  100% {
+    opacity: 0.12;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 0.28;
+    transform: scale(1);
+  }
+}
+
+/* Voice invitation pill — tighter pulse while actively listening. */
+@keyframes voice-pulse {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.05);
+  }
+}
+
 .anim-float-in {
   animation: float-in var(--duration-orchestration) var(--ease-out-quart) both;
 }
@@ -349,6 +375,21 @@ h6,
 
 .anim-drift {
   animation: drift 8s ease-in-out infinite;
+}
+
+/* Pending state: subtle opacity breath for in-flight mutations */
+@keyframes breath {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-breath {
+  animation: breath 900ms var(--ease-out-quart) infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

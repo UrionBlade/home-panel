@@ -39,11 +39,17 @@ export function TimerTile() {
         }}
       />
 
-      <div className="relative flex items-center gap-4 h-full z-10">
-        <div className="flex flex-col justify-between h-full min-w-0 flex-1">
-          <span className="label-mono text-text-muted">{t("title")}</span>
+      <TimerArt
+        size={74}
+        className="absolute top-2 right-2 pointer-events-none select-none opacity-90"
+      />
+      <div className="relative flex flex-col justify-between h-full z-10 pr-20 md:pr-24">
+        <span className="label-mono text-accent" style={{ fontWeight: 900 }}>
+          {t("tileLabel")}
+        </span>
+        <div className="flex flex-col gap-0.5">
           {soonest ? (
-            <div className="flex flex-col gap-0.5">
+            <>
               <span
                 className="font-display text-5xl font-black tabular-nums leading-none text-text"
                 style={
@@ -59,26 +65,22 @@ export function TimerTile() {
                   {t("tile.running", { count: running.length })}
                 </p>
               ) : null}
-            </div>
+            </>
           ) : nextAlarm ? (
-            <div className="flex flex-col gap-0.5">
+            <>
               <span className="font-display text-5xl font-black tabular-nums leading-none text-text">
                 {pad2(nextAlarm.hour)}:{pad2(nextAlarm.minute)}
               </span>
               <span className="text-xs label-italic text-text-muted truncate">
                 {nextAlarm.label}
               </span>
-            </div>
+            </>
           ) : (
-            <div className="flex flex-col gap-0.5">
-              <span className="font-display text-4xl leading-none font-black text-text-subtle">
-                --:--
-              </span>
-              <span className="text-xs text-text-muted">{t("tile.noTimers")}</span>
-            </div>
+            <span className="font-display text-xl italic text-text-muted leading-tight">
+              {t("tile.noTimers")}
+            </span>
           )}
         </div>
-        <TimerArt size={110} className="shrink-0 pointer-events-none select-none" />
       </div>
     </Tile>
   );

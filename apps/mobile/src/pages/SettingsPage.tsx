@@ -11,6 +11,7 @@ import { KioskSettings } from "../components/settings/KioskSettings";
 import { LaundrySettings } from "../components/settings/LaundrySettings";
 import { TvSettings } from "../components/settings/TvSettings";
 import { VoiceSettings } from "../components/settings/VoiceSettings";
+import { WasteSettings } from "../components/settings/WasteSettings";
 import { WeatherSettings } from "../components/settings/WeatherSettings";
 import { useT } from "../lib/useT";
 import { type ThemeMode, useThemeStore } from "../store/theme-store";
@@ -22,7 +23,7 @@ const LANGUAGES: { code: string; label: string }[] = [
 
 const APP_VERSION = "0.1.0";
 
-type SettingsTab = "home" | "services" | "devices" | "appearance";
+type SettingsTab = "home" | "services" | "devices" | "waste" | "appearance";
 
 function srgb(c: number): number {
   return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
@@ -51,15 +52,19 @@ export function SettingsPage() {
   const { t } = useT("settings");
   const { i18n } = useTranslation();
   const [tab, setTab] = useState<SettingsTab>(() => {
-    if (typeof window !== "undefined" && window.location.hash === "#tv") return "devices";
+    if (typeof window !== "undefined") {
+      if (window.location.hash === "#tv") return "devices";
+      if (window.location.hash === "#waste") return "waste";
+    }
     return "appearance";
   });
 
-  /* Switch to devices tab if the hash is updated after mount (e.g. tile tap). */
+  /* Keep the active tab in sync with hash changes (e.g. tile tap). */
   useEffect(() => {
     if (typeof window === "undefined") return;
     function onHashChange() {
       if (window.location.hash === "#tv") setTab("devices");
+      else if (window.location.hash === "#waste") setTab("waste");
     }
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
@@ -74,6 +79,7 @@ export function SettingsPage() {
     { key: "home", label: t("tabs.home") },
     { key: "services", label: t("tabs.services") },
     { key: "devices", label: t("tabs.devices") },
+    { key: "waste", label: t("tabs.waste") },
   ];
 
   return (
@@ -137,6 +143,8 @@ export function SettingsPage() {
           <TvSettings />
         </>
       )}
+
+      {tab === "waste" && <WasteSettings />}
 
       {tab === "appearance" && (
         <>

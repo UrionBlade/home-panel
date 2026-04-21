@@ -13,13 +13,13 @@ import {
   VideoCameraIcon,
   XIcon,
 } from "@phosphor-icons/react";
-import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CameraArt } from "../components/illustrations/TileArt";
 import { PageContainer } from "../components/layout/PageContainer";
 import { PageHeader } from "../components/layout/PageHeader";
+import { ApiError } from "../lib/api-client";
 import {
   useArmCamera,
   useBlinkStatus,
@@ -91,37 +91,69 @@ function ClipPlayer({ clip, onClose }: { clip: BlinkMotionClip; onClose: () => v
 /* ------------------------------------------------------------------ */
 /*  Live View (quasi-live via thumbnail refresh)                        */
 /* ------------------------------------------------------------------ */
+/**
+ * Live view for Blink cameras.
+ *
+ * Blink's RTSPS stream includes a query-string token in the Request-URI that
+ * no generic RTSP client (ffmpeg, MediaMTX's gortsplib) preserves, so the
+ * server closes the connection right after TLS. The community path
+ * (Home Assistant included) is snapshot polling: wake the camera, re-sync
+ * the thumbnail URL, refresh the <img>.
+ *
+ * Each tick drives a single backend call chain:
+ *   POST /cameras/:id/snapshot  → Blink wakes the camera
+ *   (wait ~7s for the JPEG to land)
+ *   POST /cameras/sync          → DB gets the new thumbnailUrl
+ *   <img src=…?_t=tick>         → browser loads the fresh frame
+ */
+const SNAPSHOT_POLL_INTERVAL_MS = 250;
+
 function LiveView({ camera, onClose }: { camera: BlinkCamera; onClose: () => void }) {
   const { t: tCommon } = useT("common");
   const snapshot = useRequestSnapshot();
-  const qc = useQueryClient();
-  const [refreshCount, setRefreshCount] = useState(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
-  const imgRef = useRef<HTMLImageElement>(null);
+  const [tick, setTick] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Request initial snapshot and start refreshing every 5s
-  const startRefresh = useCallback(() => {
-    snapshot.mutate(camera.id);
-    intervalRef.current = setInterval(() => {
-      snapshot.mutate(camera.id);
-      // After 3s from the snapshot request, invalidate cameras to get the new thumbnail
-      setTimeout(() => {
-        void qc.invalidateQueries({ queryKey: ["blink", "cameras"] });
-        setRefreshCount((c) => c + 1);
-      }, 3000);
-    }, 5000);
-  }, [camera.id, snapshot, qc]);
-
+  /* Chain snapshots back-to-back. Each `mutateAsync` already waits for
+   * Blink to produce the new thumbnail + backend sync, so the natural
+   * cadence is "as fast as Blink allows" (~7-10s per frame). The short
+   * setTimeout between iterations prevents a tight loop if the API starts
+   * failing fast. `snapshot` comes from useMutation and is stable. */
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mutation ref stable
   useEffect(() => {
-    startRefresh();
+    let cancelled = false;
+    const cameraId = camera.id;
+    async function loop() {
+      while (!cancelled) {
+        try {
+          await snapshot.mutateAsync(cameraId);
+          if (!cancelled) {
+            setErrorMessage(null);
+            setTick((n) => n + 1);
+          }
+        } catch (err: unknown) {
+          if (cancelled) return;
+          let msg = "Errore snapshot";
+          if (err instanceof ApiError) {
+            const body = err.body as { error?: string } | null;
+            msg = body?.error ?? err.message;
+          } else if (err instanceof Error) {
+            msg = err.message;
+          }
+          setErrorMessage(msg);
+        }
+        if (!cancelled) await new Promise((r) => setTimeout(r, SNAPSHOT_POLL_INTERVAL_MS));
+      }
+    }
+    void loop();
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      cancelled = true;
     };
-  }, [startRefresh]);
+  }, [camera.id]);
 
   const thumbUrl = proxyUrl(camera.thumbnailUrl);
-  // Cache-bust to force the browser to reload the image
-  const imgSrc = thumbUrl ? `${thumbUrl}&_t=${refreshCount}` : null;
+  const imgSrc = thumbUrl ? `${thumbUrl}&_t=${tick}` : null;
+  const isWaitingFirstFrame = tick === 0 && !errorMessage;
 
   return (
     <motion.div
@@ -145,38 +177,50 @@ function LiveView({ camera, onClose }: { camera: BlinkCamera; onClose: () => voi
       <div className="w-full max-w-4xl px-6 flex flex-col items-center gap-4">
         <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-surface border border-border">
           {imgSrc ? (
-            <img
-              ref={imgRef}
-              src={imgSrc}
-              alt={camera.name}
-              className="w-full h-full object-cover"
-            />
+            <img src={imgSrc} alt={camera.name} className="w-full h-full object-cover bg-black" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
+            <div className="w-full h-full flex items-center justify-center bg-black">
               <VideoCameraIcon size={48} weight="duotone" className="text-text-muted opacity-40" />
             </div>
           )}
+
           <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-danger/90 text-white text-xs font-bold">
             <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
             LIVE
           </div>
-          {snapshot.isPending && (
-            <div className="absolute bottom-4 right-4">
-              <SpinnerIcon size={20} className="animate-spin text-white/70" />
+
+          {snapshot.isPending && !isWaitingFirstFrame ? (
+            <div className="absolute bottom-4 right-4 flex items-center gap-2 px-2.5 py-1 rounded-full bg-black/55 text-white/80 text-xs">
+              <SpinnerIcon size={14} className="animate-spin" />
+              aggiorno…
             </div>
-          )}
+          ) : null}
+
+          {isWaitingFirstFrame ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/40 text-white">
+              <SpinnerIcon size={36} className="animate-spin" />
+              <span className="text-sm">Risveglio camera…</span>
+            </div>
+          ) : null}
+
+          {errorMessage && tick === 0 ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70 text-white p-8 text-center">
+              <VideoCameraIcon size={48} weight="duotone" className="opacity-60" />
+              <p className="text-base font-medium">Impossibile contattare Blink</p>
+              <p className="text-xs text-white/70 max-w-sm">{errorMessage}</p>
+            </div>
+          ) : null}
         </div>
 
         <div className="text-center">
           <h3 className="font-display text-xl text-text">{camera.name}</h3>
-          <p className="text-sm text-text-muted mt-1">Aggiornamento ogni 5 secondi</p>
+          <p className="text-sm text-text-muted mt-1">Aggiornamento automatico (3-5s per frame)</p>
         </div>
       </div>
     </motion.div>
   );
 }
 
-/* ------------------------------------------------------------------ */
 function CameraCard({
   camera,
   selected,
@@ -244,7 +288,11 @@ function CameraCard({
 
 function ArmToggle({ camera }: { camera: BlinkCamera }) {
   const arm = useArmCamera();
-  const isArmed = camera.status === "online";
+  /* Real Blink state: motion detection is enabled per-camera. "Armed" used
+   * to mix this up with "online" (Wi-Fi presence), which made the toggle a
+   * lie. */
+  const isArmed = camera.armed;
+  const isOffline = camera.status !== "online";
 
   return (
     <button
@@ -253,7 +301,8 @@ function ArmToggle({ camera }: { camera: BlinkCamera }) {
         e.stopPropagation();
         arm.mutate({ id: camera.id, arm: !isArmed });
       }}
-      disabled={arm.isPending}
+      disabled={arm.isPending || isOffline}
+      title={isOffline ? "Telecamera offline" : undefined}
       className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
         isArmed
           ? "bg-success/15 text-success hover:bg-success/25"
@@ -269,6 +318,51 @@ function ArmToggle({ camera }: { camera: BlinkCamera }) {
 /* ------------------------------------------------------------------ */
 /*  Clips section                                                      */
 /* ------------------------------------------------------------------ */
+/**
+ * Skeleton → image → fallback. Blink thumbnails sometimes 404 or stall; without
+ * a proper state machine the `<img>` falls back to its container (black) and
+ * looks broken. This component keeps the area legible regardless of outcome.
+ */
+function ClipThumbnail({ src, alt }: { src: string | null; alt: string }) {
+  const [state, setState] = useState<"loading" | "loaded" | "error">(src ? "loading" : "error");
+
+  if (state === "error" || !src) {
+    return (
+      <div
+        aria-hidden
+        className="w-full h-full flex items-center justify-center"
+        style={{
+          background:
+            "linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-elevated) 100%)",
+        }}
+      >
+        <VideoCameraIcon size={28} weight="duotone" className="text-text-muted opacity-40" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div
+        aria-hidden
+        className={`absolute inset-0 ${state === "loading" ? "animate-pulse" : "opacity-0"} transition-opacity`}
+        style={{
+          background:
+            "linear-gradient(135deg, var(--color-surface) 0%, var(--color-surface-elevated) 100%)",
+        }}
+      />
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        onLoad={() => setState("loaded")}
+        onError={() => setState("error")}
+        className={`w-full h-full object-cover transition-opacity duration-300 ${state === "loaded" ? "opacity-100" : "opacity-0"}`}
+      />
+    </>
+  );
+}
+
 function ClipsSection({ cameraId }: { cameraId?: string }) {
   const { t } = useT("cameras");
   const { data: clips = [] } = useClips(cameraId);
@@ -298,33 +392,25 @@ function ClipsSection({ cameraId }: { cameraId?: string }) {
         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {clips.map((clip) => {
             const thumb = proxyUrl(clip.thumbnailPath);
+            /* Outer element is a `div` (not a button) so the nested delete
+             * button is valid HTML. Role + keyboard handlers preserve the
+             * "the whole card opens the clip" affordance. */
             return (
               <li key={clip.id}>
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setPlayingClip(clip)}
-                  className="w-full text-left rounded-md bg-surface-elevated border border-border overflow-hidden hover:border-accent/50 hover:shadow-md transition-all"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setPlayingClip(clip);
+                    }
+                  }}
+                  className="w-full text-left rounded-md bg-surface-elevated border border-border overflow-hidden hover:border-accent/50 hover:shadow-md transition-all cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
-                  <div className="relative aspect-video bg-surface">
-                    {thumb ? (
-                      <img
-                        src={thumb}
-                        alt=""
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = "none";
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <VideoCameraIcon
-                          size={32}
-                          weight="duotone"
-                          className="text-text-muted opacity-30"
-                        />
-                      </div>
-                    )}
+                  <div className="relative aspect-video overflow-hidden">
+                    <ClipThumbnail src={thumb} alt="" />
                     <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity">
                       <PlayIcon size={40} weight="fill" className="text-white drop-shadow-lg" />
                     </div>
@@ -347,7 +433,7 @@ function ClipsSection({ cameraId }: { cameraId?: string }) {
                       <TrashIcon size={16} weight="duotone" />
                     </button>
                   </div>
-                </button>
+                </div>
               </li>
             );
           })}

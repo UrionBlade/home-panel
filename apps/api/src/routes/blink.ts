@@ -1,3 +1,5 @@
+import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
+import { basename, join } from "node:path";
 import type {
   BlinkCamera,
   BlinkCredentialsStatus,
@@ -17,14 +19,20 @@ import {
 import {
   type BlinkPending2FA,
   type BlinkSession,
-  blinkArmNetwork,
   blinkListCameras,
   blinkListMedia,
   blinkLogin,
   blinkRefreshToken,
   blinkRequestThumbnail,
+  blinkSetDeviceEnabled,
   blinkVerify2FA,
 } from "../lib/blink/client.js";
+import {
+  getSession as getLiveSession,
+  startLiveSession,
+  stopLiveSession,
+  touchSession,
+} from "../lib/blink/liveview-manager.js";
 
 /* ---- DTO mappers ---- */
 
@@ -34,6 +42,8 @@ function cameraRowToDto(row: BlinkCameraRow): BlinkCamera {
     name: row.name,
     networkId: row.networkId,
     model: row.model,
+    deviceType: row.deviceType,
+    armed: row.enabled,
     status: row.status,
     batteryLevel: row.batteryLevel,
     thumbnailUrl: row.thumbnailUrl,
@@ -253,7 +263,7 @@ export const blinkRouter = new Hono()
     }
   })
 
-  /* ----- arm / disarm ----- */
+  /* ----- arm / disarm (per-camera motion detection) ----- */
   .post("/cameras/:id/arm", async (c) => {
     const session = getSession();
     if (!session) return c.json({ error: "Non autenticato" }, 401);
@@ -265,7 +275,11 @@ export const blinkRouter = new Hono()
     if (!cam) return c.json({ error: "not_found" }, 404);
     if (!cam.networkId) return c.json({ error: "Network ID mancante" }, 400);
     try {
-      await blinkArmNetwork(session, cam.networkId, true);
+      await blinkSetDeviceEnabled(session, cam.deviceType, cam.networkId, cam.id, true);
+      db.update(blinkCameras)
+        .set({ enabled: true, updatedAt: new Date().toISOString() })
+        .where(eq(blinkCameras.id, cam.id))
+        .run();
       return c.json({ armed: true });
     } catch (err) {
       return c.json({ error: err instanceof Error ? err.message : "Errore" }, 500);
@@ -283,15 +297,19 @@ export const blinkRouter = new Hono()
     if (!cam) return c.json({ error: "not_found" }, 404);
     if (!cam.networkId) return c.json({ error: "Network ID mancante" }, 400);
     try {
-      await blinkArmNetwork(session, cam.networkId, false);
+      await blinkSetDeviceEnabled(session, cam.deviceType, cam.networkId, cam.id, false);
+      db.update(blinkCameras)
+        .set({ enabled: false, updatedAt: new Date().toISOString() })
+        .where(eq(blinkCameras.id, cam.id))
+        .run();
       return c.json({ armed: false });
     } catch (err) {
       return c.json({ error: err instanceof Error ? err.message : "Errore" }, 500);
     }
   })
 
-  /* ----- refresh thumbnail (quasi-live) ----- */
-  .post("/cameras/:id/snapshot", async (c) => {
+  /* ----- live view (real RTSPS → HLS via ffmpeg) ----- */
+  .post("/cameras/:id/live/start", async (c) => {
     const session = getSession();
     if (!session) return c.json({ error: "Non autenticato" }, 401);
     const id = c.req.param("id");
@@ -299,11 +317,100 @@ export const blinkRouter = new Hono()
     if (!camera) return c.json({ error: "Camera non trovata" }, 404);
     if (!camera.networkId) return c.json({ error: "Camera senza networkId" }, 400);
     try {
-      await blinkRequestThumbnail(session, camera.networkId, id);
-      return c.json({ ok: true });
+      const live = await startLiveSession({
+        cameraId: id,
+        deviceType: camera.deviceType,
+        networkId: camera.networkId,
+        apiSession: session,
+      });
+      return c.json({ sessionId: live.id });
     } catch (err) {
-      return c.json({ error: err instanceof Error ? err.message : "Errore" }, 500);
+      const msg = err instanceof Error ? err.message : "Errore";
+      if (msg.includes("ffmpeg non disponibile")) {
+        return c.json({ error: "Server non pronto: installa ffmpeg" }, 503);
+      }
+      console.error(`[blink] liveview start failed (${id}):`, msg);
+      return c.json({ error: msg }, 500);
     }
+  })
+
+  .post("/cameras/:id/live/stop", async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { sessionId?: string } | null;
+    const sessionId = body?.sessionId;
+    if (!sessionId) return c.json({ error: "sessionId mancante" }, 400);
+    await stopLiveSession(sessionId);
+    return c.json({ ok: true });
+  })
+
+  /* ----- refresh thumbnail (the actual "live" for Blink cameras) -----
+   *
+   * Triggers Blink to capture a new JPEG and waits — polling the homescreen
+   * every 1.2s — until the thumbnail URL actually changes. This replaces a
+   * fixed "sleep 7s" with "sleep until ready", cutting the average loop
+   * time to ~3-5s depending on camera model and network.
+   */
+  .post("/cameras/:id/snapshot", async (c) => {
+    const session = getSession();
+    if (!session) return c.json({ error: "Non autenticato" }, 401);
+    const id = c.req.param("id");
+    const camera = db.select().from(blinkCameras).where(eq(blinkCameras.id, id)).get();
+    if (!camera) return c.json({ error: "Camera non trovata" }, 404);
+    if (!camera.networkId) return c.json({ error: "Camera senza networkId" }, 400);
+
+    const POLL_INTERVAL_MS = 1200;
+    const MAX_WAIT_MS = 12_000;
+
+    /* Ask Blink for a fresh thumbnail. A 409 "System is busy" means the
+     * camera is still working on the previous request — not a real error,
+     * just proceed to polling. Any other error is actually fatal. */
+    try {
+      await blinkRequestThumbnail(session, camera.deviceType, camera.networkId, id);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Errore";
+      const isBusy = msg.includes("409") || msg.toLowerCase().includes("busy");
+      /* Blink Mini sometimes 406s the thumbnail trigger even with a correct
+       * body — its firmware is fussier than Outdoor's. Fall through to
+       * polling instead of failing: the Mini thumbnail updates on its own
+       * cadence anyway. */
+      const isSoft = isBusy || msg.includes("406");
+      if (!isSoft) {
+        console.error(`[blink] snapshot ${camera.deviceType} ${id} failed:`, err);
+        return c.json({ error: msg }, 500);
+      }
+    }
+
+    const originalUrl = camera.thumbnailUrl;
+    const started = Date.now();
+    let settled = false;
+
+    while (Date.now() - started < MAX_WAIT_MS) {
+      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+      try {
+        const remote = await blinkListCameras(session);
+        const updated = remote.find((rc) => rc.id === id);
+        if (updated && updated.thumbnail && updated.thumbnail !== originalUrl) {
+          db.update(blinkCameras)
+            .set({
+              thumbnailUrl: updated.thumbnail,
+              batteryLevel: updated.battery,
+              status: updated.status === "online" ? "online" : "offline",
+              updatedAt: new Date().toISOString(),
+            })
+            .where(eq(blinkCameras.id, id))
+            .run();
+          settled = true;
+          break;
+        }
+      } catch (err) {
+        console.warn(`[blink] snapshot poll cycle failed (${id}):`, err);
+      }
+    }
+
+    return c.json({
+      ok: true,
+      waitedMs: Date.now() - started,
+      settled,
+    });
   })
 
   /* ----- clips ----- */
@@ -332,6 +439,48 @@ export const blinkRouter = new Hono()
     const result = db.delete(blinkMotionClips).where(eq(blinkMotionClips.id, id)).run();
     if (result.changes === 0) return c.json({ error: "not_found" }, 404);
     return c.body(null, 204);
+  })
+
+  /* ----- live HLS segments (no-auth, sessionId is the capability) ----- */
+  .get("/live/:sessionId/stream.m3u8", (c) => {
+    const sessionId = c.req.param("sessionId");
+    const session = getLiveSession(sessionId);
+    if (!session) return c.json({ error: "sessione scaduta" }, 404);
+    touchSession(sessionId);
+    if (!existsSync(session.playlistPath)) {
+      /* ffmpeg hasn't written the playlist yet — tell the player to retry. */
+      return c.json({ error: "playlist non pronta" }, 425);
+    }
+    const buf = readFileSync(session.playlistPath);
+    return new Response(buf, {
+      headers: {
+        "Content-Type": "application/vnd.apple.mpegurl",
+        "Cache-Control": "no-store",
+      },
+    });
+  })
+
+  .get("/live/:sessionId/:segment{seg-[0-9]+\\.ts}", (c) => {
+    const sessionId = c.req.param("sessionId");
+    const segment = c.req.param("segment");
+    const session = getLiveSession(sessionId);
+    if (!session) return c.json({ error: "sessione scaduta" }, 404);
+    /* Guard against path traversal even though the regex already restricts
+     * the capture. */
+    const safeName = basename(segment);
+    if (safeName !== segment) return c.json({ error: "path" }, 400);
+    const filePath = join(session.dir, safeName);
+    if (!existsSync(filePath)) return c.json({ error: "segmento non pronto" }, 404);
+    touchSession(sessionId);
+    const stat = statSync(filePath);
+    const stream = createReadStream(filePath);
+    return new Response(stream as unknown as ReadableStream, {
+      headers: {
+        "Content-Type": "video/mp2t",
+        "Content-Length": String(stat.size),
+        "Cache-Control": "no-store",
+      },
+    });
   })
 
   /* ----- proxy media (con auto-refresh token) ----- */
@@ -387,6 +536,8 @@ async function syncCamerasAndClips(session: BlinkSession) {
         .set({
           name: cam.name,
           networkId: cam.networkId,
+          deviceType: cam.deviceType,
+          enabled: cam.enabled,
           status: cam.status === "online" ? "online" : "offline",
           batteryLevel: cam.battery,
           thumbnailUrl: cam.thumbnail,
@@ -402,6 +553,8 @@ async function syncCamerasAndClips(session: BlinkSession) {
           id: cam.id,
           name: cam.name,
           networkId: cam.networkId,
+          deviceType: cam.deviceType,
+          enabled: cam.enabled,
           status: cam.status === "online" ? "online" : "offline",
           batteryLevel: cam.battery,
           thumbnailUrl: cam.thumbnail,

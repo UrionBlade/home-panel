@@ -9,10 +9,18 @@ import { type FormEvent, useState } from "react";
 import { useAddShoppingItem } from "../../lib/hooks/useShopping";
 import { useT } from "../../lib/useT";
 import { Button } from "../ui/Button";
+import { Dropdown, type DropdownOption } from "../ui/Dropdown";
 import { Input } from "../ui/Input";
-import { Select } from "../ui/Select";
 import { ProductAutocomplete } from "./ProductAutocomplete";
 
+/**
+ * Quick-add bar for the shopping list.
+ *
+ * Visual intent: the list is the hero; the form is a compact row (not a
+ * full-width slab). Name field dominates, the primary add action is a
+ * proportional square icon button aligned with the input height, and the
+ * qty/unit/category controls sit on a secondary row.
+ */
 export function ShoppingForm() {
   const { t } = useT("shopping");
   const addMutation = useAddShoppingItem();
@@ -38,58 +46,63 @@ export function ShoppingForm() {
     );
   }
 
+  const unitOptions: DropdownOption[] = SHOPPING_UNITS.map((u) => ({
+    value: u,
+    label: t(`units.${u}`),
+  }));
+
+  const categoryOptions: DropdownOption[] = SHOPPING_CATEGORIES.map((c) => ({
+    value: c,
+    label: t(`categories.${c}`),
+  }));
+
+  const canSubmit = name.trim().length > 0 && !addMutation.isPending;
+
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-lg bg-surface border border-border p-5 md:p-6 flex flex-col gap-4"
+      className="rounded-md bg-surface/60 border border-border/70 p-3 md:p-4 flex flex-col gap-3"
+      aria-label={t("actions.add")}
     >
-      <ProductAutocomplete
-        value={name}
-        onChange={setName}
-        onProductSelect={(product) => {
-          setName(product.name);
-          setCategory(product.category);
-          setUnit(product.defaultUnit);
-        }}
-        placeholder={t("addPlaceholder")}
-      />
+      <div className="flex items-stretch gap-2 md:gap-3">
+        <div className="flex-1 min-w-0">
+          <ProductAutocomplete
+            value={name}
+            onChange={setName}
+            onProductSelect={(product) => {
+              setName(product.name);
+              setCategory(product.category);
+              setUnit(product.defaultUnit);
+            }}
+            placeholder={t("addPlaceholder")}
+          />
+        </div>
+        <Button
+          type="submit"
+          size="md"
+          variant="primary"
+          disabled={!canSubmit}
+          aria-label={t("actions.add")}
+          className="!px-0 w-14 shrink-0"
+        >
+          <PlusIcon size={22} weight="bold" />
+        </Button>
+      </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 items-end">
+      <div className="grid grid-cols-[5rem_1fr_1fr] gap-2 md:gap-3">
         <Input
-          label={t("fields.quantity")}
+          aria-label={t("fields.quantity")}
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
           inputMode="decimal"
         />
-        <Select
-          label={t("fields.unit")}
-          value={unit}
-          onChange={(e) => setUnit(e.target.value as ShoppingUnit)}
-          options={SHOPPING_UNITS.map((u) => ({
-            value: u,
-            label: t(`units.${u}`),
-          }))}
+        <Dropdown options={unitOptions} value={unit} onChange={(v) => setUnit(v as ShoppingUnit)} />
+        <Dropdown
+          options={categoryOptions}
+          value={category}
+          onChange={(v) => setCategory(v as ShoppingCategory)}
         />
-        <div className="col-span-2 md:col-span-1">
-          <Select
-            label={t("fields.category")}
-            value={category}
-            onChange={(e) => setCategory(e.target.value as ShoppingCategory)}
-            options={SHOPPING_CATEGORIES.map((c) => ({
-              value: c,
-              label: t(`categories.${c}`),
-            }))}
-          />
-        </div>
       </div>
-
-      <Button
-        type="submit"
-        isLoading={addMutation.isPending}
-        iconLeft={<PlusIcon size={20} weight="bold" />}
-      >
-        {t("actions.add")}
-      </Button>
     </form>
   );
 }

@@ -2,11 +2,16 @@
  * Blink cameras — tipi condivisi.
  */
 
+export type BlinkDeviceType = "camera" | "owl" | "doorbell";
+
 export interface BlinkCamera {
   id: string;
   name: string;
   networkId: string | null;
   model: string | null;
+  deviceType: BlinkDeviceType;
+  /** Per-device motion detection flag — true when the camera is recording. */
+  armed: boolean;
   status: "online" | "offline";
   batteryLevel: string | null;
   thumbnailUrl: string | null;

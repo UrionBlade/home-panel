@@ -1,5 +1,5 @@
 {
-  "title": "Settings",
+  "title": "Impostazioni",
   "subtitle": "Configurazione del pannello",
   "sections": {
     "family": "Famiglia",
@@ -13,6 +13,7 @@
     "home": "Casa",
     "services": "Servizi",
     "devices": "Dispositivi",
+    "waste": "Rifiuti",
     "appearance": "Aspetto"
   },
   "appearance": {

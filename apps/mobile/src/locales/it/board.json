@@ -1,6 +1,10 @@
 {
   "title": "Bacheca",
-  "subtitle": "I tuoi post-it",
+  "subtitle": "Note condivise di casa",
+  "header": {
+    "counter_one": "{{count}} post-it",
+    "counter_other": "{{count}} post-it"
+  },
   "empty": {
     "title": "La bacheca è vuota",
     "body": "Aggiungi il primo post-it per iniziare"

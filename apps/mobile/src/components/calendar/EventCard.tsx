@@ -1,5 +1,6 @@
 import type { CalendarEvent, EventAttendee, EventInstance } from "@home-panel/shared";
 import { ClockIcon, MapPinIcon } from "@phosphor-icons/react";
+import { EventDescription } from "./EventDescription";
 
 interface EventCardProps {
   event: CalendarEvent | EventInstance;
@@ -149,7 +150,7 @@ export function EventCard({ event, variant = "full", onClick }: EventCardProps) 
         </div>
       )}
 
-      {event.description && <p className="text-text mt-3">{event.description}</p>}
+      {event.description ? <EventDescription description={event.description} /> : null}
 
       {event.attendees.length > 0 && (
         <div className="flex items-center gap-2 mt-4 flex-wrap">

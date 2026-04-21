@@ -4,6 +4,7 @@ import {
   BatteryChargingIcon,
   DropIcon,
   GearIcon,
+  MicrophoneIcon,
   PauseIcon,
   PlayIcon,
   SpinnerIcon,
@@ -18,6 +19,7 @@ import { useNavigate } from "react-router-dom";
 import { LaundryArt } from "../components/illustrations/TileArt";
 import { PageContainer } from "../components/layout/PageContainer";
 import { PageHeader } from "../components/layout/PageHeader";
+import { PendingControl } from "../components/ui/PendingControl";
 import { useLaundryCommand, useLaundryStatus, useRefreshLaundry } from "../lib/hooks/useLaundry";
 import { i18next } from "../lib/i18n";
 import { useT } from "../lib/useT";
@@ -297,36 +299,54 @@ function ApplianceCard({ appliance }: { appliance: LaundryAppliance }) {
       {appliance.remoteControlEnabled && (
         <div className="flex gap-2 pt-1">
           {(isPaused || (!isRunning && !isFinished)) && (
-            <button
-              type="button"
-              onClick={() => command.mutate({ deviceId: appliance.id, command: "start" })}
-              disabled={command.isPending}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium bg-accent text-accent-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+            <PendingControl
+              isPending={command.isPending}
+              isSuccess={command.isSuccess}
+              isError={command.isError}
             >
-              <PlayIcon size={16} weight="fill" />
-              {t("actions.start")}
-            </button>
+              <button
+                type="button"
+                onClick={() => command.mutate({ deviceId: appliance.id, command: "start" })}
+                disabled={command.isPending}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium bg-accent text-accent-foreground hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                <PlayIcon size={16} weight="fill" />
+                {t("actions.start")}
+              </button>
+            </PendingControl>
           )}
           {isRunning && (
             <>
-              <button
-                type="button"
-                onClick={() => command.mutate({ deviceId: appliance.id, command: "pause" })}
-                disabled={command.isPending}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium bg-surface border border-border text-text hover:border-accent transition-colors disabled:opacity-50"
+              <PendingControl
+                isPending={command.isPending}
+                isSuccess={command.isSuccess}
+                isError={command.isError}
               >
-                <PauseIcon size={16} weight="fill" />
-                {t("actions.pause")}
-              </button>
-              <button
-                type="button"
-                onClick={handleStop}
-                disabled={command.isPending}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium text-danger hover:bg-danger/10 transition-colors disabled:opacity-50"
+                <button
+                  type="button"
+                  onClick={() => command.mutate({ deviceId: appliance.id, command: "pause" })}
+                  disabled={command.isPending}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium bg-surface border border-border text-text hover:border-accent transition-colors disabled:opacity-50"
+                >
+                  <PauseIcon size={16} weight="fill" />
+                  {t("actions.pause")}
+                </button>
+              </PendingControl>
+              <PendingControl
+                isPending={command.isPending}
+                isSuccess={command.isSuccess}
+                isError={command.isError}
               >
-                <StopIcon size={16} weight="fill" />
-                {t("actions.stop")}
-              </button>
+                <button
+                  type="button"
+                  onClick={handleStop}
+                  disabled={command.isPending}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium text-danger hover:bg-danger/10 transition-colors disabled:opacity-50"
+                >
+                  <StopIcon size={16} weight="fill" />
+                  {t("actions.stop")}
+                </button>
+              </PendingControl>
             </>
           )}
         </div>
@@ -407,8 +427,41 @@ export function LaundryPage() {
           {status.appliances.map((appliance) => (
             <ApplianceCard key={appliance.id} appliance={appliance} />
           ))}
+          <LaundryIdleHint appliances={status.appliances} />
         </div>
       )}
     </PageContainer>
+  );
+}
+
+/**
+ * Calm "rest state" panel shown below the appliance list when every machine
+ * is off or stopped. The dedicated page would otherwise be a header + a thin
+ * row, which reads as "something missing". Instead, we lean into the quiet
+ * and promote the voice-first affordance.
+ */
+function LaundryIdleHint({ appliances }: { appliances: LaundryAppliance[] }) {
+  const { t } = useT("laundry");
+  const allIdle = appliances.every(
+    (a) => !a.power || (a.machineState === "stop" && a.jobState !== "finish"),
+  );
+  if (!allIdle) return null;
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1, duration: 0.32, ease: [0.2, 0, 0, 1] }}
+      className="mt-6 flex flex-col items-center text-center gap-4 py-10 px-6 rounded-md border border-border/50 bg-surface/40"
+    >
+      <LaundryArt size={120} className="pointer-events-none select-none opacity-70 anim-drift" />
+      <div className="flex flex-col gap-1 max-w-md">
+        <h2 className="font-display text-2xl text-text">{t("idleState.headline")}</h2>
+        <p className="text-sm text-text-muted leading-relaxed">{t("idleState.body")}</p>
+      </div>
+      <span className="inline-flex items-center gap-2 text-xs text-text-muted border border-border/60 rounded-full px-3 py-1.5">
+        <MicrophoneIcon size={14} weight="duotone" className="text-accent" />
+        {t("idleState.voiceHint")}
+      </span>
+    </motion.section>
   );
 }

@@ -74,6 +74,11 @@ export interface TvAppLaunchInput {
   appId: string;
 }
 
+/** Body of POST /tv/channel — relative change only. */
+export interface TvChannelInput {
+  delta: "up" | "down";
+}
+
 /** Body of POST /tv/playback. */
 export interface TvPlaybackInput {
   command: "play" | "pause" | "stop" | "fastForward" | "rewind" | "next" | "previous";

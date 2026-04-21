@@ -10,7 +10,13 @@
   "actions": {
     "addEvent": "New event",
     "edit": "Edit",
-    "delete": "Delete"
+    "delete": "Delete",
+    "openConference": "Open {{service}}",
+    "showDetails": "Show details",
+    "hideDetails": "Hide details"
+  },
+  "privacy": {
+    "detailsHidden": "PIN and phone numbers hidden"
   },
   "createEvent": "Create event",
   "agenda": {

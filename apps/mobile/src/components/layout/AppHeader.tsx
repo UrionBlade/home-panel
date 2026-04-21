@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "../../lib/api-client";
 import { useT } from "../../lib/useT";
 import { useVoiceContext } from "../../lib/voice/VoiceProvider";
+import { VoiceInvitePill } from "../voice/VoiceInvitePill";
 import { VoicePrivacyIndicator } from "../voice/VoicePrivacyIndicator";
 import { VoiceWaveIndicator } from "../voice/VoiceWaveIndicator";
 import { Clock } from "./Clock";
@@ -34,10 +35,11 @@ export function AppHeader({ hideClock, title }: AppHeaderProps) {
 
   return (
     <header className="flex items-center justify-between gap-4 px-6 md:px-8 py-4 bg-surface/70 backdrop-blur-sm sticky top-0 z-20">
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 flex items-center gap-4">
         {title && (
           <h1 className="font-display text-2xl md:text-3xl tracking-tight truncate">{title}</h1>
         )}
+        {!title && <VoiceInvitePill />}
       </div>
       <div className="flex items-center gap-4 shrink-0">
         <HeaderWeather />

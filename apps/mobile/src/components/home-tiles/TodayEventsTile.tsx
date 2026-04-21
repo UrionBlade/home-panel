@@ -1,62 +1,78 @@
 import { useNavigate } from "react-router-dom";
-import { formatLongDate, formatTime } from "../../lib/dates";
+import { formatTime } from "../../lib/dates";
 import { useTodayEvents } from "../../lib/hooks/useCalendar";
 import { useT } from "../../lib/useT";
 import { CalendarArt } from "../illustrations/TileArt";
 import { Tile } from "../ui/Tile";
 
+/**
+ * Today's events — the list *is* the tile. No 3D illustration, no count
+ * number. Each row shows a colored category bar + time + title; the content
+ * takes the full width of the tile.
+ */
 export function TodayEventsTile() {
   const { t } = useT("calendar");
   const navigate = useNavigate();
   const { data } = useTodayEvents();
 
+  const now = Date.now();
   const events = data?.events ?? [];
-  const today = new Date();
-  const upcoming = events.filter((e) => new Date(e.endsAt) >= today).slice(0, 2);
+  const upcoming = events.filter((e) => new Date(e.endsAt).getTime() >= now);
+  const visible = upcoming.slice(0, 3);
+  const overflow = upcoming.length - visible.length;
 
   return (
     <Tile size="md" onClick={() => navigate("/calendar")} ariaLabel={t("title")}>
-      <div
-        aria-hidden
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(circle at 100% 100%, var(--tile-terracotta-b) 0%, transparent 55%)",
-          opacity: 0.55,
-        }}
+      {/* Calendar art as a discreet anchor in the top-right, not dominant. */}
+      <CalendarArt
+        size={74}
+        className="absolute top-2 right-2 pointer-events-none select-none opacity-90"
       />
+      <span
+        className="label-mono text-accent absolute top-5 left-6 z-10"
+        style={{ fontWeight: 900 }}
+      >
+        {t("tile.title")}
+      </span>
 
-      <div className="relative flex items-center gap-4 h-full z-10">
-        <div className="flex flex-col justify-between h-full min-w-0 flex-1">
-          <span className="label-mono text-text-muted">Oggi</span>
-          <div className="flex flex-col gap-1">
-            <p className="label-italic text-base capitalize leading-tight text-text truncate">
-              {formatLongDate(today)}
-            </p>
-            {upcoming.length === 0 ? (
-              <p className="text-xs text-text-muted">{t("tile.noEvents")}</p>
-            ) : (
-              <ul className="flex flex-col gap-0.5">
-                {upcoming.map((ev) => (
-                  <li key={ev.id} className="flex items-center gap-1.5 text-text text-xs">
-                    {ev.categoryColor && (
-                      <span
-                        className="w-1.5 h-1.5 rounded-full shrink-0"
-                        style={{ backgroundColor: ev.categoryColor }}
-                      />
-                    )}
-                    <span className="font-display tabular-nums shrink-0 font-bold text-text-muted">
-                      {ev.allDay ? "—" : formatTime(ev.startsAt)}
-                    </span>
-                    <span className="font-medium truncate">{ev.title}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+      {visible.length === 0 ? (
+        <div className="relative flex h-full items-center px-2 pt-6">
+          <p className="font-display text-xl italic text-text-muted leading-tight max-w-[70%]">
+            {t("tile.noEvents")}
+          </p>
         </div>
-        <CalendarArt size={110} className="shrink-0 pointer-events-none select-none" />
-      </div>
+      ) : (
+        <ul className="relative flex flex-col h-full justify-center gap-2.5 pr-20 md:pr-24 pt-4">
+          {visible.map((ev) => (
+            <li key={ev.id} className="flex items-center gap-3 min-w-0">
+              {/* Colored rail per category — replaces the dot, reads at 3m. */}
+              <span
+                className="w-[3px] self-stretch rounded-full shrink-0"
+                style={{
+                  background: ev.categoryColor ?? "var(--color-accent)",
+                  opacity: 0.9,
+                }}
+              />
+              <span className="font-display text-lg md:text-xl font-bold tabular-nums tracking-tight text-text-muted shrink-0 w-[3.5rem]">
+                {ev.allDay ? "—:—" : formatTime(ev.startsAt)}
+              </span>
+              <span className="font-medium text-base md:text-lg text-text truncate">
+                {ev.title}
+              </span>
+              {ev.attendeeNames.length > 0 && (
+                <span className="text-xs text-text-subtle italic truncate shrink-0 hidden lg:inline">
+                  · {ev.attendeeNames.slice(0, 2).join(", ")}
+                </span>
+              )}
+            </li>
+          ))}
+          {overflow > 0 && (
+            <li className="text-xs font-medium text-text-subtle tracking-tight mt-1">
+              {t("tile.moreCount", { count: overflow })}
+            </li>
+          )}
+        </ul>
+      )}
     </Tile>
   );
 }

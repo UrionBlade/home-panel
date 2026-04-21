@@ -21,19 +21,26 @@ export function BoardTile() {
         }}
       />
 
-      <div className="relative flex items-center gap-4 h-full z-10">
-        <div className="flex flex-col justify-between h-full min-w-0 flex-1">
-          <span className="label-mono text-text-muted">{t("title")}</span>
-          <div className="flex items-baseline gap-2">
-            <span className="font-display text-5xl font-black tabular-nums leading-none text-text">
-              {postits.length}
-            </span>
-            <span className="text-sm font-medium text-text-muted truncate">
-              {postits.length === 0 ? t("tile.empty") : t("tile.count", { count: postits.length })}
-            </span>
-          </div>
-        </div>
-        <PostItStackArt size={110} className="shrink-0 pointer-events-none select-none anim-sway" />
+      <PostItStackArt
+        size={74}
+        className="absolute top-2 right-2 pointer-events-none select-none opacity-90 anim-sway"
+      />
+      <div className="relative flex flex-col justify-between h-full z-10 pr-20 md:pr-24">
+        <span className="label-mono text-accent" style={{ fontWeight: 900 }}>
+          {t("title")}
+        </span>
+        {postits.length === 0 ? (
+          <span className="font-display text-xl italic text-text-muted leading-tight">
+            {t("tile.empty")}
+          </span>
+        ) : (
+          <span
+            className="font-display font-black tabular-nums leading-none text-text"
+            style={{ fontSize: "clamp(3.5rem, 7vw, 5.75rem)" }}
+          >
+            {postits.length}
+          </span>
+        )}
       </div>
     </Tile>
   );

@@ -9,6 +9,7 @@ import { seedEventCategories } from "./db/seed-event-categories.js";
 import { seedKioskSettings } from "./db/seed-kiosk-settings.js";
 import { seedProductCatalog } from "./db/seed-products.js";
 import { seedVoiceSettings } from "./db/seed-voice-settings.js";
+import { stopAllLiveSessions } from "./lib/blink/liveview-manager.js";
 import { startSyncScheduler } from "./lib/calendar-sync.js";
 import { apiAuth } from "./middleware/auth.js";
 import { blinkRouter } from "./routes/blink.js";
@@ -86,10 +87,16 @@ app.get("/health", (c) => {
   return c.json(body);
 });
 
-// Everything under /api/* requires Bearer token, EXCEPT the Blink media proxy and SSE
+// Everything under /api/* requires Bearer token, EXCEPT the Blink media proxy,
+// the Blink live HLS chunks, and SSE — all of which are consumed by browser
+// primitives that cannot attach Authorization headers.
 app.use("/api/*", async (c, next) => {
-  // The Blink proxy is used by <img>/<video> which cannot add Auth headers
+  // The Blink proxy is used by <img> which cannot add Auth headers
   if (c.req.path === `/api/${API_VERSION}/blink/proxy`) {
+    return next();
+  }
+  // HLS playlist + segments consumed by <video> / hls.js
+  if (c.req.path.startsWith(`/api/${API_VERSION}/blink/live/`)) {
     return next();
   }
   // SSE: EventSource does not support custom headers, uses ?token= query param
@@ -128,3 +135,11 @@ serve({ fetch: app.fetch, port, hostname }, (info) => {
   startSyncScheduler();
   startTimersScheduler();
 });
+
+/* Tear down ffmpeg children + notify Blink on graceful shutdown so the
+ * next boot doesn't inherit orphaned liveview sessions. */
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.once(signal, () => {
+    void stopAllLiveSessions().finally(() => process.exit(0));
+  });
+}

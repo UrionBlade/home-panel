@@ -75,11 +75,15 @@ export interface BlinkSession {
   host: string;
 }
 
+export type BlinkDeviceFamily = "camera" | "owl" | "doorbell";
+
 export interface BlinkCameraInfo {
   id: string;
   name: string;
   networkId: string;
+  deviceType: BlinkDeviceFamily;
   status: string;
+  enabled: boolean;
   battery: string;
   thumbnail: string;
   serial: string;
@@ -364,13 +368,25 @@ export async function blinkRefreshToken(
 
 /* ---- Authenticated API calls ---- */
 
-async function blinkApi<T>(session: BlinkSession, path: string, method = "GET"): Promise<T> {
+async function blinkApi<T>(
+  session: BlinkSession,
+  path: string,
+  method = "GET",
+  body?: unknown,
+): Promise<T> {
   const res = await fetch(`${session.host}${path}`, {
     method,
     headers: {
       Authorization: `Bearer ${session.accessToken}`,
+      // Blink's snapshot endpoint on older Wire-Free cameras rejects requests
+      // with no Accept header as 406. The mobile app sends a wildcard accept,
+      // so we do the same (kept on one line to avoid the "* /" sequence that
+      // would terminate a block comment).
+      Accept: "*/*",
       "Content-Type": "application/json",
+      "User-Agent": BROWSER_UA,
     },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -380,30 +396,51 @@ async function blinkApi<T>(session: BlinkSession, path: string, method = "GET"):
 }
 
 export async function blinkListCameras(session: BlinkSession): Promise<BlinkCameraInfo[]> {
-  interface Camera {
+  /* Blink's /homescreen bundles every device family under distinct arrays.
+   * The original implementation only consumed `cameras`, silently losing
+   * Mini (owls) and Video Doorbell devices. Walk all three families. */
+  interface HomescreenDevice {
     id: number;
     name: string;
     network_id: number;
     status: string;
-    battery: string;
-    thumbnail: string;
-    serial: string;
-    fw_version: string;
+    /** Per-camera motion detection flag (undefined on some families). */
+    enabled?: boolean;
+    battery?: string;
+    thumbnail?: string | null;
+    serial?: string;
+    fw_version?: string;
   }
-  const data = await blinkApi<{ cameras: Camera[] }>(
+  interface HomescreenPayload {
+    cameras?: HomescreenDevice[];
+    owls?: HomescreenDevice[];
+    doorbells?: HomescreenDevice[];
+  }
+  const data = await blinkApi<HomescreenPayload>(
     session,
     `/api/v3/accounts/${session.accountId}/homescreen`,
   );
-  return (data.cameras ?? []).map((cam) => ({
-    id: String(cam.id),
-    name: cam.name,
-    networkId: String(cam.network_id),
-    status: cam.status === "done" ? "online" : "offline",
-    battery: cam.battery ?? "unknown",
-    thumbnail: cam.thumbnail ? `${session.host}${cam.thumbnail}.jpg` : "",
-    serial: cam.serial ?? "",
-    firmwareVersion: cam.fw_version ?? "",
-  }));
+
+  function toInfo(raw: HomescreenDevice, deviceType: BlinkDeviceFamily): BlinkCameraInfo {
+    return {
+      id: String(raw.id),
+      name: raw.name,
+      networkId: String(raw.network_id),
+      deviceType,
+      status: raw.status === "done" || raw.status === "online" ? "online" : "offline",
+      enabled: raw.enabled ?? true,
+      battery: raw.battery ?? "unknown",
+      thumbnail: raw.thumbnail ? `${session.host}${raw.thumbnail}.jpg` : "",
+      serial: raw.serial ?? "",
+      firmwareVersion: raw.fw_version ?? "",
+    };
+  }
+
+  const list: BlinkCameraInfo[] = [];
+  for (const c of data.cameras ?? []) list.push(toInfo(c, "camera"));
+  for (const c of data.owls ?? []) list.push(toInfo(c, "owl"));
+  for (const c of data.doorbells ?? []) list.push(toInfo(c, "doorbell"));
+  return list;
 }
 
 export async function blinkArmNetwork(
@@ -420,20 +457,163 @@ export async function blinkArmNetwork(
 }
 
 /**
+ * Builds the correct REST path for per-device actions (thumbnail, enable,
+ * disable, liveview) across Blink's three device families.
+ *
+ * Blink keeps classic cameras on the legacy v1 path with a singular
+ * `camera` segment and no `/api/v1/accounts/...` prefix, while Mini (owl)
+ * and Video Doorbell use the newer plural-segment layout under
+ * `/api/v1/accounts/{aid}/networks/{nid}/...`. Using the wrong shape yields
+ * a 404 that surfaces as a black thumbnail or a stuck live view.
+ */
+function deviceActionPath(
+  session: BlinkSession,
+  deviceType: BlinkDeviceFamily,
+  networkId: string,
+  deviceId: string,
+  action: string,
+): string {
+  if (deviceType === "camera") {
+    return `/network/${networkId}/camera/${deviceId}/${action}`;
+  }
+  const segment = `${deviceType}s`;
+  return `/api/v1/accounts/${session.accountId}/networks/${networkId}/${segment}/${deviceId}/${action}`;
+}
+
+/**
+ * Per-device arm/disarm. Unlike `blinkArmNetwork` (which flips the whole
+ * network), this toggles motion detection on a single camera/owl/doorbell.
+ */
+export async function blinkSetDeviceEnabled(
+  session: BlinkSession,
+  deviceType: BlinkDeviceFamily,
+  networkId: string,
+  deviceId: string,
+  enabled: boolean,
+): Promise<void> {
+  const action = enabled ? "enable" : "disable";
+  await blinkApi<unknown>(
+    session,
+    deviceActionPath(session, deviceType, networkId, deviceId, action),
+    "POST",
+  );
+}
+
+/* ---- Live view (RTSPS) ---- */
+
+export interface BlinkLiveviewSession {
+  commandId: number;
+  /** RTSP-family URL usable by ffmpeg. */
+  server: string;
+  /** Server-advertised duration (seconds) before the session auto-expires. */
+  durationSeconds: number;
+}
+
+/**
+ * Opens a live streaming session with Blink. Returns an RTSPS URL that must
+ * be consumed within `durationSeconds`; use `blinkExtendLiveview` to keep the
+ * session alive longer. Path varies per device family.
+ */
+/**
+ * Blink uses two different API versions for liveview depending on the device
+ * family: classic Outdoor/Indoor cameras speak `/api/v5/...`, while Mini
+ * (owl) and Video Doorbell devices speak `/api/v1/...`. Using the wrong
+ * version hits a 404 before ffmpeg even runs.
+ */
+function liveviewPath(
+  session: BlinkSession,
+  deviceType: BlinkDeviceFamily,
+  networkId: string,
+  deviceId: string,
+  suffix = "",
+): string {
+  const segment = deviceType === "camera" ? "cameras" : `${deviceType}s`;
+  const version = deviceType === "camera" ? "v5" : "v1";
+  const base = `/api/${version}/accounts/${session.accountId}/networks/${networkId}/${segment}/${deviceId}/liveview`;
+  return suffix ? `${base}${suffix}` : base;
+}
+
+export async function blinkStartLiveview(
+  session: BlinkSession,
+  deviceType: BlinkDeviceFamily,
+  networkId: string,
+  deviceId: string,
+): Promise<BlinkLiveviewSession> {
+  interface LiveviewResponse {
+    command_id?: number;
+    id?: number;
+    server?: string;
+    duration?: number;
+  }
+  const res = await blinkApi<LiveviewResponse>(
+    session,
+    liveviewPath(session, deviceType, networkId, deviceId),
+    "POST",
+    { intent: "liveview" },
+  );
+  const server = res.server ?? "";
+  if (!server) throw new Error("Blink non ha restituito un server stream");
+  /* Blink occasionally returns an `immis://` variant. Rewriting to `rtsps://`
+   * keeps the handshake identical (TLS on port 443) but lets ffmpeg pick the
+   * right demuxer. */
+  const normalized = server.replace(/^immis:\/\//i, "rtsps://");
+  const commandId = res.command_id ?? res.id ?? 0;
+  if (!commandId) throw new Error("Blink liveview senza command_id");
+  return {
+    commandId,
+    server: normalized,
+    durationSeconds: res.duration ?? 30,
+  };
+}
+
+export async function blinkExtendLiveview(
+  session: BlinkSession,
+  deviceType: BlinkDeviceFamily,
+  networkId: string,
+  deviceId: string,
+  commandId: number,
+): Promise<void> {
+  await blinkApi<unknown>(
+    session,
+    liveviewPath(session, deviceType, networkId, deviceId, `/${commandId}/extend`),
+    "POST",
+  );
+}
+
+export async function blinkStopLiveview(
+  session: BlinkSession,
+  deviceType: BlinkDeviceFamily,
+  networkId: string,
+  deviceId: string,
+  commandId: number,
+): Promise<void> {
+  await blinkApi<unknown>(
+    session,
+    liveviewPath(session, deviceType, networkId, deviceId, `/${commandId}/stop`),
+    "POST",
+  );
+}
+
+/**
  * Wakes the camera and refreshes the thumbnail. Blink internally starts
  * a brief liveview that refreshes the image. The new thumbnail is
  * available after a few seconds via blinkListCameras.
  */
 export async function blinkRequestThumbnail(
   session: BlinkSession,
+  deviceType: BlinkDeviceFamily,
   networkId: string,
   cameraId: string,
 ): Promise<void> {
-  // The "new image" endpoint forces the camera to capture a new thumbnail
+  /* Mini (owl) and Doorbell endpoints are sensitive to Content-Type — they
+   * 406 a POST with no body when the Content-Type header is declared. An
+   * empty JSON body satisfies them without changing semantics. */
+  const needsBody = deviceType !== "camera";
   await blinkApi<unknown>(
     session,
-    `/api/v1/accounts/${session.accountId}/networks/${networkId}/cameras/${cameraId}/thumbnail`,
+    deviceActionPath(session, deviceType, networkId, cameraId, "thumbnail"),
     "POST",
+    needsBody ? {} : undefined,
   );
 }
 

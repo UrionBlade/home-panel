@@ -1,9 +1,11 @@
 {
   "title": "Raccolta rifiuti",
+  "tileLabel": "Rifiuti",
   "subtitle": "Prossime 2 settimane",
   "sections": {
     "today": "Oggi",
     "upcoming": "Prossimi 7 giorni",
+    "schedule": "Prossime 2 settimane",
     "types": "Tipi di rifiuto",
     "rules": "Regole di raccolta",
     "exceptions": "Eccezioni (festività)",

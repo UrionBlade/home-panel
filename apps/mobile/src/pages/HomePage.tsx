@@ -12,27 +12,37 @@ import { Clock } from "../components/layout/Clock";
 import { useReducedMotion } from "../lib/motion/useReducedMotion";
 
 /**
- * Layout mosaico iPad-first portrait 1024×1366.
+ * Mosaico asimmetrico iPad landscape (6 colonne) / stack 1 col su iPhone.
  *
- * - Small (< 768px, iPhone): 1 col, tile wide
- * - Medium (≥ 768px, iPad portrait e up): 2 col
- *   - Weather: 1 col × 2 row (alta, hero)
- *   - Altre 6 tile: 1 col × 1 row ciascuna
+ * Scale della griglia: Weather 4×2 hero (largo e alto), Events/Laundry 2×1
+ * accanto al meteo, resto 3×1 per respiro orizzontale. Niente 1×1 — tutte le
+ * tile hanno contenuto denso che richiede almeno 2 colonne.
+ *
+ * DOM order = ordine dello stack mobile e ordine di flow su iPad. La priorità
+ * dall'alto verso il basso è: contesto ambientale (Weather) → urgenze oggi
+ * (Events, Laundry) → casa (Shopping, TV) → passivi (Cameras, Board) →
+ * monitoraggio (Timer, Waste).
  */
 const tiles = [
   {
     key: "weather",
     Component: WeatherTile,
-    span: "md:row-span-2",
+    span: "md:col-span-4 md:row-span-2",
   },
-  { key: "events", Component: TodayEventsTile, span: "" },
-  { key: "timer", Component: TimerTile, span: "" },
-  { key: "shopping", Component: ShoppingTile, span: "" },
-  { key: "waste", Component: WasteTile, span: "" },
-  { key: "board", Component: BoardTile, span: "" },
-  { key: "cameras", Component: CamerasTile, span: "" },
-  { key: "laundry", Component: LaundryTile, span: "" },
-  { key: "tv", Component: TvTile, span: "" },
+  {
+    key: "tv",
+    Component: TvTile,
+    /* TV promoted to a 2×2 square hero beside the weather, with room for the
+     * full on-state controls (volume, mute, power, 4 preset apps). */
+    span: "md:col-span-2 md:row-span-2",
+  },
+  { key: "events", Component: TodayEventsTile, span: "md:col-span-3" },
+  { key: "laundry", Component: LaundryTile, span: "md:col-span-3" },
+  { key: "shopping", Component: ShoppingTile, span: "md:col-span-3" },
+  { key: "cameras", Component: CamerasTile, span: "md:col-span-3" },
+  { key: "board", Component: BoardTile, span: "md:col-span-2" },
+  { key: "timer", Component: TimerTile, span: "md:col-span-2" },
+  { key: "waste", Component: WasteTile, span: "md:col-span-2" },
 ];
 
 const containerVariants = {
@@ -82,8 +92,8 @@ export function HomePage() {
         className="
           px-6 pb-8 md:px-10 md:pb-10
           grid gap-4 md:gap-5
-          grid-cols-1 md:grid-cols-2
-          auto-rows-[9rem] md:auto-rows-[10rem]
+          grid-cols-1 md:grid-cols-6
+          auto-rows-[minmax(10rem,auto)] md:auto-rows-[10rem]
         "
       >
         {tiles.map(({ key, Component, span }) => (

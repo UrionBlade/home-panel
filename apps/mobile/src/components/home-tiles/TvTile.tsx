@@ -1,19 +1,11 @@
-import type { TvAppPreset, TvStatus } from "@home-panel/shared";
-import {
-  FilmStripIcon,
-  PlayIcon,
-  PowerIcon,
-  SparkleIcon,
-  SpeakerHighIcon,
-  SpeakerSlashIcon,
-  TelevisionSimpleIcon,
-  YoutubeLogoIcon,
-} from "@phosphor-icons/react";
+import type { TvAppPreset } from "@home-panel/shared";
+import { PowerIcon, SpeakerHighIcon, SpeakerSlashIcon } from "@phosphor-icons/react";
 import type { MouseEvent, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { ApiError } from "../../lib/api-client";
 import {
   useTvApp,
+  useTvChannel,
   useTvMute,
   useTvPower,
   useTvPresets,
@@ -21,25 +13,10 @@ import {
   useTvVolume,
 } from "../../lib/hooks/useTv";
 import { useT } from "../../lib/useT";
+import { PresetIcon } from "../illustrations/StreamingLogos";
 import { TvArt } from "../illustrations/TileArt";
+import { PendingControl } from "../ui/PendingControl";
 import { Tile } from "../ui/Tile";
-
-/** Maps preset icon names to actual Phosphor components. */
-function PresetIcon({ name, size = 18 }: { name: string; size?: number }): ReactNode {
-  const common = { size, weight: "duotone" as const };
-  switch (name) {
-    case "YoutubeLogo":
-      return <YoutubeLogoIcon {...common} />;
-    case "FilmStrip":
-      return <FilmStripIcon {...common} />;
-    case "Sparkle":
-      return <SparkleIcon {...common} />;
-    case "Television":
-      return <TelevisionSimpleIcon {...common} />;
-    default:
-      return <PlayIcon {...common} />;
-  }
-}
 
 export function TvTile() {
   const { t } = useT("tv");
@@ -48,6 +25,7 @@ export function TvTile() {
   const { data: presets = [] } = useTvPresets();
   const power = useTvPower();
   const volume = useTvVolume();
+  const channel = useTvChannel();
   const mute = useTvMute();
   const app = useTvApp();
 
@@ -62,14 +40,17 @@ export function TvTile() {
     return (
       <Tile size="md" onClick={() => navigate("/settings#tv")} ariaLabel={t("tile.notConfigured")}>
         <BackdropPaint />
-        <div className="relative flex items-center gap-4 h-full z-10">
-          <div className="flex flex-col justify-between h-full min-w-0 flex-1">
-            <span className="label-mono text-text-muted">{t("title")}</span>
-            <span className="text-sm font-medium text-text-muted">
-              {t("tile.notConfiguredHint")}
-            </span>
-          </div>
-          <TvArt size={110} className="shrink-0 pointer-events-none select-none opacity-80" />
+        <span
+          className="label-mono text-accent absolute top-5 left-6 z-10"
+          style={{ fontWeight: 900 }}
+        >
+          {t("title")}
+        </span>
+        <div className="relative flex flex-col items-center justify-center h-full z-10 gap-4 px-4">
+          <TvArt size={150} className="pointer-events-none select-none opacity-85" />
+          <span className="font-display text-xl italic text-text-muted leading-tight text-center max-w-[20ch]">
+            {t("tile.notConfiguredHint")}
+          </span>
         </div>
       </Tile>
     );
@@ -78,32 +59,87 @@ export function TvTile() {
   /* ---- Off: single-tap powers on ---- */
   if (status?.power === "off") {
     return (
-      <Tile size="md" onClick={() => power.mutate({ on: true })} ariaLabel={t("tile.powerOn")}>
-        <BackdropPaint />
-        <div className="relative flex items-center gap-4 h-full z-10">
-          <div className="flex flex-col justify-between h-full min-w-0 flex-1">
-            <span className="label-mono text-text-muted">{t("title")}</span>
-            <span className="text-sm font-medium text-text-muted">{t("tile.off")}</span>
+      <PendingControl
+        isPending={power.isPending}
+        isSuccess={power.isSuccess}
+        isError={power.isError}
+        className="w-full h-full"
+      >
+        <Tile size="md" onClick={() => power.mutate({ on: true })} ariaLabel={t("tile.powerOn")}>
+          <BackdropPaint />
+          <span
+            className="label-mono text-accent absolute top-5 left-6 z-10"
+            style={{ fontWeight: 900 }}
+          >
+            {t("title")}
+          </span>
+          <div className="relative flex flex-col items-center justify-center h-full z-10 gap-4 px-4">
+            <TvArt size={160} className="pointer-events-none select-none anim-drift" />
+            <span className="font-display text-2xl italic text-text-muted leading-tight">
+              {t("tile.off")}
+            </span>
           </div>
-          <TvArt size={110} className="shrink-0 pointer-events-none select-none anim-drift" />
-        </div>
-      </Tile>
+        </Tile>
+      </PendingControl>
     );
   }
 
-  /* ---- On: expanded controls ---- */
+  /* ---- On: remote-control layout ---- */
   return (
     <Tile size="md" ariaLabel={t("title")}>
       <BackdropPaint variant="on" />
-      <div className="relative flex flex-col justify-between h-full z-10 gap-3">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col min-w-0">
-            <span className="label-mono text-text-muted">{t("title")}</span>
-            {status?.input ? (
-              <span className="text-sm font-medium text-text truncate">{status.input}</span>
-            ) : null}
-          </div>
-          <div className="flex items-center gap-1.5">
+      <div className="relative flex flex-col h-full z-10 gap-4">
+        {/* Header: title + current input label */}
+        <div className="flex items-start justify-between gap-3">
+          <span className="label-mono text-accent" style={{ fontWeight: 900 }}>
+            {t("title")}
+          </span>
+          {status?.input ? (
+            <span className="text-sm font-medium text-text-muted truncate">{status.input}</span>
+          ) : null}
+        </div>
+
+        {/* App preset grid — horizontal row of brand buttons */}
+        <PresetRow
+          presets={presets.slice(0, 4)}
+          onLaunch={(p) => app.mutate({ appId: p.appId })}
+          pendingAppId={app.isPending ? app.variables?.appId : undefined}
+          isError={app.isError}
+          isSuccess={app.isSuccess}
+          lastLaunchedAppId={app.variables?.appId}
+        />
+
+        {/* Volume + Channel — two centered stacks side by side */}
+        <div className="flex items-start justify-center gap-8">
+          <StepperStack
+            label={t("tile.volume")}
+            readout={status?.volume ?? null}
+            onUp={() => volume.mutate({ delta: "up" })}
+            onDown={() => volume.mutate({ delta: "down" })}
+            isPending={volume.isPending}
+            isSuccess={volume.isSuccess}
+            isError={volume.isError}
+            ariaRoot={t("tile.volume")}
+          />
+          <StepperStack
+            label={t("tile.channel")}
+            readout={null}
+            onUp={() => channel.mutate({ delta: "up" })}
+            onDown={() => channel.mutate({ delta: "down" })}
+            isPending={channel.isPending}
+            isSuccess={channel.isSuccess}
+            isError={channel.isError}
+            ariaRoot={t("tile.channel")}
+          />
+        </div>
+
+        {/* Bottom row: mute + power */}
+        <div className="flex items-center justify-center gap-3 mt-auto">
+          <PendingControl
+            isPending={mute.isPending}
+            isSuccess={mute.isSuccess}
+            isError={mute.isError}
+          >
             <IconButton
               label={status?.muted ? t("tile.unmuted") : t("tile.muted")}
               onClick={(e) => {
@@ -112,11 +148,17 @@ export function TvTile() {
               }}
             >
               {status?.muted ? (
-                <SpeakerSlashIcon size={18} weight="duotone" />
+                <SpeakerSlashIcon size={22} weight="duotone" />
               ) : (
-                <SpeakerHighIcon size={18} weight="duotone" />
+                <SpeakerHighIcon size={22} weight="duotone" />
               )}
             </IconButton>
+          </PendingControl>
+          <PendingControl
+            isPending={power.isPending}
+            isSuccess={power.isSuccess}
+            isError={power.isError}
+          >
             <IconButton
               label={t("tile.powerOff")}
               onClick={(e) => {
@@ -124,18 +166,10 @@ export function TvTile() {
                 power.mutate({ on: false });
               }}
             >
-              <PowerIcon size={18} weight="duotone" />
+              <PowerIcon size={22} weight="duotone" />
             </IconButton>
-          </div>
+          </PendingControl>
         </div>
-
-        <VolumeRow
-          status={status}
-          onUp={() => volume.mutate({ delta: "up" })}
-          onDown={() => volume.mutate({ delta: "down" })}
-        />
-
-        <PresetRow presets={presets.slice(0, 4)} onLaunch={(p) => app.mutate({ appId: p.appId })} />
       </div>
     </Tile>
   );
@@ -175,94 +209,134 @@ function IconButton({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="w-9 h-9 flex items-center justify-center rounded-full bg-surface border border-border text-text hover:border-accent transition-colors"
+      className="w-12 h-12 flex items-center justify-center rounded-full bg-surface border border-border text-text hover:border-accent transition-colors"
     >
       {children}
     </button>
   );
 }
 
-function VolumeRow({
-  status,
+/**
+ * Stacked +/- stepper used for Volume and Channel.
+ *
+ * Layout:
+ *   [ +  −  ]    ← round buttons
+ *   ─────────    ← horizontal rule
+ *     LABEL      ← caption (mono, uppercase)
+ *     42         ← optional readout (only Volume reports a value)
+ */
+function StepperStack({
+  label,
+  readout,
   onUp,
   onDown,
+  isPending,
+  isSuccess,
+  isError,
+  ariaRoot,
 }: {
-  status: TvStatus | undefined;
+  label: string;
+  readout: number | null;
   onUp: () => void;
   onDown: () => void;
+  isPending: boolean;
+  isSuccess: boolean;
+  isError: boolean;
+  ariaRoot: string;
 }) {
-  const { t } = useT("tv");
-  const level = status?.volume ?? null;
   return (
-    <div className="flex items-center gap-2">
-      <span className="label-mono text-text-muted shrink-0">{t("tile.volume")}</span>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDown();
-        }}
-        aria-label={`${t("tile.volume")} −`}
-        className="px-2 py-0.5 rounded-md bg-surface border border-border text-sm font-medium hover:border-accent transition-colors"
-      >
-        −
-      </button>
-      <div
-        className="relative flex-1 h-1.5 rounded-full overflow-hidden bg-surface border border-border"
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={level ?? 0}
-      >
-        {level !== null ? (
-          <div
-            className="absolute inset-y-0 left-0 bg-accent"
-            style={{ width: `${Math.min(100, Math.max(0, level))}%` }}
-          />
+    <PendingControl isPending={isPending} isSuccess={isSuccess} isError={isError}>
+      <div className="flex flex-col items-center gap-1.5 w-[112px]">
+        <div className="flex items-center justify-center gap-2">
+          <StepButton label={`${ariaRoot} +`} onClick={onUp}>
+            +
+          </StepButton>
+          <StepButton label={`${ariaRoot} −`} onClick={onDown}>
+            −
+          </StepButton>
+        </div>
+        <span className="w-full h-px bg-border" aria-hidden />
+        <span className="label-mono text-text-muted tracking-widest">{label}</span>
+        {readout !== null ? (
+          <span className="font-display font-bold text-text tabular-nums text-base leading-none -mt-0.5">
+            {readout}
+          </span>
         ) : null}
       </div>
-      <span className="label-mono text-text-muted tabular-nums w-7 text-right">{level ?? "—"}</span>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onUp();
-        }}
-        aria-label={`${t("tile.volume")} +`}
-        className="px-2 py-0.5 rounded-md bg-surface border border-border text-sm font-medium hover:border-accent transition-colors"
-      >
-        +
-      </button>
-    </div>
+    </PendingControl>
+  );
+}
+
+function StepButton({
+  children,
+  label,
+  onClick,
+}: {
+  children: ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      aria-label={label}
+      className="w-11 h-11 flex items-center justify-center rounded-full bg-surface border border-border text-2xl font-medium leading-none hover:border-accent hover:text-accent transition-colors"
+    >
+      {children}
+    </button>
   );
 }
 
 function PresetRow({
   presets,
   onLaunch,
+  pendingAppId,
+  isError,
+  isSuccess,
+  lastLaunchedAppId,
 }: {
   presets: TvAppPreset[];
   onLaunch: (preset: TvAppPreset) => void;
+  pendingAppId: string | undefined;
+  isError: boolean;
+  isSuccess: boolean;
+  lastLaunchedAppId: string | undefined;
 }) {
   if (presets.length === 0) return null;
+  /* Horizontal row of icon-only brand buttons, centered. The brand marks carry
+   * the meaning — no label needed next to each. */
   return (
-    <div className="flex items-center gap-1.5 overflow-x-auto">
-      {presets.map((p) => (
-        <button
-          key={p.key}
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onLaunch(p);
-          }}
-          className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-surface border border-border hover:border-accent transition-colors shrink-0"
-          aria-label={p.label}
-          title={p.label}
-        >
-          <PresetIcon name={p.icon} size={16} />
-          <span className="text-xs font-medium truncate max-w-[5.5rem]">{p.label}</span>
-        </button>
-      ))}
+    <div className="flex items-center justify-center gap-3 w-full">
+      {presets.slice(0, 4).map((p) => {
+        const thisIsPending = pendingAppId === p.appId;
+        const thisIsError = isError && lastLaunchedAppId === p.appId;
+        const thisIsSuccess = isSuccess && lastLaunchedAppId === p.appId;
+        return (
+          <PendingControl
+            key={p.key}
+            isPending={thisIsPending}
+            isSuccess={thisIsSuccess}
+            isError={thisIsError}
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onLaunch(p);
+              }}
+              className="rounded-md hover:scale-105 transition-transform"
+              aria-label={p.label}
+              title={p.label}
+            >
+              <PresetIcon presetKey={p.key} size={48} />
+            </button>
+          </PendingControl>
+        );
+      })}
     </div>
   );
 }

@@ -1,13 +1,6 @@
 import type { WasteRule, WasteRulePattern, WasteType } from "@home-panel/shared";
 import { PencilSimpleIcon, PlusIcon, TrashIcon } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
-import { TrashBinArt } from "../components/illustrations/TileArt";
-import { PageContainer } from "../components/layout/PageContainer";
-import { PageHeader } from "../components/layout/PageHeader";
-import { Button } from "../components/ui/Button";
-import { Input } from "../components/ui/Input";
-import { Modal } from "../components/ui/Modal";
-import { Select } from "../components/ui/Select";
 import {
   useCreateWasteRule,
   useCreateWasteType,
@@ -18,9 +11,13 @@ import {
   useWasteCalendar,
   useWasteRules,
   useWasteTypes,
-} from "../lib/hooks/useWaste";
-import { i18next } from "../lib/i18n";
-import { useT } from "../lib/useT";
+} from "../../lib/hooks/useWaste";
+import { i18next } from "../../lib/i18n";
+import { useT } from "../../lib/useT";
+import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
+import { Modal } from "../ui/Modal";
+import { Select } from "../ui/Select";
 
 /* ---- helpers ---- */
 
@@ -118,7 +115,6 @@ function WasteTypeFormModal({
   const { t: tc } = useT("common");
   const [form, setForm] = useState(initial);
 
-  // Re-sync when initial changes (edit vs create)
   const initialKey = JSON.stringify(initial);
   const [prevKey, setPrevKey] = useState(initialKey);
   if (initialKey !== prevKey) {
@@ -483,7 +479,6 @@ function WasteManagement({ types, rules }: { types: WasteType[]; rules: WasteRul
     }
   }
 
-  // Group rules by waste type
   const rulesByType = useMemo(() => {
     const map = new Map<string, WasteRule[]>();
     for (const r of rules) {
@@ -651,9 +646,12 @@ function WasteManagement({ types, rules }: { types: WasteType[]; rules: WasteRul
   );
 }
 
-/* ---- Page ---- */
-
-export function WastePage() {
+/**
+ * Settings tab showing the 2-week waste collection preview plus type & rule
+ * management. Replaces the former standalone /waste page so the sidebar stays
+ * focused on daily-use destinations.
+ */
+export function WasteSettings() {
   const { t } = useT("waste");
   const { from, to } = useMemo(getWeekRange, []);
   const { data: days = [] } = useWasteCalendar(from, to);
@@ -661,10 +659,9 @@ export function WastePage() {
   const { data: allRules = [] } = useWasteRules();
 
   return (
-    <PageContainer>
-      <PageHeader title={t("title")} subtitle={t("subtitle")} artwork={<TrashBinArt size={96} />} />
-
+    <>
       <section className="flex flex-col gap-3">
+        <h2 className="font-display text-3xl text-text">{t("sections.schedule")}</h2>
         {days.map((day) => {
           const today = isToday(day.date);
           const past = isPast(day.date);
@@ -699,16 +696,12 @@ export function WastePage() {
                   {day.wasteTypes.map((wt) => (
                     <span
                       key={wt.id}
-                      className="text-xs px-3 py-1.5 rounded-full font-medium flex items-center gap-1.5"
+                      className="text-xs px-3 py-1.5 rounded-full font-medium"
                       style={{
                         backgroundColor: `color-mix(in oklch, ${wt.color} 18%, transparent)`,
                         color: wt.color,
                       }}
                     >
-                      <span
-                        className="w-2 h-2 rounded-full shrink-0"
-                        style={{ backgroundColor: wt.color }}
-                      />
                       {wt.displayName}
                     </span>
                   ))}
@@ -754,6 +747,6 @@ export function WastePage() {
       <hr className="border-border" />
 
       <WasteManagement types={allTypes} rules={allRules} />
-    </PageContainer>
+    </>
   );
 }

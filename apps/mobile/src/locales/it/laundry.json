@@ -51,6 +51,11 @@
   "empty": {
     "message": "Nessun elettrodomestico configurato. Seleziona lavatrice e asciugatrice nelle impostazioni."
   },
+  "idleState": {
+    "headline": "Nulla in lavaggio.",
+    "body": "Quando parte un ciclo, i dettagli compaiono qui automaticamente.",
+    "voiceHint": "Puoi chiedere: «quanto manca alla lavatrice?»"
+  },
   "units": {
     "rpm": "{{value}} giri/min"
   },

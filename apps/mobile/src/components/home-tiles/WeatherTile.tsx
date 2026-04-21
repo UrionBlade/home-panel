@@ -1,4 +1,5 @@
 import type { WeatherIconKey } from "@home-panel/shared";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWeatherForecast } from "../../lib/hooks/useWeather";
 import { WeatherArt } from "../illustrations/WeatherArt";
@@ -28,6 +29,107 @@ function accentForWeather(iconKey: WeatherIconKey): string {
     default:
       return "oklch(80% 0.07 220)";
   }
+}
+
+/* ─────────────────────── Time-of-day sky ─────────────────────── */
+
+/**
+ * A slow hue + luminosity shift applied to the tile's sky layer, so the
+ * weather card quietly "breathes" along with the real day outside.
+ *
+ * Phases use smooth crossfades via minute-level tick, never harsh step.
+ * Pure warm palette — dusk amber, night indigo, dawn rose — never cyan.
+ * Mid-day opacity is near zero so the weather accent stays dominant.
+ */
+function skyLayerForHour(hour: number, minute: number): { color: string; opacity: number } {
+  /* Fractional hour for smoother interpolation. */
+  const h = hour + minute / 60;
+
+  /* Deep night → midnight indigo. */
+  if (h < 4.5) return { color: "oklch(45% 0.10 265)", opacity: 0.32 };
+
+  /* Dawn ramp (4:30 → 7:00). */
+  if (h < 7) {
+    const progress = (h - 4.5) / 2.5;
+    return {
+      color: "oklch(74% 0.13 35)",
+      opacity: 0.32 + progress * -0.06,
+    };
+  }
+
+  /* Morning (7 → 11). Very subtle warm wash. */
+  if (h < 11) {
+    const progress = (h - 7) / 4;
+    return {
+      color: "oklch(88% 0.06 80)",
+      opacity: 0.22 - progress * 0.14,
+    };
+  }
+
+  /* Midday (11 → 15). Near-invisible — let the weather accent lead. */
+  if (h < 15) return { color: "oklch(90% 0.04 85)", opacity: 0.08 };
+
+  /* Golden hour (15 → 18). Peak warmth. */
+  if (h < 18) {
+    const progress = (h - 15) / 3;
+    return {
+      color: "oklch(72% 0.15 55)",
+      opacity: 0.12 + progress * 0.22,
+    };
+  }
+
+  /* Dusk (18 → 20). Amber to magenta fade. */
+  if (h < 20) {
+    const progress = (h - 18) / 2;
+    return {
+      color: `oklch(${62 - progress * 6}% 0.14 ${50 - progress * 15})`,
+      opacity: 0.34 - progress * 0.04,
+    };
+  }
+
+  /* Evening (20 → 22). Indigo settling in. */
+  if (h < 22) {
+    const progress = (h - 20) / 2;
+    return {
+      color: `oklch(${55 - progress * 6}% 0.12 ${250 + progress * 10})`,
+      opacity: 0.3,
+    };
+  }
+
+  /* Late evening → night. */
+  return { color: "oklch(47% 0.10 262)", opacity: 0.32 };
+}
+
+/**
+ * Returns current hour + minute and re-renders at the top of each minute so
+ * the sky layer tracks real time. Respects visibility to avoid wasted work.
+ */
+function useCurrentHourMinute(): [number, number] {
+  const [now, setNow] = useState(() => {
+    const d = new Date();
+    return [d.getHours(), d.getMinutes()] as [number, number];
+  });
+
+  useEffect(() => {
+    function tick() {
+      const d = new Date();
+      setNow([d.getHours(), d.getMinutes()]);
+    }
+    /* Align the first update to the next minute boundary, then tick every 60s. */
+    const msUntilNextMinute = 60_000 - (Date.now() % 60_000);
+    const timeout = window.setTimeout(() => {
+      tick();
+      const interval = window.setInterval(tick, 60_000);
+      (timeout as unknown as { _interval?: number })._interval = interval;
+    }, msUntilNextMinute);
+    return () => {
+      const anyTimeout = timeout as unknown as { _interval?: number };
+      if (anyTimeout._interval) window.clearInterval(anyTimeout._interval);
+      window.clearTimeout(timeout);
+    };
+  }, []);
+
+  return now;
 }
 
 /* ─────────────────────── Particles ─────────────────────── */
@@ -94,6 +196,8 @@ function ParticleLayer({ iconKey }: { iconKey: WeatherIconKey }) {
 export function WeatherTile() {
   const navigate = useNavigate();
   const { data, isError } = useWeatherForecast(undefined, 7);
+  const [hour, minute] = useCurrentHourMinute();
+  const sky = skyLayerForHour(hour, minute);
 
   if (isError || !data) {
     return (
@@ -112,7 +216,17 @@ export function WeatherTile() {
 
   return (
     <Tile size="md" onClick={() => navigate("/weather")} ariaLabel="Meteo Besozzo">
-      {/* Tinted background */}
+      {/* Time-of-day sky — slow hue shift tracking the real outside. */}
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none transition-[background,opacity] duration-[2000ms] ease-[cubic-bezier(0.2,0,0,1)]"
+        style={{
+          background: `radial-gradient(ellipse 120% 80% at 15% 110%, ${sky.color} 0%, transparent 65%)`,
+          opacity: sky.opacity,
+        }}
+      />
+
+      {/* Weather-condition accent over the time-of-day sky. */}
       <div
         aria-hidden
         className="absolute inset-0 pointer-events-none"
@@ -139,7 +253,8 @@ export function WeatherTile() {
         {/* Main temp — max 55% width per non overlappare l'illustrazione */}
         <div className="flex flex-col gap-0.5 mt-4 max-w-[55%]">
           <span className="font-display text-7xl font-black tabular-nums leading-[0.82] text-text">
-            {Math.round(current.temperature)}°
+            {Math.round(current.temperature)}
+            <span className="text-accent">°</span>
           </span>
           <div className="text-sm label-italic capitalize text-text-muted mt-1">
             {current.condition}

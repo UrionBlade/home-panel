@@ -51,6 +51,11 @@
   "empty": {
     "message": "No appliance configured. Pick a washer and dryer in settings."
   },
+  "idleState": {
+    "headline": "Nothing in the wash.",
+    "body": "When a cycle starts, details appear here automatically.",
+    "voiceHint": "Try: \"how long on the washer?\""
+  },
   "units": {
     "rpm": "{{value}} rpm"
   },

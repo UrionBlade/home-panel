@@ -1,5 +1,6 @@
 {
   "title": "Timer & Sveglie",
+  "tileLabel": "Timer",
   "subtitle": "Countdown e sveglie",
   "alarm": {
     "noDayHint": "Nessun giorno = sveglia singola"

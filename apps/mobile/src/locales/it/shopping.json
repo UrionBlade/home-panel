@@ -46,6 +46,8 @@
   "tile": {
     "count_one": "{{count}} prodotto",
     "count_other": "{{count}} prodotti",
+    "andMore_one": "+{{count}} altro",
+    "andMore_other": "+{{count}} altri",
     "calmState": "Tutto sotto controllo"
   }
 }

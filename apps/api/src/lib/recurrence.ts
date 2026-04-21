@@ -3,6 +3,11 @@ import type { RecurrenceRule } from "@home-panel/shared";
 /**
  * Espande una singola serie ricorrente in date di occorrenza concrete dentro [from, to].
  * Subset semplice: daily, weekly (con byWeekday), monthly (con byMonthDay), yearly, every-n-days.
+ *
+ * DST-safe: advancing via setUTCDate keeps UTC offset fixed, which would shift
+ * the local wall-clock time by ±1h across DST boundaries (CET ↔ CEST). We
+ * re-align each pushed occurrence to the original startDate's local time so
+ * "recurring at 17:00" stays at 17:00 local year-round.
  */
 export function expandRecurrence(
   startDate: Date,
@@ -25,6 +30,17 @@ export function expandRecurrence(
   let safety = 0;
   const SAFETY_LIMIT = 5000;
 
+  const refHours = startDate.getHours();
+  const refMinutes = startDate.getMinutes();
+  const refSeconds = startDate.getSeconds();
+  const refMs = startDate.getMilliseconds();
+
+  function withOriginalLocalTime(d: Date): Date {
+    const out = new Date(d);
+    out.setHours(refHours, refMinutes, refSeconds, refMs);
+    return out;
+  }
+
   function isValid(d: Date): boolean {
     if (endsOn && d > endsOn) return false;
     if (counter >= maxCount) return false;
@@ -32,7 +48,8 @@ export function expandRecurrence(
   }
 
   function pushIfInRange(d: Date) {
-    if (d >= from && d <= to) out.push(new Date(d));
+    const aligned = withOriginalLocalTime(d);
+    if (aligned >= from && aligned <= to) out.push(aligned);
   }
 
   switch (rule.freq) {

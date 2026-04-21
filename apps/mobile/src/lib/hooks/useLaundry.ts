@@ -7,6 +7,7 @@ import type {
   SmartThingsSetupInput,
 } from "@home-panel/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useUiStore } from "../../store/ui-store";
 import { apiClient } from "../api-client";
 
 const LAUNDRY_STATUS_KEY = ["laundry", "status"] as const;
@@ -92,10 +93,36 @@ export function useRefreshLaundry() {
 /** Invia comando (start/stop/pause) */
 export function useLaundryCommand() {
   const qc = useQueryClient();
+  const pushToast = useUiStore((s) => s.pushToast);
   return useMutation({
     mutationFn: (input: LaundryCommandInput) =>
       apiClient.post<{ ok: boolean }>("/api/v1/laundry/command", input),
-    onSuccess: () => {
+    onMutate: async (input) => {
+      await qc.cancelQueries({ queryKey: LAUNDRY_STATUS_KEY });
+      const previous = qc.getQueryData<LaundryStatus>(LAUNDRY_STATUS_KEY);
+      // Optimistic: update machineState of the target appliance immediately
+      qc.setQueryData<LaundryStatus>(LAUNDRY_STATUS_KEY, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          appliances: old.appliances.map((a) => {
+            if (a.id !== input.deviceId) return a;
+            const nextState =
+              input.command === "start" ? "run" : input.command === "pause" ? "pause" : "stop";
+            return { ...a, machineState: nextState };
+          }),
+        };
+      });
+      return { previous };
+    },
+    onError: (_err, _input, context) => {
+      const ctx = context as { previous: LaundryStatus | undefined } | undefined;
+      if (ctx?.previous !== undefined) {
+        qc.setQueryData<LaundryStatus>(LAUNDRY_STATUS_KEY, ctx.previous);
+      }
+      pushToast({ tone: "danger", text: "Comando lavanderia non riuscito" });
+    },
+    onSettled: () => {
       void qc.invalidateQueries({ queryKey: LAUNDRY_STATUS_KEY });
     },
   });

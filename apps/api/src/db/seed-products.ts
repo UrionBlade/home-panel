@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "./client.js";
 import { productCatalog } from "./schema.js";
 
@@ -32,8 +32,13 @@ const PRODUCTS: SeedProduct[] = [
   { name: "Farina", category: "pantry", defaultUnit: "kg" },
   { name: "Zucchero", category: "pantry", defaultUnit: "kg" },
   { name: "Sale", category: "pantry", defaultUnit: "kg" },
-  { name: "Olio extravergine", category: "pantry", defaultUnit: "l" },
-  { name: "Aceto", category: "pantry", defaultUnit: "ml" },
+  { name: "Olio extravergine", category: "pantry", defaultUnit: "bottiglia" },
+  { name: "Olio di semi", category: "pantry", defaultUnit: "bottiglia" },
+  { name: "Aceto di mele", category: "pantry", defaultUnit: "bottiglia" },
+  { name: "Aceto di vino rosso", category: "pantry", defaultUnit: "bottiglia" },
+  { name: "Aceto di vino bianco", category: "pantry", defaultUnit: "bottiglia" },
+  { name: "Aceto di riso", category: "pantry", defaultUnit: "bottiglia" },
+  { name: "Aceto balsamico", category: "pantry", defaultUnit: "bottiglia" },
   { name: "Pelati", category: "pantry", defaultUnit: "barattolo" },
   { name: "Tonno", category: "pantry", defaultUnit: "lattina" },
   { name: "Legumi", category: "pantry", defaultUnit: "barattolo" },
@@ -100,19 +105,57 @@ const PRODUCTS: SeedProduct[] = [
   { name: "Sapone", category: "other", defaultUnit: "pz" },
 ];
 
-export function seedProductCatalog() {
-  const existing = db.select({ count: sql<number>`count(*)` }).from(productCatalog).get();
-  if (existing && existing.count > 0) return;
+/**
+ * Product names retired from the seed list — removed on every boot so the
+ * autocomplete doesn't keep suggesting deprecated entries. Safe to delete:
+ * the catalog is autocomplete-only, no FK references from shopping items.
+ */
+const RETIRED_NAMES = ["Aceto", "Olio", "Panna cucina"];
 
-  for (const product of PRODUCTS) {
-    db.insert(productCatalog)
-      .values({
-        id: randomUUID(),
-        name: product.name,
-        category: product.category,
-        defaultUnit: product.defaultUnit,
-      })
-      .run();
+export function seedProductCatalog() {
+  const existing = db.select().from(productCatalog).all();
+  const existingByName = new Map(existing.map((p) => [p.name, p]));
+
+  /* Drop retired names. */
+  let removed = 0;
+  for (const name of RETIRED_NAMES) {
+    if (existingByName.has(name)) {
+      db.delete(productCatalog).where(eq(productCatalog.name, name)).run();
+      existingByName.delete(name);
+      removed++;
+    }
   }
-  console.log(`[seed] product_catalog: ${PRODUCTS.length} prodotti inseriti`);
+
+  /* Insert newcomers, update stale defaultUnit/category on the rest. */
+  let added = 0;
+  let updated = 0;
+  for (const product of PRODUCTS) {
+    const current = existingByName.get(product.name);
+    if (!current) {
+      db.insert(productCatalog)
+        .values({
+          id: randomUUID(),
+          name: product.name,
+          category: product.category,
+          defaultUnit: product.defaultUnit,
+        })
+        .run();
+      added++;
+    } else if (
+      current.category !== product.category ||
+      current.defaultUnit !== product.defaultUnit
+    ) {
+      db.update(productCatalog)
+        .set({ category: product.category, defaultUnit: product.defaultUnit })
+        .where(eq(productCatalog.id, current.id))
+        .run();
+      updated++;
+    }
+  }
+
+  if (added || updated || removed) {
+    console.log(
+      `[seed] product_catalog: +${added} added, ~${updated} updated, -${removed} retired`,
+    );
+  }
 }

@@ -82,7 +82,14 @@ export function Clock({ variant = "compact" }: ClockProps) {
         >
           <FlipDigit value={hh.charAt(0)} />
           <FlipDigit value={hh.charAt(1)} />
-          <span className="opacity-60 mx-[0.04em]">:</span>
+          <span className="relative inline-block mx-[0.04em]" aria-hidden>
+            {/* Base: colon in muted text color (bottom dot = visible grey). */}
+            <span className="opacity-60">:</span>
+            {/* Overlay: same glyph clipped to its top half, painted accent. */}
+            <span className="absolute inset-0 text-accent" style={{ clipPath: "inset(0 0 38% 0)" }}>
+              :
+            </span>
+          </span>
           <FlipDigit value={mm.charAt(0)} />
           <FlipDigit value={mm.charAt(1)} />
         </div>

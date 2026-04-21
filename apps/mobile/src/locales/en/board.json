@@ -1,6 +1,10 @@
 {
   "title": "Board",
-  "subtitle": "Your sticky notes",
+  "subtitle": "Shared house notes",
+  "header": {
+    "counter_one": "{{count}} note",
+    "counter_other": "{{count}} notes"
+  },
   "empty": {
     "title": "The board is empty",
     "body": "Add your first sticky note to get started"

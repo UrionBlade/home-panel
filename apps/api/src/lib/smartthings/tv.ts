@@ -154,3 +154,11 @@ export async function sendPlayback(
 ): Promise<void> {
   await stSendCommands(pat, deviceId, [{ capability: "mediaPlayback", command }]);
 }
+
+export async function sendChannelUp(pat: string, deviceId: string): Promise<void> {
+  await stSendCommands(pat, deviceId, [{ capability: "tvChannel", command: "channelUp" }]);
+}
+
+export async function sendChannelDown(pat: string, deviceId: string): Promise<void> {
+  await stSendCommands(pat, deviceId, [{ capability: "tvChannel", command: "channelDown" }]);
+}

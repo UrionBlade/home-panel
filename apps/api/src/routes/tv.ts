@@ -1,6 +1,7 @@
 import type {
   TvAppLaunchInput,
   TvAppPreset,
+  TvChannelInput,
   TvConfig,
   TvConfigUpdateInput,
   TvDeviceSummary,
@@ -22,6 +23,8 @@ import {
 import {
   getCachedTvStatus,
   invalidateTvCache,
+  sendChannelDown,
+  sendChannelUp,
   sendLaunchApp,
   sendMute,
   sendPlayback,
@@ -309,6 +312,24 @@ export const tvRouter = new Hono()
     }
     try {
       await sendLaunchApp(resolved.ctx.pat, resolved.ctx.deviceId, body.appId.trim());
+      invalidateTvCache(resolved.ctx.deviceId);
+      return c.json({ ok: true }, 202);
+    } catch (err) {
+      const mapped = mapUpstreamError(err);
+      return c.json(mapped.body, mapped.status);
+    }
+  })
+
+  .post("/channel", async (c) => {
+    const resolved = resolveContext();
+    if (!resolved.ok) return c.json(resolved.error.body, resolved.error.status);
+    const body = (await c.req.json().catch(() => null)) as TvChannelInput | null;
+    if (!body || (body.delta !== "up" && body.delta !== "down")) {
+      return c.json({ error: "delta deve essere 'up' o 'down'" }, 400);
+    }
+    try {
+      if (body.delta === "up") await sendChannelUp(resolved.ctx.pat, resolved.ctx.deviceId);
+      else await sendChannelDown(resolved.ctx.pat, resolved.ctx.deviceId);
       invalidateTvCache(resolved.ctx.deviceId);
       return c.json({ ok: true }, 202);
     } catch (err) {

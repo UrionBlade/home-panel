@@ -121,6 +121,22 @@
     "active": "Voice active",
     "indicator": "Voice indicator"
   },
+  "pill": {
+    "prefix": "Try:",
+    "examples": [
+      "turn on the tv",
+      "how long on the washer?",
+      "add milk to the shopping list",
+      "what events do I have today?",
+      "timer five minutes",
+      "good morning",
+      "play Netflix",
+      "what goes out tonight?"
+    ],
+    "open": "Open commands list",
+    "longPressHint": "Hold to talk now",
+    "listening": "Listening…"
+  },
   "responses": {
     "shopping": {
       "dontUnderstandAdd": "I didn't catch what to add to the shopping list",

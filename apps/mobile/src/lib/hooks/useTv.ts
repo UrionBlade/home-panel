@@ -1,6 +1,7 @@
 import type {
   TvAppLaunchInput,
   TvAppPreset,
+  TvChannelInput,
   TvConfig,
   TvConfigUpdateInput,
   TvDeviceSummary,
@@ -12,6 +13,7 @@ import type {
   TvVolumeInput,
 } from "@home-panel/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useUiStore } from "../../store/ui-store";
 import { ApiError, apiClient } from "../api-client";
 
 const TV_STATUS_KEY = ["tv", "status"] as const;
@@ -80,26 +82,91 @@ export function useTvAssign() {
 }
 
 export function useTvPower() {
-  const invalidate = useInvalidateStatus();
+  const qc = useQueryClient();
+  const pushToast = useUiStore((s) => s.pushToast);
   return useMutation<{ ok: boolean }, ApiError, TvPowerInput>({
     mutationFn: (input) => apiClient.post("/api/v1/tv/power", input),
-    onSuccess: invalidate,
+    onMutate: async (input) => {
+      await qc.cancelQueries({ queryKey: TV_STATUS_KEY });
+      const previous = qc.getQueryData<TvStatus>(TV_STATUS_KEY);
+      qc.setQueryData<TvStatus>(TV_STATUS_KEY, (old) =>
+        old ? { ...old, power: input.on ? "on" : "off" } : old,
+      );
+      return { previous };
+    },
+    onError: (_err, _input, context) => {
+      const ctx = context as { previous: TvStatus | undefined } | undefined;
+      if (ctx?.previous !== undefined) {
+        qc.setQueryData<TvStatus>(TV_STATUS_KEY, ctx.previous);
+      }
+      pushToast({ tone: "danger", text: "Comando TV non riuscito" });
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: TV_STATUS_KEY });
+    },
   });
 }
 
 export function useTvVolume() {
-  const invalidate = useInvalidateStatus();
+  const qc = useQueryClient();
+  const pushToast = useUiStore((s) => s.pushToast);
   return useMutation<{ ok: boolean }, ApiError, TvVolumeInput>({
     mutationFn: (input) => apiClient.post("/api/v1/tv/volume", input),
-    onSuccess: invalidate,
+    onMutate: async (input) => {
+      await qc.cancelQueries({ queryKey: TV_STATUS_KEY });
+      const previous = qc.getQueryData<TvStatus>(TV_STATUS_KEY);
+      qc.setQueryData<TvStatus>(TV_STATUS_KEY, (old) => {
+        if (!old) return old;
+        if (input.level !== undefined) {
+          return { ...old, volume: input.level };
+        }
+        if (input.delta !== undefined) {
+          const current = old.volume ?? 50;
+          const next = input.delta === "up" ? Math.min(100, current + 5) : Math.max(0, current - 5);
+          return { ...old, volume: next };
+        }
+        return old;
+      });
+      return { previous };
+    },
+    onError: (_err, _input, context) => {
+      const ctx = context as { previous: TvStatus | undefined } | undefined;
+      if (ctx?.previous !== undefined) {
+        qc.setQueryData<TvStatus>(TV_STATUS_KEY, ctx.previous);
+      }
+      pushToast({ tone: "danger", text: "Volume non regolato" });
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: TV_STATUS_KEY });
+    },
   });
 }
 
 export function useTvMute() {
-  const invalidate = useInvalidateStatus();
+  const qc = useQueryClient();
+  const pushToast = useUiStore((s) => s.pushToast);
   return useMutation<{ ok: boolean; muted: boolean }, ApiError, TvMuteInput>({
     mutationFn: (input) => apiClient.post("/api/v1/tv/mute", input),
-    onSuccess: invalidate,
+    onMutate: async (input) => {
+      await qc.cancelQueries({ queryKey: TV_STATUS_KEY });
+      const previous = qc.getQueryData<TvStatus>(TV_STATUS_KEY);
+      qc.setQueryData<TvStatus>(TV_STATUS_KEY, (old) => {
+        if (!old) return old;
+        const nextMuted = input.muted === "toggle" ? !old.muted : input.muted;
+        return { ...old, muted: nextMuted };
+      });
+      return { previous };
+    },
+    onError: (_err, _input, context) => {
+      const ctx = context as { previous: TvStatus | undefined } | undefined;
+      if (ctx?.previous !== undefined) {
+        qc.setQueryData<TvStatus>(TV_STATUS_KEY, ctx.previous);
+      }
+      pushToast({ tone: "danger", text: "Mute TV non riuscito" });
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: TV_STATUS_KEY });
+    },
   });
 }
 
@@ -112,10 +179,16 @@ export function useTvInput() {
 }
 
 export function useTvApp() {
-  const invalidate = useInvalidateStatus();
+  const qc = useQueryClient();
+  const pushToast = useUiStore((s) => s.pushToast);
   return useMutation<{ ok: boolean }, ApiError, TvAppLaunchInput>({
     mutationFn: (input) => apiClient.post("/api/v1/tv/app", input),
-    onSuccess: invalidate,
+    onError: () => {
+      pushToast({ tone: "danger", text: "App TV non avviata" });
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: TV_STATUS_KEY });
+    },
   });
 }
 
@@ -124,5 +197,15 @@ export function useTvPlayback() {
   return useMutation<{ ok: boolean }, ApiError, TvPlaybackInput>({
     mutationFn: (input) => apiClient.post("/api/v1/tv/playback", input),
     onSuccess: invalidate,
+  });
+}
+
+export function useTvChannel() {
+  const pushToast = useUiStore((s) => s.pushToast);
+  return useMutation<{ ok: boolean }, ApiError, TvChannelInput>({
+    mutationFn: (input) => apiClient.post("/api/v1/tv/channel", input),
+    onError: () => {
+      pushToast({ tone: "danger", text: "Canale non cambiato" });
+    },
   });
 }

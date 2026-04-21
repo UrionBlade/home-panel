@@ -92,16 +92,39 @@ export function useArmCamera() {
   });
 }
 
+/* ---- Live HLS session (real RTSPS → HLS) ---- */
+
+export function useStartLiveSession() {
+  return useMutation({
+    mutationFn: (cameraId: string) =>
+      apiClient.post<{ sessionId: string }>(`/api/v1/blink/cameras/${cameraId}/live/start`),
+  });
+}
+
+export function useStopLiveSession() {
+  return useMutation({
+    mutationFn: (input: { cameraId: string; sessionId: string }) =>
+      apiClient.post<{ ok: boolean }>(`/api/v1/blink/cameras/${input.cameraId}/live/stop`, {
+        sessionId: input.sessionId,
+      }),
+  });
+}
+
+/**
+ * Refresh the camera thumbnail. The backend endpoint now polls Blink
+ * internally and only returns when the new JPEG URL is available (or after
+ * 12s timeout), so the frontend just awaits this single call — no client-
+ * side sleep, no separate sync step. Typical latency 3-5s.
+ */
 export function useRequestSnapshot() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (cameraId: string) =>
-      apiClient.post<{ ok: boolean }>(`/api/v1/blink/cameras/${cameraId}/snapshot`),
-    // After 3s, refresh cameras to get the updated thumbnail
+      apiClient.post<{ ok: boolean; waitedMs: number; settled: boolean }>(
+        `/api/v1/blink/cameras/${cameraId}/snapshot`,
+      ),
     onSuccess: () => {
-      setTimeout(() => {
-        void qc.invalidateQueries({ queryKey: BLINK_CAMERAS_KEY });
-      }, 3000);
+      void qc.invalidateQueries({ queryKey: BLINK_CAMERAS_KEY });
     },
   });
 }

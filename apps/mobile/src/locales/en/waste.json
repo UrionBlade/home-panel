@@ -1,9 +1,11 @@
 {
   "title": "Waste collection",
+  "tileLabel": "Waste",
   "subtitle": "Next 2 weeks",
   "sections": {
     "today": "Today",
     "upcoming": "Next 7 days",
+    "schedule": "Next 2 weeks",
     "types": "Waste types",
     "rules": "Collection rules",
     "exceptions": "Exceptions (holidays)",

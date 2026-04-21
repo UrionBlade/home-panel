@@ -1,5 +1,6 @@
 {
   "title": "Timers & Alarms",
+  "tileLabel": "Timers",
   "subtitle": "Countdowns and alarms",
   "alarm": {
     "noDayHint": "No day = one-off alarm"

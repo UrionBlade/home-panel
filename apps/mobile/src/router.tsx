@@ -11,7 +11,6 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { ShoppingPage } from "./pages/ShoppingPage";
 import { SpotifyCallbackPage } from "./pages/SpotifyCallbackPage";
 import { TimerPage } from "./pages/TimerPage";
-import { WastePage } from "./pages/WastePage";
 import { WeatherPage } from "./pages/WeatherPage";
 
 const router = createBrowserRouter([
@@ -49,11 +48,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/waste",
-    element: (
-      <AppShell>
-        <WastePage />
-      </AppShell>
-    ),
+    element: <Navigate to="/settings#waste" replace />,
   },
   {
     path: "/board",

@@ -261,6 +261,12 @@ export const blinkCameras = sqliteTable("blink_cameras", {
   model: text("model"),
   serialNumber: text("serial_number"),
   firmwareVersion: text("firmware_version"),
+  /** Blink device family: "camera" (outdoor/indoor), "owl" (Mini), "doorbell". */
+  deviceType: text("device_type", { enum: ["camera", "owl", "doorbell"] })
+    .notNull()
+    .default("camera"),
+  /** Per-device motion detection enabled flag. Distinct from "armed" network state. */
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
   status: text("status", { enum: ["online", "offline"] })
     .notNull()
     .default("online"),
