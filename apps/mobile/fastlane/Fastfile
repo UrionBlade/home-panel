@@ -29,6 +29,7 @@ platform :ios do
   desc "Build and upload a new TestFlight build"
   lane :release do
     setup_signing
+    ensure_ios_project
     stamp_build_number
     build_tauri_ios
     upload_build
@@ -37,6 +38,15 @@ platform :ios do
   desc "Just set up signing — useful for debugging in CI"
   lane :signing do
     setup_signing
+  end
+
+  # `tauri ios init` scaffolds gen/apple/ from tauri.conf.json. The folder is
+  # gitignored, so a fresh CI checkout never has it. Running init is idempotent
+  # and fast once the Rust target is installed.
+  private_lane :ensure_ios_project do
+    Dir.chdir(IOS_PROJECT_ROOT) do
+      sh("pnpm tauri ios init")
+    end
   end
 
   private_lane :setup_signing do
@@ -77,7 +87,11 @@ platform :ios do
   private_lane :stamp_build_number do
     build_number = ENV["GITHUB_RUN_NUMBER"] || Time.now.to_i.to_s
     UI.message("Setting CFBundleVersion to #{build_number}")
-    sh("/usr/libexec/PlistBuddy -c 'Set :CFBundleVersion #{build_number}' '#{INFO_PLIST}'")
+    # PlistBuddy Set fails if the key is missing; fall back to Add.
+    sh(
+      "/usr/libexec/PlistBuddy -c 'Set :CFBundleVersion #{build_number}' '#{INFO_PLIST}' 2>/dev/null " \
+        "|| /usr/libexec/PlistBuddy -c 'Add :CFBundleVersion string #{build_number}' '#{INFO_PLIST}'",
+    )
   end
 
   private_lane :build_tauri_ios do
