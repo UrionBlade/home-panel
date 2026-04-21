@@ -288,6 +288,8 @@ export const blinkMotionClips = sqliteTable("blink_motion_clips", {
   durationSeconds: integer("duration_seconds"),
   thumbnailPath: text("thumbnail_path"),
   clipPath: text("clip_path"),
+  localPath: text("local_path"),
+  downloadedAt: text("downloaded_at"),
   viewed: integer("viewed", { mode: "boolean" }).notNull().default(false),
   createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
 });

@@ -127,6 +127,13 @@
       "when": 1776790001223,
       "tag": "0017_brainy_lyja",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1776813652933,
+      "tag": "0018_fearless_venom",
+      "breakpoints": true
     }
   ]
 }

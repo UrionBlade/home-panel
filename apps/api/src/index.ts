@@ -12,6 +12,7 @@ import { seedKioskSettings } from "./db/seed-kiosk-settings.js";
 import { seedProductCatalog } from "./db/seed-products.js";
 import { seedVoiceSettings } from "./db/seed-voice-settings.js";
 import { stopAllLiveSessions } from "./lib/blink/liveview-manager.js";
+import { startBlinkScheduler } from "./lib/blink/scheduler.js";
 import { startSyncScheduler } from "./lib/calendar-sync.js";
 import { apiAuth } from "./middleware/auth.js";
 import { blinkRouter } from "./routes/blink.js";
@@ -138,6 +139,7 @@ const hostname = process.env.HOST ?? "0.0.0.0";
 serve({ fetch: app.fetch, port, hostname }, (info) => {
   console.log(`API in ascolto su http://${info.address}:${info.port}`);
   startSyncScheduler();
+  startBlinkScheduler();
   startTimersScheduler();
 });
 

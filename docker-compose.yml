@@ -26,10 +26,13 @@ services:
       PORT: "3000"
       HOST: 0.0.0.0
       DATABASE_URL: /data/home-panel.sqlite
+      BLINK_CLIPS_DIR: /clips/blink
+      BLINK_CLIPS_RETENTION_DAYS: "30"
     ports:
       - "3000:3000"
     volumes:
       - ./data:/data
+      - /volume1/video/blink:/clips/blink
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
       interval: 30s

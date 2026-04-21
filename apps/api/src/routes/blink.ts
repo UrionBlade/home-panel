@@ -27,6 +27,7 @@ import {
   blinkSetDeviceEnabled,
   blinkVerify2FA,
 } from "../lib/blink/client.js";
+import { downloadPendingClips } from "../lib/blink/clip-downloader.js";
 import {
   getSession as getLiveSession,
   startLiveSession,
@@ -63,7 +64,7 @@ function clipRowToDto(row: BlinkMotionClipRow): BlinkMotionClip {
   };
 }
 
-function getSession(): BlinkSession | null {
+export function getSession(): BlinkSession | null {
   const creds = db.select().from(blinkCredentials).get();
   if (!creds?.accountId || !creds?.encryptedToken) return null;
   const region = creds.region ?? "u014";
@@ -525,7 +526,7 @@ async function saveSession(email: string, session: BlinkSession) {
   }
 }
 
-async function syncCamerasAndClips(session: BlinkSession) {
+export async function syncCamerasAndClips(session: BlinkSession) {
   const now = new Date().toISOString();
 
   const remoteCameras = await blinkListCameras(session);
@@ -614,5 +615,17 @@ async function syncCamerasAndClips(session: BlinkSession) {
   }
 
   console.log(`[blink] sync: ${remoteCameras.length} cameras, ${newClips} new clips`);
-  return { cameras: remoteCameras.length, newClips, totalClips: remoteClips.length };
+
+  // Download clip files to disk (errors are logged, never thrown).
+  const download = await downloadPendingClips(session).catch((err) => {
+    console.error("[blink] clip download batch failed:", err);
+    return { attempted: 0, saved: 0, failed: 0 };
+  });
+
+  return {
+    cameras: remoteCameras.length,
+    newClips,
+    totalClips: remoteClips.length,
+    downloaded: download.saved,
+  };
 }
