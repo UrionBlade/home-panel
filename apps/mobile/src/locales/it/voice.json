@@ -36,6 +36,16 @@
         "title": "Rifiuti",
         "items": ["Cosa porto fuori stasera?", "Cosa porto fuori domani?"]
       },
+      "laundry": {
+        "title": "Lavanderia",
+        "items": [
+          "Quanto manca alla lavatrice?",
+          "Quanto manca all'asciugatrice?",
+          "A che punto è la lavatrice?",
+          "La lavatrice è finita?",
+          "Quanto manca al bucato?"
+        ]
+      },
       "timer": {
         "title": "Timer",
         "items": [
@@ -241,6 +251,45 @@
     "cancel": {
       "stoppedAlert": "Fermato",
       "cancelled": "Ok, annullato"
+    },
+    "laundry": {
+      "kind": {
+        "washer": "la lavatrice",
+        "dryer": "l'asciugatrice"
+      },
+      "notConfigured": "Lavatrice e asciugatrice non sono ancora configurate. Vai nelle impostazioni.",
+      "missing": {
+        "washer": "Non hai configurato nessuna lavatrice.",
+        "dryer": "Non hai configurato nessuna asciugatrice.",
+        "both": "Non ho nessuna lavatrice o asciugatrice configurata."
+      },
+      "status": {
+        "running": [
+          "A {{kind}} mancano {{remaining}}",
+          "{{kind}} finisce tra {{remaining}}",
+          "Ancora {{remaining}} per {{kind}}"
+        ],
+        "runningNoEta": [
+          "{{kind}} sta lavorando, ma non so quanto ci mette",
+          "{{kind}} è in funzione, tempo sconosciuto"
+        ],
+        "finished": ["{{kind}} ha finito!", "{{kind}} è pronta, puoi svuotarla"],
+        "paused": ["{{kind}} è in pausa", "{{kind}} è ferma in pausa"],
+        "idle": ["{{kind}} è spenta", "{{kind}} non sta lavorando"]
+      },
+      "remaining": {
+        "done": "meno di un minuto",
+        "underMinute": "meno di un minuto",
+        "minutes_one": "un minuto",
+        "minutes_other": "{{count}} minuti",
+        "hoursOnly_one": "un'ora",
+        "hoursOnly_other": "{{count}} ore",
+        "hoursAndMinutes": "{{hours}} ore e {{minutes}} minuti"
+      },
+      "error": {
+        "upstream": "Non riesco a raggiungere SmartThings al momento",
+        "generic": "Non sono riuscito a leggere lo stato"
+      }
     },
     "tv": {
       "powerOn": {

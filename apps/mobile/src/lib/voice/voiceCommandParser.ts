@@ -1,4 +1,5 @@
 import type { ParsedCommand, VoiceIntent } from "@home-panel/shared";
+import { matchLaundryIntent } from "./laundryIntents";
 import { matchTvIntent } from "./tvIntents";
 
 /**
@@ -662,6 +663,8 @@ export function parseVoiceCommand(text: string): ParsedCommand | null {
   /* Device-specific matchers (evaluated before the generic keyword scoring). */
   const tv = matchTvIntent(text);
   if (tv) return tv;
+  const laundry = matchLaundryIntent(text);
+  if (laundry) return laundry;
 
   let bestIntent: VoiceIntent | null = null;
   let bestScore = 0;

@@ -40,6 +40,16 @@
         "title": "Waste",
         "items": ["What goes out tonight?", "What goes out tomorrow?"]
       },
+      "laundry": {
+        "title": "Laundry",
+        "items": [
+          "How long on the washer?",
+          "How long on the dryer?",
+          "What's the washer status?",
+          "Is the washer done?",
+          "How long on the laundry?"
+        ]
+      },
       "timer": {
         "title": "Timer",
         "items": [
@@ -245,6 +255,45 @@
     "cancel": {
       "stoppedAlert": "Stopped",
       "cancelled": "Ok, cancelled"
+    },
+    "laundry": {
+      "kind": {
+        "washer": "the washer",
+        "dryer": "the dryer"
+      },
+      "notConfigured": "Washer and dryer are not configured yet. Check the settings.",
+      "missing": {
+        "washer": "No washer is configured.",
+        "dryer": "No dryer is configured.",
+        "both": "No washer or dryer is configured."
+      },
+      "status": {
+        "running": [
+          "{{remaining}} left on {{kind}}",
+          "{{kind}} finishes in {{remaining}}",
+          "{{kind}} still has {{remaining}}"
+        ],
+        "runningNoEta": [
+          "{{kind}} is running, but I don't know for how long",
+          "{{kind}} is working, no ETA"
+        ],
+        "finished": ["{{kind}} is done!", "{{kind}} finished, you can unload"],
+        "paused": ["{{kind}} is paused", "{{kind}} is on pause"],
+        "idle": ["{{kind}} is idle", "{{kind}} is not running"]
+      },
+      "remaining": {
+        "done": "less than a minute",
+        "underMinute": "less than a minute",
+        "minutes_one": "one minute",
+        "minutes_other": "{{count}} minutes",
+        "hoursOnly_one": "one hour",
+        "hoursOnly_other": "{{count}} hours",
+        "hoursAndMinutes": "{{hours}} hours and {{minutes}} minutes"
+      },
+      "error": {
+        "upstream": "I can't reach SmartThings right now",
+        "generic": "I couldn't read the status"
+      }
     },
     "tv": {
       "powerOn": {

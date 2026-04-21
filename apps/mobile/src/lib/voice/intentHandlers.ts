@@ -10,6 +10,7 @@ import { apiClient } from "../api-client";
 import { i18next } from "../i18n";
 import { primeAudio } from "../timers/alertSound";
 import { dismissActiveAlert, hasActiveAlert } from "../timers/alertStore";
+import { handleLaundryIntent, isLaundryIntent } from "./laundryIntents";
 import { nativeVoiceClient } from "./nativeVoiceClient";
 import { handleTvIntent, isTvIntent } from "./tvIntents";
 import { voiceClient } from "./voiceClient";
@@ -225,6 +226,10 @@ export async function handleIntent(command: ParsedCommand): Promise<string> {
   if (isTvIntent(command.intent)) {
     const tvResponse = await handleTvIntent(command, _queryClient);
     if (tvResponse !== null) return tvResponse;
+  }
+  if (isLaundryIntent(command.intent)) {
+    const laundryResponse = await handleLaundryIntent(command);
+    if (laundryResponse !== null) return laundryResponse;
   }
 
   switch (command.intent) {
@@ -578,6 +583,7 @@ export async function handleIntent(command: ParsedCommand): Promise<string> {
     case "tv_unmute":
     case "tv_launch_app":
     case "tv_input_set":
+    case "read_laundry_status":
       return vt("errors.generic");
   }
 }
