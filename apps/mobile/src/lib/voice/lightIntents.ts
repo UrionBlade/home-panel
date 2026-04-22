@@ -7,7 +7,7 @@
  * query data: the matcher only extracts the raw subject text.
  */
 
-import type { LightSummary, ParsedCommand, VoiceIntent } from "@home-panel/shared";
+import type { LightSummary, ParsedCommand, Room, VoiceIntent } from "@home-panel/shared";
 import type { QueryClient } from "@tanstack/react-query";
 import { ApiError, apiClient } from "../api-client";
 import { i18next } from "../i18n";
@@ -124,11 +124,14 @@ function interpolate(template: string, vars: VoiceVars): string {
 /*  Fuzzy resolution                                                         */
 /* ------------------------------------------------------------------------ */
 
-/** Score a candidate light against the spoken subject. Higher = better. */
-function scoreCandidate(subject: string, light: LightSummary): number {
+/** Score a candidate light against the spoken subject. Higher = better.
+ * `roomName` is the human-readable room label (either the legacy
+ * `light.room` text or the name resolved via `light.roomId` against the
+ * rooms cache). */
+function scoreCandidate(subject: string, light: LightSummary, roomName: string | null): number {
   const s = subject.toLowerCase();
   const name = light.name.toLowerCase();
-  const room = (light.room ?? "").toLowerCase();
+  const room = (roomName ?? "").toLowerCase();
 
   if (!s) return 0;
   let score = 0;
@@ -151,9 +154,16 @@ function scoreCandidate(subject: string, light: LightSummary): number {
   return score;
 }
 
-function resolveLights(subject: string, lights: LightSummary[]): LightSummary[] {
+function resolveLights(
+  subject: string,
+  lights: LightSummary[],
+  roomNameFor: (light: LightSummary) => string | null,
+): LightSummary[] {
   if (!subject) return [];
-  const scored = lights.map((l) => ({ light: l, score: scoreCandidate(subject, l) }));
+  const scored = lights.map((l) => ({
+    light: l,
+    score: scoreCandidate(subject, l, roomNameFor(l)),
+  }));
   scored.sort((a, b) => b.score - a.score);
   const best = scored[0];
   if (!best || best.score === 0) return [];
@@ -211,6 +221,16 @@ export async function handleLightIntent(
 
   if (lights.length === 0) return vt("noLights");
 
+  /* Resolve each light's display room through the rooms cache so voice
+   * matching understands "accendi le luci del salotto" even when the light
+   * row only stores a `roomId` FK (no legacy `room` free-text). */
+  const rooms = qc?.getQueryData<Room[]>(["rooms"]) ?? [];
+  const roomById = new Map(rooms.map((r) => [r.id, r.name]));
+  const roomNameFor = (l: LightSummary): string | null => {
+    if (l.roomId) return roomById.get(l.roomId) ?? l.room ?? null;
+    return l.room ?? null;
+  };
+
   switch (command.intent) {
     case "lights_all_on":
     case "lights_all_off": {
@@ -228,7 +248,7 @@ export async function handleLightIntent(
     case "light_off": {
       const subject = command.entities.subject ?? "";
       const target: "on" | "off" = command.intent === "light_on" ? "on" : "off";
-      const matches = resolveLights(subject, lights);
+      const matches = resolveLights(subject, lights, roomNameFor);
       if (matches.length === 0) {
         return interpolate(pickVariant(vtArray("notFound")), {
           subject: subject || "—",
@@ -245,7 +265,7 @@ export async function handleLightIntent(
       const key = target === "on" ? "manyOn" : "manyOff";
       return interpolate(pickVariant(vtArray(key)), {
         count: okCount,
-        room: matches[0].room ?? subject,
+        room: roomNameFor(matches[0]) ?? subject,
       });
     }
 
