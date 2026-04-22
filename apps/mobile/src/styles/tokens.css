@@ -213,13 +213,14 @@ html {
 
 body {
   margin: 0;
-  /* Respect iOS safe areas: the top padding keeps a thin strip above the
-   * app for the status bar / notch, the bottom one clears the home
-   * indicator. `box-sizing: border-box` makes the `height: 100%` rule above
-   * include this padding, so #root gets the remaining space and never
-   * overflows — no double scroll. */
+  /* Respect the top safe area so the status bar / notch gets a thin
+   * background strip. The bottom safe area is intentionally NOT padded
+   * here — iOS draws the home indicator translucently over content, and
+   * reserving space for it leaves an ugly black bar at the bottom. If a
+   * future bottom-docked control needs clearance, it should pad itself
+   * via env(safe-area-inset-bottom). `box-sizing: border-box` keeps the
+   * `height: 100%` rule inclusive of this top padding. */
   padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
   box-sizing: border-box;
   background-color: var(--color-bg);
   color: var(--color-text);
