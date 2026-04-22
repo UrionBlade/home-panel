@@ -34,8 +34,32 @@ export function stHeaders(pat: string): Record<string, string> {
   };
 }
 
+/**
+ * Wrap fetch with small retry/backoff for transient SmartThings errors.
+ * ST occasionally returns 5xx/429/408 for a single request even when the
+ * device is reachable — a couple of quick retries make the backend feel
+ * reliable without masking real auth/config failures.
+ */
+async function stFetchWithRetry(url: string, init: RequestInit): Promise<Response> {
+  const delays = [0, 250, 750]; // 3 attempts total
+  let lastErr: unknown;
+  for (const delay of delays) {
+    if (delay > 0) await new Promise((r) => setTimeout(r, delay));
+    try {
+      const res = await fetch(url, init);
+      if (res.status < 500 && res.status !== 408 && res.status !== 429) {
+        return res;
+      }
+      lastErr = new SmartThingsHttpError(res.status, `SmartThings ${res.status}`);
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr ?? new SmartThingsHttpError(599, "SmartThings unreachable");
+}
+
 export async function stFetch<T>(pat: string, path: string): Promise<T> {
-  const res = await fetch(`${ST_BASE}${path}`, { headers: stHeaders(pat) });
+  const res = await stFetchWithRetry(`${ST_BASE}${path}`, { headers: stHeaders(pat) });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new SmartThingsHttpError(res.status, `SmartThings ${res.status}: ${body}`);
@@ -44,7 +68,7 @@ export async function stFetch<T>(pat: string, path: string): Promise<T> {
 }
 
 export async function stPost<T>(pat: string, path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${ST_BASE}${path}`, {
+  const res = await stFetchWithRetry(`${ST_BASE}${path}`, {
     method: "POST",
     headers: { ...stHeaders(pat), "Content-Type": "application/json" },
     body: JSON.stringify(body),
