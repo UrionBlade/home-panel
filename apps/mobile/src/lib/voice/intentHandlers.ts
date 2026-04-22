@@ -339,6 +339,34 @@ export async function handleIntent(command: ParsedCommand): Promise<string> {
       return vt("timer.started", { duration: formatTimerDuration(seconds) });
     }
 
+    case "query_timer": {
+      try {
+        const timers =
+          await apiClient.get<
+            Array<{ id: string; label: string | null; remainingSeconds: number }>
+          >("/api/v1/timers/timers");
+        if (timers.length === 0) return vt("timer.noActive");
+        if (timers.length === 1) {
+          const t = timers[0];
+          const remaining = formatTimerDuration(t.remainingSeconds);
+          return t.label
+            ? vt("timer.queryOneLabeled", { remaining, label: t.label })
+            : vt("timer.queryOne", { remaining });
+        }
+        const ordLabels = vtArray("timer.ordinals");
+        const list = timers
+          .map((t, i) => {
+            const ord = ordLabels[i] ?? `${i + 1}°`;
+            return `${ord}: ${formatTimerDuration(t.remainingSeconds)}`;
+          })
+          .join(", ");
+        return vt("timer.queryMany", { count: timers.length, list });
+      } catch (err) {
+        console.warn("[voice] query_timer:", err);
+        return vt("timer.stopFailed");
+      }
+    }
+
     case "stop_timer": {
       // If there is an active alert (expired timer ringing), stop that first
       if (hasActiveAlert()) {

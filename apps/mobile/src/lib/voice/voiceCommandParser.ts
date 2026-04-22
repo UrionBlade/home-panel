@@ -298,6 +298,27 @@ const RULES: IntentRule[] = [
 
   // ==== TIMER ====
   {
+    // "quanto manca al timer", "quanto tempo resta al timer", etc. Must
+    // sit before `set_timer` so its higher score (quanto + manca + timer)
+    // beats the 1-point match that set_timer would otherwise claim.
+    intent: "query_timer",
+    keywords: [
+      "quanto",
+      "manca",
+      "mancano",
+      "resta",
+      "restano",
+      "rimane",
+      "rimangono",
+      "tempo",
+      "timer",
+      "cronometro",
+      "countdown",
+    ],
+    required: ["timer", "countdown", "cronometro"],
+    exclude: ["imposta", "metti", "avvia", "attiva", "ferma", "stop", "cancella"],
+  },
+  {
     intent: "set_timer",
     keywords: [
       "timer",
@@ -309,6 +330,7 @@ const RULES: IntentRule[] = [
       "parti",
     ],
     required: ["timer", "countdown", "cronometro"],
+    exclude: ["quanto", "manca", "mancano", "resta", "restano", "rimane", "rimangono"],
     extractEntity: (text) => {
       // Pass near-raw text to parseDuration for the timer intent,
       // stripping only command words but NOT articles/filler words

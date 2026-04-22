@@ -30,6 +30,7 @@ export type VoiceIntent =
   | "read_weather_tomorrow"
   | "set_timer"
   | "stop_timer"
+  | "query_timer"
   | "add_postit"
   | "routine_morning"
   | "routine_night"
