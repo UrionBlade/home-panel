@@ -24,7 +24,7 @@ IOS_PROJECT_ROOT = File.expand_path("..", __dir__)
 REPO_ROOT = File.expand_path("../..", IOS_PROJECT_ROOT)
 TAURI_IOS_ROOT = File.join(IOS_PROJECT_ROOT, "src-tauri", "gen", "apple")
 INFO_PLIST = File.join(TAURI_IOS_ROOT, "mobile_iOS", "Info.plist")
-EXPORT_OPTIONS_PLIST = "/tmp/HomePanelExportOptions.plist"
+EXPORT_OPTIONS_PLIST = File.join(TAURI_IOS_ROOT, "ExportOptions.plist")
 
 platform :ios do
   desc "Build and upload a new TestFlight build"
@@ -169,41 +169,12 @@ platform :ios do
   end
 
   private_lane :build_tauri_ios do
-    # `tauri ios build` drives xcodebuild internally but doesn't expose
-    # --exportOptionsPlist. Since we need manual signing on CI, we split the
-    # work: run the Vite frontend build (Tauri's beforeBuildCommand), then
-    # invoke xcodebuild archive + exportArchive ourselves. Tauri's Rust
-    # pre-build script is still triggered automatically by xcodebuild via
-    # the project.yml preBuildScripts phase.
+    # Our manual-signing ExportOptions.plist was written at
+    # gen/apple/ExportOptions.plist in ensure_ios_project; Tauri picks up
+    # that file for the -exportArchive step.
     Dir.chdir(IOS_PROJECT_ROOT) do
-      sh("pnpm build")
+      sh("pnpm tauri ios build --export-method app-store-connect")
     end
-
-    archive_path = "/tmp/HomePanel.xcarchive"
-    export_dir = "/tmp/HomePanel-export"
-    xcodeproj = File.join(TAURI_IOS_ROOT, "mobile.xcodeproj")
-
-    sh(
-      "xcodebuild", "archive",
-      "-project", xcodeproj,
-      "-scheme", "mobile_iOS",
-      "-configuration", "release",
-      "-destination", "generic/platform=iOS",
-      "-archivePath", archive_path,
-      "CODE_SIGN_STYLE=Manual",
-    )
-
-    sh(
-      "xcodebuild", "-exportArchive",
-      "-archivePath", archive_path,
-      "-exportPath", export_dir,
-      "-exportOptionsPlist", EXPORT_OPTIONS_PLIST,
-    )
-
-    ipa = Dir.glob(File.join(export_dir, "*.ipa")).first
-    UI.user_error!("No .ipa produced in #{export_dir}") unless ipa
-    ENV["HOME_PANEL_IPA_PATH"] = ipa
-    UI.message("Produced #{ipa}")
   end
 
   private_lane :upload_build do
@@ -216,13 +187,9 @@ platform :ios do
       in_house: false,
     )
 
-    ipa_path = ENV["HOME_PANEL_IPA_PATH"]
-    if ipa_path.nil? || ipa_path.empty?
-      # Fallback to scanning Tauri's usual output path for local invocations.
-      ipa_glob = File.join(TAURI_IOS_ROOT, "build", "**", "*.ipa")
-      ipa_path = Dir.glob(ipa_glob).max_by { |f| File.mtime(f) }
-    end
-    UI.user_error!("No .ipa produced") if ipa_path.nil?
+    ipa_glob = File.join(TAURI_IOS_ROOT, "build", "**", "*.ipa")
+    ipa_path = Dir.glob(ipa_glob).max_by { |f| File.mtime(f) }
+    UI.user_error!("No .ipa produced under #{ipa_glob}") if ipa_path.nil?
     UI.message("Uploading #{ipa_path}")
 
     upload_to_testflight(
