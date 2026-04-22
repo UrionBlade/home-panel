@@ -47,6 +47,20 @@ platform :ios do
     Dir.chdir(IOS_PROJECT_ROOT) do
       sh("pnpm tauri ios init")
     end
+
+    # Tauri generates the Xcode project with automatic signing, which requires
+    # an Apple ID logged into Xcode. On CI we use manual signing with the
+    # distribution certificate + App Store provisioning profile that Fastlane
+    # installed in setup_signing.
+    update_code_signing_settings(
+      path: File.join(TAURI_IOS_ROOT, "mobile.xcodeproj"),
+      use_automatic_signing: false,
+      team_id: ENV.fetch("IOS_TEAM_ID"),
+      code_sign_identity: "Apple Distribution",
+      profile_name: "Home Panel App Store",
+      targets: ["mobile_iOS"],
+      build_configurations: ["release"],
+    )
   end
 
   private_lane :setup_signing do
