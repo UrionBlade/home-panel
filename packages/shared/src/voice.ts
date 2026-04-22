@@ -59,7 +59,11 @@ export type VoiceIntent =
   | "tv_unmute"
   | "tv_launch_app"
   | "tv_input_set"
-  | "read_laundry_status";
+  | "read_laundry_status"
+  | "light_on"
+  | "light_off"
+  | "lights_all_off"
+  | "lights_all_on";
 
 export interface ParsedCommand {
   intent: VoiceIntent;

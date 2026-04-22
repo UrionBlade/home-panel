@@ -1,5 +1,6 @@
 import type { ParsedCommand, VoiceIntent } from "@home-panel/shared";
 import { matchLaundryIntent } from "./laundryIntents";
+import { matchLightIntent } from "./lightIntents";
 import { matchTvIntent } from "./tvIntents";
 
 /**
@@ -687,6 +688,8 @@ export function parseVoiceCommand(text: string): ParsedCommand | null {
   if (tv) return tv;
   const laundry = matchLaundryIntent(text);
   if (laundry) return laundry;
+  const light = matchLightIntent(text);
+  if (light) return light;
 
   let bestIntent: VoiceIntent | null = null;
   let bestScore = 0;

@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { BoardTile } from "../components/home-tiles/BoardTile";
 import { CamerasTile } from "../components/home-tiles/CamerasTile";
 import { LaundryTile } from "../components/home-tiles/LaundryTile";
+import { LightsTile } from "../components/home-tiles/LightsTile";
 import { ShoppingTile } from "../components/home-tiles/ShoppingTile";
 import { TimerTile } from "../components/home-tiles/TimerTile";
 import { TodayEventsTile } from "../components/home-tiles/TodayEventsTile";
@@ -40,9 +41,10 @@ const tiles = [
   { key: "laundry", Component: LaundryTile, span: "md:col-span-3" },
   { key: "shopping", Component: ShoppingTile, span: "md:col-span-3" },
   { key: "cameras", Component: CamerasTile, span: "md:col-span-3" },
-  { key: "board", Component: BoardTile, span: "md:col-span-2" },
-  { key: "timer", Component: TimerTile, span: "md:col-span-2" },
-  { key: "waste", Component: WasteTile, span: "md:col-span-2" },
+  { key: "lights", Component: LightsTile, span: "md:col-span-3" },
+  { key: "timer", Component: TimerTile, span: "md:col-span-3" },
+  { key: "board", Component: BoardTile, span: "md:col-span-3" },
+  { key: "waste", Component: WasteTile, span: "md:col-span-3" },
 ];
 
 const containerVariants = {

@@ -348,6 +348,38 @@
         "La tv non risponde, riprova tra un attimo"
       ]
     },
+    "lights": {
+      "oneOn": ["Ho acceso {{name}}", "{{name}} accesa", "Fatto, {{name}} è accesa"],
+      "oneOff": ["Ho spento {{name}}", "{{name}} spenta", "Ok, {{name}} è spenta"],
+      "manyOn": [
+        "Ho acceso {{count}} luci in {{room}}",
+        "{{count}} luci accese",
+        "Accese tutte in {{room}}"
+      ],
+      "manyOff": [
+        "Ho spento {{count}} luci in {{room}}",
+        "{{count}} luci spente",
+        "Spente tutte in {{room}}"
+      ],
+      "allOn": ["Ho acceso tutte le luci", "Luci accese: {{count}}", "Tutte accese"],
+      "allOff": ["Ho spento tutte le luci", "Luci spente: {{count}}", "Tutte spente, buonanotte"],
+      "notFound": [
+        "Non trovo una luce che corrisponde a «{{subject}}»",
+        "Non ho trovato «{{subject}}». Prova con il nome della stanza"
+      ],
+      "noLights": [
+        "Non hai ancora importato nessuna luce",
+        "Devi sincronizzare le luci prima di potermele chiedere"
+      ],
+      "notConfigured": [
+        "eWeLink non è ancora configurato, vai nelle impostazioni",
+        "Prima devi collegare il tuo account eWeLink"
+      ],
+      "upstreamError": [
+        "Non riesco a raggiungere le luci in questo momento",
+        "Le luci non rispondono, riprova tra un attimo"
+      ]
+    },
     "errors": {
       "generic": "Si è verificato un errore"
     }

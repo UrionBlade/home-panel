@@ -9,6 +9,7 @@ import errorsEn from "../locales/en/errors.json";
 import familyEn from "../locales/en/family.json";
 import kioskEn from "../locales/en/kiosk.json";
 import laundryEn from "../locales/en/laundry.json";
+import lightsEn from "../locales/en/lights.json";
 import musicEn from "../locales/en/music.json";
 import recipesEn from "../locales/en/recipes.json";
 import settingsEn from "../locales/en/settings.json";
@@ -26,6 +27,7 @@ import errorsIt from "../locales/it/errors.json";
 import familyIt from "../locales/it/family.json";
 import kioskIt from "../locales/it/kiosk.json";
 import laundryIt from "../locales/it/laundry.json";
+import lightsIt from "../locales/it/lights.json";
 import musicIt from "../locales/it/music.json";
 import recipesIt from "../locales/it/recipes.json";
 import settingsIt from "../locales/it/settings.json";
@@ -53,6 +55,7 @@ void i18next
       "board",
       "kiosk",
       "laundry",
+      "lights",
       "music",
       "voice",
       "timers",
@@ -69,6 +72,7 @@ void i18next
         family: familyIt,
         kiosk: kioskIt,
         laundry: laundryIt,
+        lights: lightsIt,
         music: musicIt,
         recipes: recipesIt,
         settings: settingsIt,
@@ -88,6 +92,7 @@ void i18next
         family: familyEn,
         kiosk: kioskEn,
         laundry: laundryEn,
+        lights: lightsEn,
         music: musicEn,
         recipes: recipesEn,
         settings: settingsEn,

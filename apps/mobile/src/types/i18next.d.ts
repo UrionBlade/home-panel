@@ -6,6 +6,7 @@ import type errorsIt from "../locales/it/errors.json";
 import type familyIt from "../locales/it/family.json";
 import type kioskIt from "../locales/it/kiosk.json";
 import type laundryIt from "../locales/it/laundry.json";
+import type lightsIt from "../locales/it/lights.json";
 import type musicIt from "../locales/it/music.json";
 import type recipesIt from "../locales/it/recipes.json";
 import type settingsIt from "../locales/it/settings.json";
@@ -26,6 +27,7 @@ declare module "i18next" {
       family: typeof familyIt;
       kiosk: typeof kioskIt;
       laundry: typeof laundryIt;
+      lights: typeof lightsIt;
       music: typeof musicIt;
       recipes: typeof recipesIt;
       settings: typeof settingsIt;

@@ -9,6 +9,8 @@ import { CalendarSourcesSettings } from "../components/settings/CalendarSourcesS
 import { CameraSettings } from "../components/settings/CameraSettings";
 import { KioskSettings } from "../components/settings/KioskSettings";
 import { LaundrySettings } from "../components/settings/LaundrySettings";
+import { LightsSettings } from "../components/settings/LightsSettings";
+import { RoomsSettings } from "../components/settings/RoomsSettings";
 import { TvSettings } from "../components/settings/TvSettings";
 import { VoiceSettings } from "../components/settings/VoiceSettings";
 import { WasteSettings } from "../components/settings/WasteSettings";
@@ -54,6 +56,7 @@ export function SettingsPage() {
   const [tab, setTab] = useState<SettingsTab>(() => {
     if (typeof window !== "undefined") {
       if (window.location.hash === "#tv") return "devices";
+      if (window.location.hash === "#lights") return "devices";
       if (window.location.hash === "#waste") return "waste";
     }
     return "appearance";
@@ -64,6 +67,7 @@ export function SettingsPage() {
     if (typeof window === "undefined") return;
     function onHashChange() {
       if (window.location.hash === "#tv") setTab("devices");
+      else if (window.location.hash === "#lights") setTab("devices");
       else if (window.location.hash === "#waste") setTab("waste");
     }
     window.addEventListener("hashchange", onHashChange);
@@ -124,6 +128,7 @@ export function SettingsPage() {
       {tab === "home" && (
         <>
           <FamilyManager />
+          <RoomsSettings />
           <KioskSettings />
         </>
       )}
@@ -141,6 +146,7 @@ export function SettingsPage() {
           <CameraSettings />
           <LaundrySettings />
           <TvSettings />
+          <LightsSettings />
         </>
       )}
 

@@ -7,6 +7,7 @@ type Namespace =
   | "family"
   | "kiosk"
   | "laundry"
+  | "lights"
   | "music"
   | "recipes"
   | "settings"

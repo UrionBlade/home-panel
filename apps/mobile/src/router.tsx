@@ -5,6 +5,7 @@ import { CalendarPage } from "./pages/CalendarPage";
 import { CamerasPage } from "./pages/CamerasPage";
 import { HomePage } from "./pages/HomePage";
 import { LaundryPage } from "./pages/LaundryPage";
+import { LightsPage } from "./pages/LightsPage";
 import { MusicPage } from "./pages/MusicPage";
 import { RecipesPage } from "./pages/RecipesPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -87,6 +88,14 @@ const router = createBrowserRouter([
     element: (
       <AppShell>
         <LaundryPage />
+      </AppShell>
+    ),
+  },
+  {
+    path: "/lights",
+    element: (
+      <AppShell>
+        <LightsPage />
       </AppShell>
     ),
   },

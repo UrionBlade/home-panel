@@ -1,0 +1,90 @@
+{
+  "title": "Lights",
+  "subtitle": "Turn lights on and off around the home",
+  "tile": {
+    "title": "Lights",
+    "on_one": "{{count}} on",
+    "on_other": "{{count}} on",
+    "allOff": "All off",
+    "notConfigured": "Not configured",
+    "noDevices": "No devices"
+  },
+  "states": {
+    "on": "On",
+    "off": "Off",
+    "unknown": "Unknown"
+  },
+  "actions": {
+    "turnOn": "Turn on",
+    "turnOff": "Turn off",
+    "sync": "Sync",
+    "rename": "Rename",
+    "allOn": "All on",
+    "allOff": "All off"
+  },
+  "rooms": {
+    "unassigned": "No room"
+  },
+  "empty": {
+    "noneAdopted": {
+      "title": "No lights imported yet",
+      "body": "Tap \"Sync\" to discover the devices on your eWeLink account.",
+      "cta": "Sync now"
+    }
+  },
+  "notConfigured": {
+    "title": "Set up eWeLink",
+    "body": "Connect your eWeLink account from settings to control lights.",
+    "cta": "Open settings"
+  },
+  "settings": {
+    "title": "Lights (eWeLink)",
+    "subtitle": "Connect your account to control lights from the panel",
+    "appMissing": {
+      "title": "App ID / App Secret missing",
+      "body": "Ask the server to set EWELINK_APP_ID and EWELINK_APP_SECRET in .env. Register a free app at dev.ewelink.cc to obtain them."
+    },
+    "form": {
+      "email": "eWeLink account email",
+      "emailPlaceholder": "you@example.com",
+      "password": "Password",
+      "passwordPlaceholder": "Your eWeLink account password",
+      "countryCode": "Country code",
+      "countryCodePlaceholder": "+39",
+      "connect": "Connect",
+      "reconnect": "Reconnect",
+      "disconnect": "Disconnect",
+      "testing": "Verifying credentials…"
+    },
+    "status": {
+      "connected": "Connected as {{email}}",
+      "region": "Region: {{region}}",
+      "regionLabel": "Region",
+      "lastAuth": "Last sign-in: {{time}}",
+      "lastAuthLabel": "Last sign-in",
+      "notConnected": "Not connected"
+    },
+    "errors": {
+      "loginFailed": "eWeLink login failed: {{message}}",
+      "saveFailed": "Could not save credentials"
+    },
+    "success": {
+      "connected": "eWeLink account connected",
+      "disconnected": "Account disconnected"
+    },
+    "confirmDisconnect": {
+      "title": "Disconnect eWeLink?",
+      "body": "This removes your credentials and all imported lights. You'll need to sync again afterwards."
+    }
+  },
+  "sync": {
+    "success_zero": "No devices found",
+    "success_one": "Found {{count}} light",
+    "success_other": "Found {{count}} lights",
+    "changes": "{{added}} added, {{updated}} updated, {{removed}} removed",
+    "error": "Sync failed"
+  },
+  "command": {
+    "error": "Command failed"
+  }
+}

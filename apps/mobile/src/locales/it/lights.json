@@ -1,0 +1,90 @@
+{
+  "title": "Luci",
+  "subtitle": "Accendi e spegni le luci di casa",
+  "tile": {
+    "title": "Luci",
+    "on_one": "{{count}} accesa",
+    "on_other": "{{count}} accese",
+    "allOff": "Tutte spente",
+    "notConfigured": "Non configurate",
+    "noDevices": "Nessun dispositivo"
+  },
+  "states": {
+    "on": "Accesa",
+    "off": "Spenta",
+    "unknown": "Sconosciuto"
+  },
+  "actions": {
+    "turnOn": "Accendi",
+    "turnOff": "Spegni",
+    "sync": "Sincronizza",
+    "rename": "Rinomina",
+    "allOn": "Tutte accese",
+    "allOff": "Tutte spente"
+  },
+  "rooms": {
+    "unassigned": "Senza stanza"
+  },
+  "empty": {
+    "noneAdopted": {
+      "title": "Nessuna luce importata",
+      "body": "Premi «Sincronizza» per scoprire i dispositivi eWeLink del tuo account.",
+      "cta": "Sincronizza ora"
+    }
+  },
+  "notConfigured": {
+    "title": "Configura eWeLink",
+    "body": "Per controllare le luci collega il tuo account eWeLink dalle impostazioni.",
+    "cta": "Apri impostazioni"
+  },
+  "settings": {
+    "title": "Luci (eWeLink)",
+    "subtitle": "Collega il tuo account per controllare le luci dal pannello",
+    "appMissing": {
+      "title": "App ID / App Secret mancanti",
+      "body": "Chiedi al server di impostare EWELINK_APP_ID e EWELINK_APP_SECRET in .env. Li ottieni registrando una app gratuita su dev.ewelink.cc."
+    },
+    "form": {
+      "email": "Email account eWeLink",
+      "emailPlaceholder": "tu@esempio.it",
+      "password": "Password",
+      "passwordPlaceholder": "La password del tuo account eWeLink",
+      "countryCode": "Prefisso paese",
+      "countryCodePlaceholder": "+39",
+      "connect": "Collega",
+      "reconnect": "Riconnetti",
+      "disconnect": "Scollega",
+      "testing": "Verifico le credenziali…"
+    },
+    "status": {
+      "connected": "Collegato come {{email}}",
+      "region": "Regione: {{region}}",
+      "regionLabel": "Regione",
+      "lastAuth": "Ultimo login: {{time}}",
+      "lastAuthLabel": "Ultimo login",
+      "notConnected": "Non collegato"
+    },
+    "errors": {
+      "loginFailed": "Login eWeLink fallito: {{message}}",
+      "saveFailed": "Non sono riuscito a salvare le credenziali"
+    },
+    "success": {
+      "connected": "Account eWeLink collegato",
+      "disconnected": "Account scollegato"
+    },
+    "confirmDisconnect": {
+      "title": "Scollegare eWeLink?",
+      "body": "Verranno rimosse le credenziali e tutte le luci importate. Dovrai sincronizzare di nuovo."
+    }
+  },
+  "sync": {
+    "success_zero": "Nessun dispositivo trovato",
+    "success_one": "Trovata {{count}} luce",
+    "success_other": "Trovate {{count}} luci",
+    "changes": "{{added}} nuove, {{updated}} aggiornate, {{removed}} rimosse",
+    "error": "Sincronizzazione fallita"
+  },
+  "command": {
+    "error": "Comando non riuscito"
+  }
+}

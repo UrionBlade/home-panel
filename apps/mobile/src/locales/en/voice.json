@@ -352,6 +352,38 @@
         "The tv is not responding, try again in a moment"
       ]
     },
+    "lights": {
+      "oneOn": ["Turned on {{name}}", "{{name}} is on", "Done, {{name}} is on"],
+      "oneOff": ["Turned off {{name}}", "{{name}} is off", "Ok, {{name}} is off"],
+      "manyOn": [
+        "Turned on {{count}} lights in {{room}}",
+        "{{count}} lights on",
+        "All on in {{room}}"
+      ],
+      "manyOff": [
+        "Turned off {{count}} lights in {{room}}",
+        "{{count}} lights off",
+        "All off in {{room}}"
+      ],
+      "allOn": ["All lights on", "Lights on: {{count}}", "Turned them all on"],
+      "allOff": ["All lights off", "Lights off: {{count}}", "All off, goodnight"],
+      "notFound": [
+        "I can't find a light matching \"{{subject}}\"",
+        "No match for \"{{subject}}\". Try the room name"
+      ],
+      "noLights": [
+        "You haven't imported any lights yet",
+        "Sync your lights first, then I can control them"
+      ],
+      "notConfigured": [
+        "eWeLink is not set up yet, check the settings",
+        "You need to connect your eWeLink account first"
+      ],
+      "upstreamError": [
+        "I can't reach the lights right now",
+        "The lights are not responding, try again in a moment"
+      ]
+    },
     "errors": {
       "generic": "Something went wrong"
     }

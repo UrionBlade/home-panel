@@ -411,6 +411,28 @@ export type NewLightRow = typeof lights.$inferInsert;
  * Credentials are stored as plain JSON: the SQLite file lives on the NAS and
  * is not exposed externally, same threat model as the rest of .env secrets.
  */
+/*
+ * Rooms: named spaces inside the house. Free-form list managed entirely via
+ * Settings → Stanze. Devices (lights, TV, laundry, AC, cameras…) reference a
+ * room by id so the UI and voice can group/route them ("accendi il
+ * condizionatore del salotto").
+ *
+ * The `icon` column stores a Phosphor icon name (e.g. `bed`, `couch`,
+ * `cooking-pot`). It's free-form text — the client validates against a
+ * known palette rather than a DB enum so the icon set can evolve without
+ * migrations.
+ */
+export const rooms = sqliteTable("rooms", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  icon: text("icon"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+});
+export type RoomRow = typeof rooms.$inferSelect;
+export type NewRoomRow = typeof rooms.$inferInsert;
+
 export const providerCredentials = sqliteTable("provider_credentials", {
   provider: text("provider").primaryKey(),
   configJson: text("config_json").notNull().default("{}"),
