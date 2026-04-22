@@ -56,31 +56,67 @@ export function TvTile() {
     );
   }
 
-  /* ---- Off: single-tap powers on. Preserves the on-state footprint so the
-   * grid doesn't reflow when the TV is turned off, and shows an explicit
-   * power pill so it reads as "tap to turn on" instead of dead copy. ---- */
+  /* ---- Off: single-tap powers on. Mirrors the on-state layout exactly so
+   * the tile footprint doesn't change — the inner controls are greyed out
+   * and inert, and a pill overlay reads "tap to turn on". ---- */
   if (status?.power === "off") {
+    const noop = () => {};
     return (
       <PendingControl
         isPending={power.isPending}
         isSuccess={power.isSuccess}
         isError={power.isError}
-        className="w-full h-full min-h-[22rem] md:min-h-0"
+        className="w-full h-full"
       >
         <Tile size="md" onClick={() => power.mutate({ on: true })} ariaLabel={t("tile.powerOn")}>
           <BackdropPaint />
-          <span
-            className="label-mono text-accent absolute top-5 left-6 z-10"
-            style={{ fontWeight: 900 }}
-          >
-            {t("title")}
-          </span>
-          <div className="relative flex flex-col items-center justify-between h-full z-10 gap-4 px-4 py-2">
-            <span className="font-display text-xl italic text-text-muted leading-tight mt-10">
-              {t("tile.off")}
-            </span>
-            <TvArt size={160} className="pointer-events-none select-none anim-drift" />
-            <div className="flex items-center gap-2 px-5 py-3 rounded-full bg-accent/10 text-accent font-semibold">
+          <div className="relative flex flex-col h-full z-10 gap-4 opacity-50 pointer-events-none select-none">
+            <div className="flex items-start justify-between gap-3">
+              <span className="label-mono text-accent" style={{ fontWeight: 900 }}>
+                {t("title")}
+              </span>
+            </div>
+            <PresetRow
+              presets={presets.slice(0, 4)}
+              onLaunch={noop}
+              pendingAppId={undefined}
+              isError={false}
+              isSuccess={false}
+              lastLaunchedAppId={undefined}
+            />
+            <div className="flex flex-col lg:flex-row items-center justify-center gap-3 lg:gap-8">
+              <StepperStack
+                label={t("tile.volume")}
+                readout={null}
+                onUp={noop}
+                onDown={noop}
+                isPending={false}
+                isSuccess={false}
+                isError={false}
+                ariaRoot={t("tile.volume")}
+              />
+              <StepperStack
+                label={t("tile.channel")}
+                readout={null}
+                onUp={noop}
+                onDown={noop}
+                isPending={false}
+                isSuccess={false}
+                isError={false}
+                ariaRoot={t("tile.channel")}
+              />
+            </div>
+            <div className="flex items-center justify-center gap-3 mt-auto">
+              <IconButton label={t("tile.muted")} onClick={noop}>
+                <SpeakerHighIcon size={22} weight="duotone" />
+              </IconButton>
+              <IconButton label={t("tile.powerOn")} onClick={noop}>
+                <PowerIcon size={22} weight="duotone" />
+              </IconButton>
+            </div>
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+            <div className="flex items-center gap-2 px-5 py-3 rounded-full bg-accent text-white font-semibold shadow-lg">
               <PowerIcon size={20} weight="duotone" />
               <span>{t("tile.offCta")}</span>
             </div>
