@@ -190,7 +190,6 @@ platform :ios do
       "-configuration", "release",
       "-destination", "generic/platform=iOS",
       "-archivePath", archive_path,
-      "-allowProvisioningUpdates", "NO",
       "CODE_SIGN_STYLE=Manual",
     )
 
@@ -199,7 +198,6 @@ platform :ios do
       "-archivePath", archive_path,
       "-exportPath", export_dir,
       "-exportOptionsPlist", EXPORT_OPTIONS_PLIST,
-      "-allowProvisioningUpdates", "NO",
     )
 
     ipa = Dir.glob(File.join(export_dir, "*.ipa")).first
