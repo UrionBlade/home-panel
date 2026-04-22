@@ -11,8 +11,12 @@ import { useT } from "../../lib/useT";
 import { useUiStore } from "../../store/ui-store";
 import { ScreensaverOverlay } from "../kiosk/ScreensaverOverlay";
 import { Button } from "../ui/Button";
+import { Dropdown, type DropdownOption } from "../ui/Dropdown";
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const HOUR_OPTIONS: DropdownOption[] = Array.from({ length: 24 }, (_, i) => ({
+  value: String(i),
+  label: `${String(i).padStart(2, "0")}:00`,
+}));
 
 export function KioskSettings() {
   const { t } = useT("kiosk");
@@ -61,41 +65,18 @@ export function KioskSettings() {
 
         {settings.nightModeEnabled && (
           <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="night-start-hour" className="text-sm text-text-muted">
-                {t("nightMode.start")}
-              </label>
-              <select
-                id="night-start-hour"
-                value={settings.nightStartHour}
-                onChange={(e) => update.mutate({ nightStartHour: Number(e.target.value) })}
-                className="rounded-sm border border-border bg-surface px-3 py-2 text-text"
-              >
-                {HOURS.map((h) => (
-                  <option key={h} value={h}>
-                    {String(h).padStart(2, "0")}:00
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label htmlFor="night-end-hour" className="text-sm text-text-muted">
-                {t("nightMode.end")}
-              </label>
-              <select
-                id="night-end-hour"
-                value={settings.nightEndHour}
-                onChange={(e) => update.mutate({ nightEndHour: Number(e.target.value) })}
-                className="rounded-sm border border-border bg-surface px-3 py-2 text-text"
-              >
-                {HOURS.map((h) => (
-                  <option key={h} value={h}>
-                    {String(h).padStart(2, "0")}:00
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Dropdown
+              label={t("nightMode.start")}
+              options={HOUR_OPTIONS}
+              value={String(settings.nightStartHour)}
+              onChange={(v) => update.mutate({ nightStartHour: Number(v) })}
+            />
+            <Dropdown
+              label={t("nightMode.end")}
+              options={HOUR_OPTIONS}
+              value={String(settings.nightEndHour)}
+              onChange={(v) => update.mutate({ nightEndHour: Number(v) })}
+            />
 
             <div className="flex flex-col gap-1 col-span-2">
               <label htmlFor="night-brightness" className="text-sm text-text-muted">

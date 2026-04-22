@@ -2,8 +2,8 @@ import type { CreateFamilyMemberInput, FamilyMember, FamilyMemberKind } from "@h
 import { type FormEvent, useState } from "react";
 import { useT } from "../../lib/useT";
 import { Button } from "../ui/Button";
+import { Dropdown } from "../ui/Dropdown";
 import { Input } from "../ui/Input";
-import { Select } from "../ui/Select";
 
 interface MemberFormProps {
   initial?: FamilyMember;
@@ -66,10 +66,10 @@ export function MemberForm({ initial, onSubmit, onCancel, isSubmitting }: Member
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       {!isEdit && (
-        <Select
+        <Dropdown
           label="Tipo"
           value={kind}
-          onChange={(e) => setKind(e.target.value as FamilyMemberKind)}
+          onChange={(v) => setKind(v as FamilyMemberKind)}
           options={[
             { value: "human", label: t("kindLabel.human") },
             { value: "pet", label: t("kindLabel.pet") },

@@ -8,7 +8,6 @@ export { IconButton } from "./IconButton";
 export { Input } from "./Input";
 export { Modal } from "./Modal";
 export { PendingControl } from "./PendingControl";
-export { Select } from "./Select";
 export type { TileSize } from "./Tile";
 export { Tile } from "./Tile";
 export { ToastContainer } from "./Toast";

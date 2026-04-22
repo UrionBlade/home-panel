@@ -17,9 +17,9 @@ import {
 } from "../../lib/hooks/useCalendarSources";
 import { useT } from "../../lib/useT";
 import { Button } from "../ui/Button";
+import { Dropdown } from "../ui/Dropdown";
 import { Input } from "../ui/Input";
 import { Modal } from "../ui/Modal";
-import { Select } from "../ui/Select";
 
 interface SourceFormData {
   name: string;
@@ -316,13 +316,13 @@ export function CalendarSourcesSettings() {
             value={form.url}
             onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))}
           />
-          <Select
+          <Dropdown
             label={t("sources.type")}
             value={form.type}
-            onChange={(e) =>
+            onChange={(v) =>
               setForm((f) => ({
                 ...f,
-                type: e.target.value as "ics" | "caldav",
+                type: v as "ics" | "caldav",
               }))
             }
             options={[

@@ -58,7 +58,13 @@ export function RecipesPage() {
   // GialloZafferano feed: when the query is empty.
   const gzFeed = useGialloZafferanoFeed();
   // GialloZafferano search: when query length >= 3 (handled inside the hook).
+  // Uses `useInfiniteQuery` so the user can page through results beyond the
+  // initial 30.
   const gzSearch = useSearchGialloZafferano(debouncedSearch);
+  const gzSearchResults = useMemo<GialloZafferanoSearchResult[]>(
+    () => gzSearch.data?.pages.flat() ?? [],
+    [gzSearch.data],
+  );
 
   const [selectedLocalId, setSelectedLocalId] = useState<string | null>(null);
   const [selectedRemote, setSelectedRemote] = useState<GialloZafferanoSearchResult | null>(null);
@@ -67,14 +73,15 @@ export function RecipesPage() {
   const [showImportUrl, setShowImportUrl] = useState(false);
 
   const gzList = useMemo<GialloZafferanoSearchResult[]>(() => {
-    if (isSearching) return gzSearch.data ?? [];
+    if (isSearching) return gzSearchResults;
     return gzFeed.data ?? [];
-  }, [isSearching, gzSearch.data, gzFeed.data]);
+  }, [isSearching, gzSearchResults, gzFeed.data]);
 
   const gzLoading = isSearching
-    ? gzSearch.isFetching && (gzSearch.data ?? []).length === 0
+    ? gzSearch.isFetching && gzSearchResults.length === 0
     : gzFeed.isLoading;
   const gzError = isSearching ? gzSearch.isError : gzFeed.isError;
+  const canLoadMoreGz = isSearching && gzSearch.hasNextPage;
 
   function handleAdd() {
     setEditRecipeId(null);
@@ -173,15 +180,29 @@ export function RecipesPage() {
             message={isSearching ? t("import.searchEmpty") : t("sections.gzEmpty")}
           />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {gzList.map((card) => (
-              <RemoteRecipeCard
-                key={card.url}
-                card={card}
-                onClick={() => setSelectedRemote(card)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {gzList.map((card) => (
+                <RemoteRecipeCard
+                  key={card.url}
+                  card={card}
+                  onClick={() => setSelectedRemote(card)}
+                />
+              ))}
+            </div>
+            {canLoadMoreGz && (
+              <div className="flex justify-center pt-2">
+                <Button
+                  variant="ghost"
+                  size="md"
+                  onClick={() => gzSearch.fetchNextPage()}
+                  isLoading={gzSearch.isFetchingNextPage}
+                >
+                  {t("actions.loadMore")}
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </section>
 

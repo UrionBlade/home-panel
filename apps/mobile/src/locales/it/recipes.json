@@ -40,7 +40,8 @@
     "favorite": "Preferita",
     "unfavorite": "Rimuovi preferita",
     "openSource": "Apri originale",
-    "save": "Salva"
+    "save": "Salva",
+    "loadMore": "Carica altre"
   },
   "sections": {
     "mine": "Le mie ricette",

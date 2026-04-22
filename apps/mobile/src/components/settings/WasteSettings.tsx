@@ -15,9 +15,9 @@ import {
 import { i18next } from "../../lib/i18n";
 import { useT } from "../../lib/useT";
 import { Button } from "../ui/Button";
+import { Dropdown } from "../ui/Dropdown";
 import { Input } from "../ui/Input";
 import { Modal } from "../ui/Modal";
-import { Select } from "../ui/Select";
 
 /* ---- helpers ---- */
 
@@ -175,11 +175,11 @@ function WasteTypeFormModal({
           onChange={(e) => setForm({ ...form, icon: e.target.value })}
           placeholder={t("form.type.iconPlaceholder")}
         />
-        <Select
+        <Dropdown
           label={t("form.type.containerType")}
           options={containerOptions}
           value={form.containerType}
-          onChange={(e) => setForm({ ...form, containerType: e.target.value as "bag" | "bin" })}
+          onChange={(v) => setForm({ ...form, containerType: v as "bag" | "bin" })}
         />
         <div className="flex flex-col gap-2">
           <label htmlFor="exposition-instructions" className="text-sm font-medium text-text-muted">
@@ -287,11 +287,11 @@ function WasteRuleFormModal({
       }
     >
       <div className="flex flex-col gap-4">
-        <Select
+        <Dropdown
           label={t("form.rule.frequency")}
           options={freqOptions}
           value={form.freq}
-          onChange={(e) => setForm({ ...form, freq: e.target.value as "weekly" | "every-n-days" })}
+          onChange={(v) => setForm({ ...form, freq: v as "weekly" | "every-n-days" })}
         />
         {form.freq === "every-n-days" && (
           <Input
@@ -302,11 +302,11 @@ function WasteRuleFormModal({
             onChange={(e) => setForm({ ...form, interval: e.target.value })}
           />
         )}
-        <Select
+        <Dropdown
           label={t("form.rule.weekday")}
           options={weekdayOptions}
           value={form.byWeekday}
-          onChange={(e) => setForm({ ...form, byWeekday: e.target.value })}
+          onChange={(v) => setForm({ ...form, byWeekday: v })}
         />
         <Input
           label={t("form.rule.expositionTime")}

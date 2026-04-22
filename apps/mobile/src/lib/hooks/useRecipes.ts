@@ -6,7 +6,7 @@ import type {
   Recipe,
   UpdateRecipeInput,
 } from "@home-panel/shared";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../api-client";
 
 const RECIPES_KEY = ["recipes"] as const;
@@ -94,18 +94,25 @@ export function useImportRecipeUrl() {
 }
 
 /**
- * Ricerca ricette su giallozafferano.it tramite il backend.
- * Query activates only when query is >= 3 characters to avoid
- * richieste inutili mentre l'utente digita.
+ * Search recipes on giallozafferano.it via the backend.
+ * Only activates when the query is >= 3 characters to avoid
+ * hammering GZ while the user types. Paginates via `useInfiniteQuery` so
+ * the UI can append a "Carica altre" button and fetch the next batch.
  */
 export function useSearchGialloZafferano(query: string) {
   const trimmed = query.trim();
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ["recipes", "gz-search", trimmed],
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       apiClient.get<GialloZafferanoSearchResult[]>(
-        `/api/v1/recipes/gz/search?q=${encodeURIComponent(trimmed)}`,
+        `/api/v1/recipes/gz/search?q=${encodeURIComponent(trimmed)}&page=${pageParam}`,
       ),
+    initialPageParam: 1,
+    /* Keep paging while the last page returned something; stop on the first
+     * empty page. GZ returns up to ~16 serp results per page — a "full"
+     * size is not a reliable signal and partial last pages are common. */
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      lastPage.length > 0 ? (lastPageParam as number) + 1 : undefined,
     enabled: trimmed.length >= 3,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

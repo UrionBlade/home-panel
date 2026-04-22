@@ -2,6 +2,7 @@ import { CheckCircleIcon, SpinnerIcon, TelevisionIcon, WarningIcon } from "@phos
 import { useEffect, useRef, useState } from "react";
 import { useTvAssign, useTvConfig, useTvDevices, useTvStatus } from "../../lib/hooks/useTv";
 import { useT } from "../../lib/useT";
+import { Dropdown, type DropdownOption } from "../ui/Dropdown";
 
 type TestState = "idle" | "loading" | "ok-on" | "ok-off" | "error";
 
@@ -51,7 +52,10 @@ export function TvSettings() {
 
   const boundDevice = devices.find((d) => d.deviceId === config?.tvDeviceId) ?? null;
   const smartThingsNotReady = config && !config.smartThingsConfigured;
-  const selectClass = "rounded-md border border-border bg-surface px-3 py-2 text-sm";
+  const deviceOptions: DropdownOption[] = [
+    { value: "", label: tTv("settings.noneBound") },
+    ...devices.map((d) => ({ value: d.deviceId, label: d.label })),
+  ];
 
   return (
     <section id="tv" ref={sectionRef} className="flex flex-col gap-8">
@@ -78,29 +82,21 @@ export function TvSettings() {
                 {tTv("settings.loadingDevices")}
               </div>
             ) : (
-              <label className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5">
                 <span className="text-sm font-medium">{tTv("settings.boundLabel")}</span>
-                <select
+                <Dropdown
+                  options={deviceOptions}
                   value={config?.tvDeviceId ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value;
+                  onChange={(v) => {
                     if (v === "") handleUnbind();
                     else handlePick(v);
                   }}
-                  className={selectClass}
                   disabled={assign.isPending}
-                >
-                  <option value="">{tTv("settings.noneBound")}</option>
-                  {devices.map((d) => (
-                    <option key={d.deviceId} value={d.deviceId}>
-                      {d.label}
-                    </option>
-                  ))}
-                </select>
+                />
                 {devices.length === 0 && (
                   <span className="text-xs text-text-muted">{tTv("settings.noDevices")}</span>
                 )}
-              </label>
+              </div>
             )}
 
             {boundDevice && (

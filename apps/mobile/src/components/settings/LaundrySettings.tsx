@@ -14,6 +14,7 @@ import {
   useSmartThingsSetup,
 } from "../../lib/hooks/useLaundry";
 import { useT } from "../../lib/useT";
+import { Dropdown, type DropdownOption } from "../ui/Dropdown";
 
 export function LaundrySettings() {
   const { t: tSettings } = useT("settings");
@@ -68,7 +69,15 @@ function ConnectedView({
     }
   }
 
-  const selectClass = "rounded-md border border-border bg-surface px-3 py-2 text-sm";
+  const notSelected = "— Non selezionata —";
+  const washerOptions: DropdownOption[] = [
+    { value: "", label: notSelected },
+    ...washers.map((d) => ({ value: d.deviceId, label: d.label })),
+  ];
+  const dryerOptions: DropdownOption[] = [
+    { value: "", label: notSelected },
+    ...dryers.map((d) => ({ value: d.deviceId, label: d.label })),
+  ];
 
   return (
     <div className="flex flex-col gap-4">
@@ -95,53 +104,31 @@ function ConnectedView({
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {/* Lavatrice */}
-          <label className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5">
             <span className="flex items-center gap-2 text-sm font-medium">
               <WashingMachineIcon size={16} weight="duotone" />
               Lavatrice
             </span>
-            <select
+            <Dropdown
+              options={washerOptions}
               value={washerDeviceId ?? ""}
-              onChange={(e) =>
-                assign.mutate({
-                  washerDeviceId: e.target.value || null,
-                })
-              }
-              className={selectClass}
-            >
-              <option value="">— Non selezionata —</option>
-              {washers.map((d) => (
-                <option key={d.deviceId} value={d.deviceId}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
-          </label>
+              onChange={(v) => assign.mutate({ washerDeviceId: v || null })}
+              disabled={assign.isPending}
+            />
+          </div>
 
-          {/* Asciugatrice */}
-          <label className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5">
             <span className="flex items-center gap-2 text-sm font-medium">
               <WindIcon size={16} weight="duotone" />
               Asciugatrice
             </span>
-            <select
+            <Dropdown
+              options={dryerOptions}
               value={dryerDeviceId ?? ""}
-              onChange={(e) =>
-                assign.mutate({
-                  dryerDeviceId: e.target.value || null,
-                })
-              }
-              className={selectClass}
-            >
-              <option value="">— Non selezionata —</option>
-              {dryers.map((d) => (
-                <option key={d.deviceId} value={d.deviceId}>
-                  {d.label}
-                </option>
-              ))}
-            </select>
-          </label>
+              onChange={(v) => assign.mutate({ dryerDeviceId: v || null })}
+              disabled={assign.isPending}
+            />
+          </div>
 
           {washers.length === 0 && dryers.length === 0 && (
             <p className="text-sm text-text-muted">{tSettings("laundry.noDevices")}</p>

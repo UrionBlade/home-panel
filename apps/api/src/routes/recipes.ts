@@ -308,8 +308,17 @@ export const recipesRouter = new Hono()
     if (!q) {
       return c.json({ error: "q è obbligatorio" }, 400);
     }
+    const pageRaw = c.req.query("page");
+    let page = 1;
+    if (pageRaw !== undefined) {
+      const parsed = Number.parseInt(pageRaw, 10);
+      if (!Number.isFinite(parsed) || parsed < 1 || parsed > 50) {
+        return c.json({ error: "page non valido" }, 400);
+      }
+      page = parsed;
+    }
     try {
-      const results = await searchGialloZafferano(q);
+      const results = await searchGialloZafferano(q, page);
       return c.json(results);
     } catch (err) {
       console.error("[recipes/gz/search]", err);

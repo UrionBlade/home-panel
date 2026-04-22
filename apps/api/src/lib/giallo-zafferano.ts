@@ -162,13 +162,16 @@ async function fetchHtml(url: string): Promise<string> {
   return text;
 }
 
-interface ParsedCard extends GialloZafferanoSearchResult {
-  /** true if the card is a main search result (`gz-card-search`),
-   * false if it is a "recommended" card from the sidebar carousel. Used for sorting. */
-  primary: boolean;
-}
+function parseCard(classes: string, body: string): GialloZafferanoSearchResult | null {
+  /* GZ's search page has two categories of cards with the same outer
+   * `gz-card` class: the actual search results (always carry
+   * `gz-ets-serp-target`) and the sidebar "popular recipes" carousel
+   * (`gz-card-vertical`) which shows the same ~30 recipes regardless of
+   * the query. Only the former should be surfaced — including the latter
+   * inflates page 1, pollutes it with unrelated recipes, and makes
+   * pagination look like it repeats content. */
+  if (!/\bgz-ets-serp-target\b/.test(classes)) return null;
 
-function parseCard(classes: string, body: string): ParsedCard | null {
   const hrefMatch = body.match(HREF_RE);
   const href = hrefMatch?.[1]?.trim();
   if (!href || !RECIPE_HOST_PATTERN.test(href)) return null;
@@ -206,7 +209,6 @@ function parseCard(classes: string, body: string): ParsedCard | null {
     difficulty: stats.difficulty,
     rating: stats.rating,
     comments: stats.comments,
-    primary: /\bgz-card-search\b/.test(classes),
   };
 }
 
@@ -214,19 +216,28 @@ function parseCard(classes: string, body: string): ParsedCard | null {
  * Searches recipes on giallozafferano.it.
  *
  * @param query free text (e.g. "carbonara", "pollo al curry")
+ * @param page 1-based page number; page 1 hits the canonical URL, pages 2+
+ *        go through GZ's `/page{N}/` segment.
  * @returns list of uniform results; empty array if no matches.
  *
  * Sort strategy: `gz-card-search` cards first (main SERP results),
  * then any "vertical" cards as a fallback. De-duplicated by canonical URL.
  */
-export async function searchGialloZafferano(query: string): Promise<GialloZafferanoSearchResult[]> {
+export async function searchGialloZafferano(
+  query: string,
+  page = 1,
+): Promise<GialloZafferanoSearchResult[]> {
   const trimmed = query.trim();
   if (!trimmed) return [];
 
-  const searchUrl = `${SEARCH_URL_TEMPLATE}/${encodeURIComponent(trimmed)}/`;
+  const encoded = encodeURIComponent(trimmed);
+  const searchUrl =
+    page > 1
+      ? `${SEARCH_URL_TEMPLATE}/page${page}/${encoded}/`
+      : `${SEARCH_URL_TEMPLATE}/${encoded}/`;
   const html = await fetchHtml(searchUrl);
 
-  const collected: ParsedCard[] = [];
+  const collected: GialloZafferanoSearchResult[] = [];
   const seen = new Set<string>();
 
   for (const match of html.matchAll(ARTICLE_BLOCK_RE)) {
@@ -238,13 +249,12 @@ export async function searchGialloZafferano(query: string): Promise<GialloZaffer
     if (seen.has(parsed.url)) continue;
     seen.add(parsed.url);
     collected.push(parsed);
-    if (collected.length >= MAX_RESULTS * 2) break;
+    /* GZ never returns more than ~16 real results per page; the cap is
+     * only a safety net against runaway HTML. */
+    if (collected.length >= MAX_RESULTS) break;
   }
 
-  // Primary first, preserving appearance order within each group.
-  collected.sort((a, b) => Number(b.primary) - Number(a.primary));
-
-  return collected.slice(0, MAX_RESULTS).map(({ primary: _p, ...rest }) => rest);
+  return collected;
 }
 
 /* -------------------------------------------------------------------- */

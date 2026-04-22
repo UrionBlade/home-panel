@@ -5,8 +5,8 @@ import { useFamilyMembers } from "../../lib/hooks/useFamily";
 import { useT } from "../../lib/useT";
 import { Avatar } from "../ui/Avatar";
 import { Button } from "../ui/Button";
+import { Dropdown } from "../ui/Dropdown";
 import { Input } from "../ui/Input";
-import { Select } from "../ui/Select";
 
 interface EventFormProps {
   /** When provided, the form is pre-filled in edit mode */
@@ -132,10 +132,10 @@ export function EventForm({
         onChange={(e) => setLocation(e.target.value)}
       />
 
-      <Select
+      <Dropdown
         label={t("fields.category")}
         value={categoryId}
-        onChange={(e) => setCategoryId(e.target.value)}
+        onChange={(v) => setCategoryId(v)}
         options={[
           { value: "", label: "—" },
           ...categories.map((c) => ({ value: c.id, label: c.name })),

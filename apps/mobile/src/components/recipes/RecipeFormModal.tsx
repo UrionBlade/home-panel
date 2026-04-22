@@ -4,9 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useCreateRecipe, useRecipe, useUpdateRecipe } from "../../lib/hooks/useRecipes";
 import { useT } from "../../lib/useT";
 import { Button } from "../ui/Button";
+import { Dropdown } from "../ui/Dropdown";
 import { Input } from "../ui/Input";
 import { Modal } from "../ui/Modal";
-import { Select } from "../ui/Select";
 
 interface RecipeFormModalProps {
   open: boolean;
@@ -271,10 +271,10 @@ export function RecipeFormModal({ open, onClose, editRecipeId, importData }: Rec
           />
         </div>
 
-        <Select
+        <Dropdown
           label={t("fields.difficulty")}
           value={difficulty}
-          onChange={(e) => setDifficulty(e.target.value)}
+          onChange={(v) => setDifficulty(v)}
           options={DIFFICULTY_OPTIONS}
         />
 

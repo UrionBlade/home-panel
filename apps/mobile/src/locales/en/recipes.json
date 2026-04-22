@@ -40,7 +40,8 @@
     "favorite": "Favorite",
     "unfavorite": "Remove favorite",
     "openSource": "Open original",
-    "save": "Save"
+    "save": "Save",
+    "loadMore": "Load more"
   },
   "sections": {
     "mine": "My recipes",
