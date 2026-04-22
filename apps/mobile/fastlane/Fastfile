@@ -31,6 +31,7 @@ platform :ios do
   lane :release do
     setup_signing
     ensure_ios_project
+    generate_icons
     stamp_build_number
     build_tauri_ios
     upload_build
@@ -156,6 +157,15 @@ platform :ios do
     install_provisioning_profile(path: profile_path)
 
     File.delete(p12_path) if File.exist?(p12_path)
+  end
+
+  # Overwrite the default Tauri icons in gen/apple's AppIcon.appiconset with
+  # variants rendered from src-tauri/icons/icon.png. Without this, a fresh
+  # `tauri ios init` on CI leaves the built-in Tauri "T" placeholder.
+  private_lane :generate_icons do
+    Dir.chdir(IOS_PROJECT_ROOT) do
+      sh("pnpm tauri icon src-tauri/icons/icon.png")
+    end
   end
 
   private_lane :stamp_build_number do
