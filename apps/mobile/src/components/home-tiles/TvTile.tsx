@@ -56,14 +56,16 @@ export function TvTile() {
     );
   }
 
-  /* ---- Off: single-tap powers on ---- */
+  /* ---- Off: single-tap powers on. Preserves the on-state footprint so the
+   * grid doesn't reflow when the TV is turned off, and shows an explicit
+   * power pill so it reads as "tap to turn on" instead of dead copy. ---- */
   if (status?.power === "off") {
     return (
       <PendingControl
         isPending={power.isPending}
         isSuccess={power.isSuccess}
         isError={power.isError}
-        className="w-full h-full"
+        className="w-full h-full min-h-[22rem] md:min-h-0"
       >
         <Tile size="md" onClick={() => power.mutate({ on: true })} ariaLabel={t("tile.powerOn")}>
           <BackdropPaint />
@@ -73,11 +75,15 @@ export function TvTile() {
           >
             {t("title")}
           </span>
-          <div className="relative flex flex-col items-center justify-center h-full z-10 gap-4 px-4">
-            <TvArt size={160} className="pointer-events-none select-none anim-drift" />
-            <span className="font-display text-2xl italic text-text-muted leading-tight">
+          <div className="relative flex flex-col items-center justify-between h-full z-10 gap-4 px-4 py-2">
+            <span className="font-display text-xl italic text-text-muted leading-tight mt-10">
               {t("tile.off")}
             </span>
+            <TvArt size={160} className="pointer-events-none select-none anim-drift" />
+            <div className="flex items-center gap-2 px-5 py-3 rounded-full bg-accent/10 text-accent font-semibold">
+              <PowerIcon size={20} weight="duotone" />
+              <span>{t("tile.offCta")}</span>
+            </div>
           </div>
         </Tile>
       </PendingControl>
