@@ -45,6 +45,8 @@
     "disconnected": "Backend non raggiungibile"
   },
   "aria": {
-    "mainNav": "Navigazione principale"
+    "mainNav": "Navigazione principale",
+    "openNav": "Apri menu",
+    "closeNav": "Chiudi menu"
   }
 }

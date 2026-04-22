@@ -109,8 +109,10 @@ export function TvTile() {
           lastLaunchedAppId={app.variables?.appId}
         />
 
-        {/* Volume + Channel — two centered stacks side by side */}
-        <div className="flex items-start justify-center gap-8">
+        {/* Volume + Channel — side by side on wide tiles, stacked below lg
+         * where the 2-col tile is too narrow (≈196px on iPad portrait) to
+         * fit both 112px stepper groups on the same line. */}
+        <div className="flex flex-col lg:flex-row items-center justify-center gap-3 lg:gap-8">
           <StepperStack
             label={t("tile.volume")}
             readout={status?.volume ?? null}

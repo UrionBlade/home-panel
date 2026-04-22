@@ -45,6 +45,8 @@
     "disconnected": "Backend unreachable"
   },
   "aria": {
-    "mainNav": "Main navigation"
+    "mainNav": "Main navigation",
+    "openNav": "Open menu",
+    "closeNav": "Close menu"
   }
 }

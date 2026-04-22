@@ -1,6 +1,6 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { AnimatePresence } from "framer-motion";
-import { type ReactNode, useEffect, useMemo } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { I18nextProvider } from "react-i18next";
 import { useKioskPhotos, useKioskSettings } from "../../lib/hooks/useKioskSettings";
 import { i18next } from "../../lib/i18n";
@@ -65,6 +65,7 @@ function ScreensaverManager() {
 }
 
 export function AppShell({ children, hideClock, title }: AppShellProps) {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   return (
     <ErrorBoundary>
       <I18nextProvider i18n={i18next}>
@@ -75,9 +76,16 @@ export function AppShell({ children, hideClock, title }: AppShellProps) {
                 <KioskActivator />
                 <SSEConnector />
                 <div className="flex h-screen w-screen overflow-hidden bg-bg text-text">
-                  <SideNav />
+                  <SideNav
+                    isMobileOpen={mobileNavOpen}
+                    onMobileClose={() => setMobileNavOpen(false)}
+                  />
                   <div className="flex-1 flex flex-col overflow-hidden">
-                    <AppHeader hideClock={hideClock} title={title} />
+                    <AppHeader
+                      hideClock={hideClock}
+                      title={title}
+                      onOpenNav={() => setMobileNavOpen(true)}
+                    />
                     <main className="flex-1 overflow-auto">{children}</main>
                   </div>
                   <ToastContainer />
