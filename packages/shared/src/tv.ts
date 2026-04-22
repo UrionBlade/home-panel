@@ -29,6 +29,8 @@ export interface TvConfig {
   smartThingsConfigured: boolean;
   /** Device id bound as the TV, or null. */
   tvDeviceId: string | null;
+  /** Room assignment for the bound TV, nullable. */
+  tvRoomId: string | null;
 }
 
 /** A Samsung OCF TV visible to the configured PAT. */
@@ -41,9 +43,11 @@ export interface TvDeviceSummary {
   manufacturer: string | null;
 }
 
-/** Body of PATCH /tv/config. Null unbinds. */
+/** Body of PATCH /tv/config. Null unbinds. All fields optional — send only
+ * what changes. */
 export interface TvConfigUpdateInput {
-  tvDeviceId: string | null;
+  tvDeviceId?: string | null;
+  tvRoomId?: string | null;
 }
 
 /** Body of POST /tv/power. */

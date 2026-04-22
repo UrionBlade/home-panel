@@ -92,6 +92,16 @@ export function useArmCamera() {
   });
 }
 
+/** Assign (or clear) the room of a Blink camera. */
+export function useUpdateCameraRoom() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, roomId }: { id: string; roomId: string | null }) =>
+      apiClient.patch<BlinkCamera>(`/api/v1/blink/cameras/${id}`, { roomId }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: BLINK_CAMERAS_KEY }),
+  });
+}
+
 /* ---- Live HLS session (real RTSPS → HLS) ---- */
 
 export function useStartLiveSession() {

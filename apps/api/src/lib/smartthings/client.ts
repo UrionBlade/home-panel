@@ -20,6 +20,9 @@ export function getSmartThingsConfig(): SmartThingsConfigRow | undefined {
       washerDeviceId: null,
       dryerDeviceId: null,
       tvDeviceId: null,
+      washerRoomId: null,
+      dryerRoomId: null,
+      tvRoomId: null,
       updatedAt: "",
     };
     return { ...base, pat: process.env.SMARTTHINGS_PAT };

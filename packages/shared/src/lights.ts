@@ -14,7 +14,12 @@ export type LightProvider = "ewelink";
 export interface LightSummary {
   id: string;
   name: string;
+  /** Legacy free-text label retained for pre-room data. New assignments go
+   * through `roomId` and should be preferred by the UI. */
   room: string | null;
+  /** FK-style pointer to a Room row, nullable. When a room is deleted the
+   * light stays but falls back to the "Senza stanza" group. */
+  roomId: string | null;
   provider: LightProvider;
   deviceId: string;
   state: LightState;

@@ -8,6 +8,7 @@ import { LaundryPage } from "./pages/LaundryPage";
 import { LightsPage } from "./pages/LightsPage";
 import { MusicPage } from "./pages/MusicPage";
 import { RecipesPage } from "./pages/RecipesPage";
+import { RoomsPage } from "./pages/RoomsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { ShoppingPage } from "./pages/ShoppingPage";
 import { SpotifyCallbackPage } from "./pages/SpotifyCallbackPage";
@@ -104,6 +105,14 @@ const router = createBrowserRouter([
     element: (
       <AppShell>
         <MusicPage />
+      </AppShell>
+    ),
+  },
+  {
+    path: "/rooms",
+    element: (
+      <AppShell>
+        <RoomsPage />
       </AppShell>
     ),
   },

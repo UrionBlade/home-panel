@@ -31,6 +31,16 @@ export function useLights() {
   });
 }
 
+/** Panel-side metadata edit: rename and/or reassign room for a light. */
+export function useUpdateLight() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: { name?: string; roomId?: string | null } }) =>
+      apiClient.patch<LightSummary>(`/api/v1/lights/${id}`, input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: LIGHTS_KEY }),
+  });
+}
+
 export function useEwelinkCredentials() {
   return useQuery({
     queryKey: EWELINK_CREDS_KEY,

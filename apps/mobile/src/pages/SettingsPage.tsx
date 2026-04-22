@@ -10,7 +10,6 @@ import { CameraSettings } from "../components/settings/CameraSettings";
 import { KioskSettings } from "../components/settings/KioskSettings";
 import { LaundrySettings } from "../components/settings/LaundrySettings";
 import { LightsSettings } from "../components/settings/LightsSettings";
-import { RoomsSettings } from "../components/settings/RoomsSettings";
 import { TvSettings } from "../components/settings/TvSettings";
 import { VoiceSettings } from "../components/settings/VoiceSettings";
 import { WasteSettings } from "../components/settings/WasteSettings";
@@ -128,7 +127,6 @@ export function SettingsPage() {
       {tab === "home" && (
         <>
           <FamilyManager />
-          <RoomsSettings />
           <KioskSettings />
         </>
       )}

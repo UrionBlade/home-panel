@@ -237,6 +237,8 @@ export const laundryRouter = new Hono()
       configured: !!config?.pat,
       washerDeviceId: config?.washerDeviceId ?? null,
       dryerDeviceId: config?.dryerDeviceId ?? null,
+      washerRoomId: config?.washerRoomId ?? null,
+      dryerRoomId: config?.dryerRoomId ?? null,
     });
   })
 
@@ -331,6 +333,12 @@ export const laundryRouter = new Hono()
     };
     if (body.washerDeviceId !== undefined) updates.washerDeviceId = body.washerDeviceId;
     if (body.dryerDeviceId !== undefined) updates.dryerDeviceId = body.dryerDeviceId;
+    if (body.washerRoomId !== undefined) {
+      updates.washerRoomId = body.washerRoomId ? body.washerRoomId.trim() || null : null;
+    }
+    if (body.dryerRoomId !== undefined) {
+      updates.dryerRoomId = body.dryerRoomId ? body.dryerRoomId.trim() || null : null;
+    }
 
     db.update(smartthingsConfig).set(updates).run();
 

@@ -273,6 +273,9 @@ export const blinkCameras = sqliteTable("blink_cameras", {
   batteryLevel: text("battery_level"),
   thumbnailUrl: text("thumbnail_url"),
   lastMotionAt: text("last_motion_at"),
+  /** Nullable room assignment. Not a FK — if the room is deleted the camera
+   * simply becomes unassigned (client shows "Senza stanza"). */
+  roomId: text("room_id"),
   createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
   updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
 });
@@ -370,6 +373,11 @@ export const smartthingsConfig = sqliteTable("smartthings_config", {
   washerDeviceId: text("washer_device_id"),
   dryerDeviceId: text("dryer_device_id"),
   tvDeviceId: text("tv_device_id"),
+  /* Per-device room assignments. The SmartThings config is singleton so the
+   * room references are inlined here instead of in a separate join table. */
+  washerRoomId: text("washer_room_id"),
+  dryerRoomId: text("dryer_room_id"),
+  tvRoomId: text("tv_room_id"),
   updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
 });
 export type SmartThingsConfigRow = typeof smartthingsConfig.$inferSelect;
@@ -383,7 +391,12 @@ export type SmartThingsConfigRow = typeof smartthingsConfig.$inferSelect;
 export const lights = sqliteTable("lights", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
+  /** Legacy free-text room label; kept for pre-migration data. New code
+   * assigns rooms via `roomId` instead. */
   room: text("room"),
+  /** Nullable room assignment — not a FK; deleting a room leaves the light
+   * orphaned (client shows it under "Senza stanza"). */
+  roomId: text("room_id"),
   /** Provider id, e.g. "ewelink". Must match one registered in
    * apps/api/src/lib/lights/providers/*. */
   provider: text("provider").notNull(),

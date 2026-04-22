@@ -6,19 +6,8 @@
     "cameras": "Cameras",
     "laundry": "Laundry",
     "tv": "TV",
-    "rooms": "Rooms",
     "appearance": "Appearance",
     "info": "Info"
-  },
-  "rooms": {
-    "hint": "Create the rooms of your house. You'll then assign each device (TV, washer, air conditioners…) to the right room.",
-    "empty": "No rooms yet. Add one to get started.",
-    "add": "Add room",
-    "edit": "Edit room",
-    "name": "Name",
-    "namePlaceholder": "e.g. Living room, Bedroom, Laundry",
-    "icon": "Icon",
-    "confirmDelete": "Delete the room \"{{name}}\"? Its devices will stay but won't have a room anymore."
   },
   "tabs": {
     "home": "Home",

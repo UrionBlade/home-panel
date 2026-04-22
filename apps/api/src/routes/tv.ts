@@ -109,6 +109,7 @@ export const tvRouter = new Hono()
     const body: TvConfig = {
       smartThingsConfigured: !!config?.pat,
       tvDeviceId: config?.tvDeviceId ?? null,
+      tvRoomId: config?.tvRoomId ?? null,
     };
     return c.json(body);
   })
@@ -139,12 +140,19 @@ export const tvRouter = new Hono()
       return c.json({ error: "SmartThings non configurato" }, 400);
     }
     const body = (await c.req.json().catch(() => null)) as TvConfigUpdateInput | null;
-    if (!body || (body.tvDeviceId !== null && typeof body.tvDeviceId !== "string")) {
-      return c.json({ error: "tvDeviceId è richiesto (string | null)" }, 400);
+    if (!body) {
+      return c.json({ error: "Body JSON obbligatorio" }, 400);
+    }
+    if (
+      body.tvDeviceId !== undefined &&
+      body.tvDeviceId !== null &&
+      typeof body.tvDeviceId !== "string"
+    ) {
+      return c.json({ error: "tvDeviceId deve essere string | null" }, 400);
     }
 
     /* Validate the requested id belongs to a TV-shaped device. */
-    if (body.tvDeviceId !== null) {
+    if (body.tvDeviceId) {
       try {
         const items = await stListDevices(config.pat);
         const match = items.find((d) => d.deviceId === body.tvDeviceId);
@@ -157,21 +165,22 @@ export const tvRouter = new Hono()
       }
     }
 
+    const updates: Record<string, string | null> = {
+      updatedAt: new Date().toISOString(),
+    };
+    if (body.tvDeviceId !== undefined) updates.tvDeviceId = body.tvDeviceId;
+    if (body.tvRoomId !== undefined) {
+      updates.tvRoomId = body.tvRoomId ? body.tvRoomId.trim() || null : null;
+    }
+
     const existing = db.select().from(smartthingsConfig).get();
     if (existing) {
-      db.update(smartthingsConfig)
-        .set({ tvDeviceId: body.tvDeviceId, updatedAt: new Date().toISOString() })
-        .run();
+      db.update(smartthingsConfig).set(updates).run();
     } else {
-      db.insert(smartthingsConfig)
-        .values({
-          tvDeviceId: body.tvDeviceId,
-          updatedAt: new Date().toISOString(),
-        })
-        .run();
+      db.insert(smartthingsConfig).values(updates).run();
     }
     invalidateTvCache();
-    return c.json({ ok: true, tvDeviceId: body.tvDeviceId });
+    return c.json({ ok: true, ...updates });
   })
 
   .get("/status", async (c) => {

@@ -49,6 +49,7 @@ function cameraRowToDto(row: BlinkCameraRow): BlinkCamera {
     batteryLevel: row.batteryLevel,
     thumbnailUrl: row.thumbnailUrl,
     lastMotionAt: row.lastMotionAt,
+    roomId: row.roomId,
   };
 }
 
@@ -249,6 +250,30 @@ export const blinkRouter = new Hono()
     const row = db.select().from(blinkCameras).where(eq(blinkCameras.id, id)).get();
     if (!row) return c.json({ error: "not_found" }, 404);
     return c.json(cameraRowToDto(row));
+  })
+
+  /* Assign (or clear) the room of a single camera. Body: `{ roomId: string | null }`.
+   * The id is stored as plain text; stale values are shown as "Senza stanza"
+   * by the client rather than rejected here. */
+  .patch("/cameras/:id", async (c) => {
+    const id = c.req.param("id");
+    const existing = db.select().from(blinkCameras).where(eq(blinkCameras.id, id)).get();
+    if (!existing) return c.json({ error: "not_found" }, 404);
+    const body = (await c.req.json().catch(() => null)) as { roomId?: string | null } | null;
+    if (!body || typeof body !== "object") {
+      return c.json({ error: "Body JSON obbligatorio" }, 400);
+    }
+    if (body.roomId !== undefined) {
+      const value =
+        typeof body.roomId === "string" && body.roomId.trim() ? body.roomId.trim() : null;
+      db.update(blinkCameras)
+        .set({ roomId: value, updatedAt: new Date().toISOString() })
+        .where(eq(blinkCameras.id, id))
+        .run();
+    }
+    const updated = db.select().from(blinkCameras).where(eq(blinkCameras.id, id)).get();
+    if (!updated) return c.json({ error: "not_found" }, 404);
+    return c.json(cameraRowToDto(updated));
   })
 
   .post("/cameras/sync", async (c) => {

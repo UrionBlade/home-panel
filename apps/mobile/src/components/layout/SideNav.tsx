@@ -1,6 +1,7 @@
 import {
   CalendarBlankIcon,
   CookingPotIcon,
+  DoorIcon,
   GearSixIcon,
   HouseLineIcon,
   type Icon,
@@ -34,6 +35,7 @@ const ENTRIES: NavEntry[] = [
   { to: "/timers", labelKey: "tabs.timers", Icon: TimerIcon },
   { to: "/laundry", labelKey: "tabs.laundry", Icon: WashingMachineIcon },
   { to: "/cameras", labelKey: "tabs.cameras", Icon: VideoCameraIcon },
+  { to: "/rooms", labelKey: "tabs.rooms", Icon: DoorIcon },
   { to: "/settings", labelKey: "tabs.settings", Icon: GearSixIcon },
 ];
 

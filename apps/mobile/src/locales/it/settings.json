@@ -6,19 +6,8 @@
     "cameras": "Telecamere",
     "laundry": "Lavanderia",
     "tv": "TV",
-    "rooms": "Stanze",
     "appearance": "Aspetto",
     "info": "Info"
-  },
-  "rooms": {
-    "hint": "Crea le stanze della casa. Poi assegnerai ogni dispositivo (TV, lavatrice, climatizzatori…) alla stanza giusta.",
-    "empty": "Nessuna stanza ancora. Aggiungine una per iniziare.",
-    "add": "Aggiungi stanza",
-    "edit": "Modifica stanza",
-    "name": "Nome",
-    "namePlaceholder": "es. Salotto, Camera, Lavanderia",
-    "icon": "Icona",
-    "confirmDelete": "Eliminare la stanza «{{name}}»? I dispositivi associati resteranno, ma non avranno più una stanza."
   },
   "tabs": {
     "home": "Casa",

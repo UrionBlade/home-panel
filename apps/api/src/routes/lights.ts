@@ -47,6 +47,7 @@ function toSummary(row: typeof lights.$inferSelect): LightSummary {
     id: row.id,
     name: row.name,
     room: row.room,
+    roomId: row.roomId,
     /* Schema stores provider as string; only "ewelink" is implemented today,
      * unknown values would have failed sync so this cast is safe. */
     provider: row.provider as LightSummary["provider"],
@@ -74,6 +75,40 @@ export const lightsRouter = new Hono()
     const rows = db.select().from(lights).all();
     const body: LightSummary[] = rows.map(toSummary);
     return c.json(body);
+  })
+
+  /* Update a light's panel-side metadata: display name and/or room assignment.
+   * The upstream provider is never contacted — this is the user's personal
+   * labelling. Body fields are all optional; send only what changes. */
+  .patch("/:id", async (c) => {
+    const id = c.req.param("id");
+    const existing = db.select().from(lights).where(eq(lights.id, id)).get();
+    if (!existing) return c.json({ error: "not_found" }, 404);
+    const body = (await c.req.json().catch(() => null)) as {
+      name?: string;
+      roomId?: string | null;
+    } | null;
+    if (!body || typeof body !== "object") {
+      return c.json({ error: "Body JSON obbligatorio" }, 400);
+    }
+    const updates: { name?: string; roomId?: string | null; updatedAt: string } = {
+      updatedAt: new Date().toISOString(),
+    };
+    if (typeof body.name === "string") {
+      const trimmed = body.name.trim();
+      if (!trimmed || trimmed.length > 64) {
+        return c.json({ error: "name 1-64 caratteri" }, 400);
+      }
+      updates.name = trimmed;
+    }
+    if (body.roomId !== undefined) {
+      updates.roomId =
+        typeof body.roomId === "string" && body.roomId.trim() ? body.roomId.trim() : null;
+    }
+    db.update(lights).set(updates).where(eq(lights.id, id)).run();
+    const updated = db.select().from(lights).where(eq(lights.id, id)).get();
+    if (!updated) return c.json({ error: "not_found" }, 404);
+    return c.json(toSummary(updated));
   })
 
   .post("/sync", async (c) => {

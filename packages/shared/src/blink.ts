@@ -16,6 +16,9 @@ export interface BlinkCamera {
   batteryLevel: string | null;
   thumbnailUrl: string | null;
   lastMotionAt: string | null;
+  /** Assigned room id, null if unassigned. Not a strict FK — the camera stays
+   * listed under "Senza stanza" if the room was deleted. */
+  roomId: string | null;
 }
 
 export interface BlinkMotionClip {

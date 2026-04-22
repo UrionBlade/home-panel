@@ -1,0 +1,25 @@
+{
+  "title": "Rooms",
+  "subtitle": "The map of your house",
+  "empty": "You don't have any rooms yet. Create one to get started — then each device can be assigned to the right room.",
+  "add": "Add room",
+  "edit": "Edit room",
+  "name": "Name",
+  "namePlaceholder": "e.g. Living room, Bedroom, Laundry",
+  "icon": "Icon",
+  "confirmDelete": "Delete the room \"{{name}}\"? Its devices will stay but won't have a room anymore.",
+  "devices": "Devices",
+  "devicesHint": "Drop each device into the right room. Voice commands can then target rooms (e.g. \"hey home, turn on the bedroom air conditioner\").",
+  "devicesEmpty": "No devices configured yet. Connect cameras, TV, or others from the Settings page and they'll appear here.",
+  "unassigned": "— No room —",
+  "groups": {
+    "cameras": "Cameras",
+    "lights": "Lights",
+    "smartthings": "SmartThings"
+  },
+  "labels": {
+    "washer": "Washer",
+    "dryer": "Dryer",
+    "tv": "TV"
+  }
+}

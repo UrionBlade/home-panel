@@ -1,0 +1,25 @@
+{
+  "title": "Stanze",
+  "subtitle": "La mappa della casa",
+  "empty": "Non hai ancora nessuna stanza. Creane una per iniziare — poi potremo assegnare a ogni stanza i dispositivi giusti.",
+  "add": "Aggiungi stanza",
+  "edit": "Modifica stanza",
+  "name": "Nome",
+  "namePlaceholder": "es. Salotto, Camera, Lavanderia",
+  "icon": "Icona",
+  "confirmDelete": "Eliminare la stanza «{{name}}»? I dispositivi associati resteranno, ma non avranno più una stanza.",
+  "devices": "Dispositivi",
+  "devicesHint": "Trascina ciascun dispositivo nella stanza giusta. Potrai richiamarli a voce per stanza (es. «ok casa accendi il condizionatore della camera»).",
+  "devicesEmpty": "Nessun dispositivo configurato. Collega telecamere, TV o altro dalla pagina Impostazioni e torneranno qui.",
+  "unassigned": "— Senza stanza —",
+  "groups": {
+    "cameras": "Telecamere",
+    "lights": "Luci",
+    "smartthings": "SmartThings"
+  },
+  "labels": {
+    "washer": "Lavatrice",
+    "dryer": "Asciugatrice",
+    "tv": "TV"
+  }
+}
