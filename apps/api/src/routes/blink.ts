@@ -1,4 +1,4 @@
-import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
+import { createReadStream, existsSync, readFileSync, statSync, unlinkSync } from "node:fs";
 import { basename, join } from "node:path";
 import type {
   BlinkCamera,
@@ -6,7 +6,7 @@ import type {
   BlinkMotionClip,
   BlinkSetupInput,
 } from "@home-panel/shared";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db/client.js";
 import {
@@ -417,14 +417,15 @@ export const blinkRouter = new Hono()
   /* ----- clips ----- */
   .get("/clips", (c) => {
     const cameraId = c.req.query("cameraId");
-    const rows = cameraId
-      ? db
-          .select()
-          .from(blinkMotionClips)
-          .where(eq(blinkMotionClips.cameraId, cameraId))
-          .orderBy(desc(blinkMotionClips.recordedAt))
-          .all()
-      : db.select().from(blinkMotionClips).orderBy(desc(blinkMotionClips.recordedAt)).all();
+    const whereClause = cameraId
+      ? and(eq(blinkMotionClips.cameraId, cameraId), isNull(blinkMotionClips.deletedAt))
+      : isNull(blinkMotionClips.deletedAt);
+    const rows = db
+      .select()
+      .from(blinkMotionClips)
+      .where(whereClause)
+      .orderBy(desc(blinkMotionClips.recordedAt))
+      .all();
     return c.json(rows.map(clipRowToDto));
   })
 
@@ -437,8 +438,26 @@ export const blinkRouter = new Hono()
 
   .delete("/clips/:id", (c) => {
     const id = c.req.param("id");
-    const result = db.delete(blinkMotionClips).where(eq(blinkMotionClips.id, id)).run();
-    if (result.changes === 0) return c.json({ error: "not_found" }, 404);
+    const row = db.select().from(blinkMotionClips).where(eq(blinkMotionClips.id, id)).get();
+    if (!row || row.deletedAt) return c.json({ error: "not_found" }, 404);
+
+    // Remove the cached .mp4 from disk, if any. Ignore disk errors: the
+    // tombstone is what matters for sync idempotency.
+    if (row.localPath && existsSync(row.localPath)) {
+      try {
+        unlinkSync(row.localPath);
+      } catch (err) {
+        console.warn(
+          `[blink] failed to unlink ${row.localPath}:`,
+          err instanceof Error ? err.message : err,
+        );
+      }
+    }
+
+    db.update(blinkMotionClips)
+      .set({ deletedAt: new Date().toISOString(), localPath: null })
+      .where(eq(blinkMotionClips.id, id))
+      .run();
     return c.body(null, 204);
   })
 

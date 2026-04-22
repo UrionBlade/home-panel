@@ -120,7 +120,13 @@ export async function downloadPendingClips(
     })
     .from(blinkMotionClips)
     .leftJoin(blinkCameras, eq(blinkMotionClips.cameraId, blinkCameras.id))
-    .where(and(isNull(blinkMotionClips.localPath), isNotNull(blinkMotionClips.clipPath)))
+    .where(
+      and(
+        isNull(blinkMotionClips.localPath),
+        isNull(blinkMotionClips.deletedAt),
+        isNotNull(blinkMotionClips.clipPath),
+      ),
+    )
     .all();
 
   let saved = 0;

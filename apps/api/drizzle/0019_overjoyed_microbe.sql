@@ -1,0 +1,1 @@
+ALTER TABLE `blink_motion_clips` ADD `deleted_at` text;

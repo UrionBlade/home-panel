@@ -290,6 +290,9 @@ export const blinkMotionClips = sqliteTable("blink_motion_clips", {
   clipPath: text("clip_path"),
   localPath: text("local_path"),
   downloadedAt: text("downloaded_at"),
+  /** Tombstone: set when the user deletes a clip so the Blink sync won't
+   * re-insert it and the downloader won't re-fetch the media file. */
+  deletedAt: text("deleted_at"),
   viewed: integer("viewed", { mode: "boolean" }).notNull().default(false),
   createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
 });
