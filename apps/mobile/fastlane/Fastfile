@@ -74,7 +74,7 @@ platform :ios do
       profile_name: profile_name,
       profile_uuid: profile_uuid,
       targets: ["mobile_iOS"],
-      build_configurations: ["Release"],
+      build_configurations: ["Debug", "Release"],
     )
   end
 
