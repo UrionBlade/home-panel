@@ -192,11 +192,10 @@ platform :ios do
     # Our manual-signing ExportOptions.plist was written at
     # gen/apple/ExportOptions.plist in ensure_ios_project; Tauri picks up
     # that file for the -exportArchive step.
-    # --build-number makes Tauri stamp CFBundleVersion as "0.1.0.<N>",
-    # monotonically increasing per CI run, which App Store Connect requires.
-    build_number = ENV["GITHUB_RUN_NUMBER"] || Time.now.to_i.to_s
+    # CFBundleVersion is taken verbatim from tauri.conf.json `version`, so
+    # bump that file to ship a new build (e.g. "0.1.1" -> "0.1.2").
     Dir.chdir(IOS_PROJECT_ROOT) do
-      sh("pnpm tauri ios build --export-method app-store-connect --build-number #{build_number}")
+      sh("pnpm tauri ios build --export-method app-store-connect")
     end
   end
 
