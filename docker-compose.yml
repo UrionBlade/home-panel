@@ -32,7 +32,7 @@ services:
       - "3000:3000"
     volumes:
       - ./data:/data
-      - /volume1/video/blink:/clips/blink
+      - ./blink-clips:/clips/blink
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
       interval: 30s
