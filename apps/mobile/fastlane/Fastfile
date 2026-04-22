@@ -48,18 +48,33 @@ platform :ios do
       sh("pnpm tauri ios init")
     end
 
-    # Tauri generates the Xcode project with automatic signing, which requires
-    # an Apple ID logged into Xcode. On CI we use manual signing with the
-    # distribution certificate + App Store provisioning profile that Fastlane
-    # installed in setup_signing.
+    # Tauri generates the Xcode project with automatic signing. On CI we use
+    # manual signing with the distribution cert + provisioning profile that
+    # Fastlane installed in setup_signing. The profile's display name can
+    # differ from what we typed on the developer portal, so extract it from
+    # the .mobileprovision file itself rather than hardcoding.
+    profile_path = "/tmp/HomePanel_AppStore.mobileprovision"
+    profile_plist = "/tmp/HomePanel_AppStore.plist"
+    sh("/usr/bin/security cms -D -i '#{profile_path}' > '#{profile_plist}'")
+    profile_name = sh(
+      "/usr/libexec/PlistBuddy -c 'Print :Name' '#{profile_plist}'",
+      log: false,
+    ).strip
+    profile_uuid = sh(
+      "/usr/libexec/PlistBuddy -c 'Print :UUID' '#{profile_plist}'",
+      log: false,
+    ).strip
+    UI.message("Using provisioning profile '#{profile_name}' (UUID #{profile_uuid})")
+
     update_code_signing_settings(
       path: File.join(TAURI_IOS_ROOT, "mobile.xcodeproj"),
       use_automatic_signing: false,
       team_id: ENV.fetch("IOS_TEAM_ID"),
       code_sign_identity: "Apple Distribution",
-      profile_name: "Home Panel App Store",
+      profile_name: profile_name,
+      profile_uuid: profile_uuid,
       targets: ["mobile_iOS"],
-      build_configurations: ["release"],
+      build_configurations: ["Release"],
     )
   end
 
