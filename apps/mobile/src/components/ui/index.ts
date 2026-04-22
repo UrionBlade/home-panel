@@ -2,6 +2,7 @@ export type { AvatarSize } from "./Avatar";
 export { Avatar } from "./Avatar";
 export type { ButtonSize, ButtonVariant } from "./Button";
 export { Button } from "./Button";
+export { ConfirmDialog } from "./ConfirmDialog";
 export type { DropdownOption } from "./Dropdown";
 export { Dropdown } from "./Dropdown";
 export { IconButton } from "./IconButton";

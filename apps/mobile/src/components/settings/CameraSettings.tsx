@@ -7,6 +7,7 @@ import {
   useBlinkVerifyPin,
 } from "../../lib/hooks/useBlink";
 import { useT } from "../../lib/useT";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 
 export function CameraSettings() {
   const { t: tSettings } = useT("settings");
@@ -41,12 +42,16 @@ export function CameraSettings() {
 function BlinkConnected({ email }: { email?: string }) {
   const { t } = useT("cameras");
   const { t: tSettings } = useT("settings");
+  const { t: tCommon } = useT("common");
   const logout = useBlinkLogout();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   function handleDisconnect() {
-    if (window.confirm(t("confirm.disconnect"))) {
-      logout.mutate();
-    }
+    setConfirmOpen(true);
+  }
+
+  function doDisconnect() {
+    logout.mutate(undefined, { onSettled: () => setConfirmOpen(false) });
   }
 
   function renderConnectedAs(name: string) {
@@ -78,6 +83,15 @@ function BlinkConnected({ email }: { email?: string }) {
         <SignOutIcon size={16} weight="bold" />
         {t("actions.disconnect")}
       </button>
+      <ConfirmDialog
+        open={confirmOpen}
+        title={tCommon("actions.confirm")}
+        message={t("confirm.disconnect")}
+        destructive
+        isLoading={logout.isPending}
+        onConfirm={doDisconnect}
+        onClose={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }

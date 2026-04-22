@@ -2,6 +2,7 @@ import { CheckCircleIcon, SpinnerIcon, TelevisionIcon, WarningIcon } from "@phos
 import { useEffect, useRef, useState } from "react";
 import { useTvAssign, useTvConfig, useTvDevices, useTvStatus } from "../../lib/hooks/useTv";
 import { useT } from "../../lib/useT";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { Dropdown, type DropdownOption } from "../ui/Dropdown";
 
 type TestState = "idle" | "loading" | "ok-on" | "ok-off" | "error";
@@ -9,6 +10,7 @@ type TestState = "idle" | "loading" | "ok-on" | "ok-off" | "error";
 export function TvSettings() {
   const { t: tTv } = useT("tv");
   const { t: tSettings } = useT("settings");
+  const { t: tCommon } = useT("common");
   const { data: config } = useTvConfig();
   const { data: devices = [], isLoading: loadingDevices } = useTvDevices(
     !!config?.smartThingsConfigured,
@@ -16,6 +18,7 @@ export function TvSettings() {
   const assign = useTvAssign();
   const status = useTvStatus();
   const [testState, setTestState] = useState<TestState>("idle");
+  const [confirmUnbind, setConfirmUnbind] = useState(false);
   const sectionRef = useRef<HTMLElement | null>(null);
 
   /* Anchor support: scroll #tv into view on mount if hash matches. */
@@ -31,9 +34,11 @@ export function TvSettings() {
   }
 
   function handleUnbind() {
-    if (window.confirm(tTv("settings.confirmUnbind"))) {
-      assign.mutate({ tvDeviceId: null });
-    }
+    setConfirmUnbind(true);
+  }
+
+  function doUnbind() {
+    assign.mutate({ tvDeviceId: null }, { onSettled: () => setConfirmUnbind(false) });
   }
 
   async function handleTest() {
@@ -136,6 +141,16 @@ export function TvSettings() {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmUnbind}
+        title={tCommon("actions.confirm")}
+        message={tTv("settings.confirmUnbind")}
+        destructive
+        isLoading={assign.isPending}
+        onConfirm={doUnbind}
+        onClose={() => setConfirmUnbind(false)}
+      />
     </section>
   );
 }

@@ -19,6 +19,7 @@ import { useNavigate } from "react-router-dom";
 import { LaundryArt } from "../components/illustrations/TileArt";
 import { PageContainer } from "../components/layout/PageContainer";
 import { PageHeader } from "../components/layout/PageHeader";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { PendingControl } from "../components/ui/PendingControl";
 import { useLaundryCommand, useLaundryStatus, useRefreshLaundry } from "../lib/hooks/useLaundry";
 import { i18next } from "../lib/i18n";
@@ -164,12 +165,14 @@ function LiveCountdown({ completionTime }: { completionTime: string }) {
 
 function ApplianceCard({ appliance }: { appliance: LaundryAppliance }) {
   const { t } = useT("laundry");
+  const { t: tCommon } = useT("common");
   const command = useLaundryCommand();
   const isRunning = appliance.machineState === "run";
   const isPaused = appliance.machineState === "pause";
   const isFinished = appliance.jobState === "finish";
   const isActive = isRunning || isPaused || isFinished;
   const prevJobRef = useRef(appliance.jobState);
+  const [confirmStop, setConfirmStop] = useState(false);
 
   // Sound notification when the cycle finishes
   useEffect(() => {
@@ -182,9 +185,14 @@ function ApplianceCard({ appliance }: { appliance: LaundryAppliance }) {
   const Icon = appliance.type === "washer" ? WashingMachineIcon : WindIcon;
 
   function handleStop() {
-    if (window.confirm(t("confirm.stop"))) {
-      command.mutate({ deviceId: appliance.id, command: "stop" });
-    }
+    setConfirmStop(true);
+  }
+
+  function doStop() {
+    command.mutate(
+      { deviceId: appliance.id, command: "stop" },
+      { onSettled: () => setConfirmStop(false) },
+    );
   }
 
   // Compact card: off or stopped
@@ -351,6 +359,17 @@ function ApplianceCard({ appliance }: { appliance: LaundryAppliance }) {
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmStop}
+        title={tCommon("actions.confirm")}
+        message={t("confirm.stop")}
+        confirmLabel={t("actions.stop")}
+        destructive
+        isLoading={command.isPending}
+        onConfirm={doStop}
+        onClose={() => setConfirmStop(false)}
+      />
     </motion.div>
   );
 }

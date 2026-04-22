@@ -14,6 +14,7 @@ import {
   useSmartThingsSetup,
 } from "../../lib/hooks/useLaundry";
 import { useT } from "../../lib/useT";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { Dropdown, type DropdownOption } from "../ui/Dropdown";
 
 export function LaundrySettings() {
@@ -56,17 +57,21 @@ function ConnectedView({
   dryerDeviceId: string | null;
 }) {
   const { t: tSettings } = useT("settings");
+  const { t: tCommon } = useT("common");
   const logout = useSmartThingsLogout();
   const { data: devices = [], isLoading } = useSmartThingsDevices(true);
   const assign = useAssignDevices();
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
 
   const washers = devices.filter((d) => d.type === "washer");
   const dryers = devices.filter((d) => d.type === "dryer");
 
   function handleDisconnect() {
-    if (window.confirm(tSettings("laundry.confirmDisconnect"))) {
-      logout.mutate();
-    }
+    setConfirmDisconnect(true);
+  }
+
+  function doDisconnect() {
+    logout.mutate(undefined, { onSettled: () => setConfirmDisconnect(false) });
   }
 
   const notSelected = "— Non selezionata —";
@@ -135,6 +140,16 @@ function ConnectedView({
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmDisconnect}
+        title={tCommon("actions.confirm")}
+        message={tSettings("laundry.confirmDisconnect")}
+        destructive
+        isLoading={logout.isPending}
+        onConfirm={doDisconnect}
+        onClose={() => setConfirmDisconnect(false)}
+      />
     </div>
   );
 }
