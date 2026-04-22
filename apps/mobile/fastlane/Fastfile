@@ -160,12 +160,27 @@ platform :ios do
 
   private_lane :stamp_build_number do
     build_number = ENV["GITHUB_RUN_NUMBER"] || Time.now.to_i.to_s
-    UI.message("Setting CFBundleVersion to #{build_number}")
-    # PlistBuddy Set fails if the key is missing; fall back to Add.
-    sh(
-      "/usr/libexec/PlistBuddy -c 'Set :CFBundleVersion #{build_number}' '#{INFO_PLIST}' 2>/dev/null " \
-        "|| /usr/libexec/PlistBuddy -c 'Add :CFBundleVersion string #{build_number}' '#{INFO_PLIST}'",
-    )
+    UI.message("Patching Info.plist — build #{build_number} + privacy strings")
+
+    # `tauri ios init` regenerates Info.plist from scratch, dropping the
+    # NSMicrophoneUsageDescription / NSSpeechRecognitionUsageDescription
+    # that Apple rejects the upload without (voice intent feature uses the
+    # microphone and SFSpeechRecognizer).
+    mic_reason = "Home Panel uses the microphone to recognise your voice commands."
+    speech_reason = "Home Panel processes your voice locally to execute household commands."
+
+    # Single shell block avoids Ruby-side escape dances for PlistBuddy.
+    sh(<<~SHELL)
+      set -e
+      plist="#{INFO_PLIST}"
+      set_or_add() {
+        /usr/libexec/PlistBuddy -c "Set :$1 $3" "$plist" 2>/dev/null \
+          || /usr/libexec/PlistBuddy -c "Add :$1 $2 $3" "$plist"
+      }
+      set_or_add CFBundleVersion string "#{build_number}"
+      set_or_add NSMicrophoneUsageDescription string "#{mic_reason}"
+      set_or_add NSSpeechRecognitionUsageDescription string "#{speech_reason}"
+    SHELL
   end
 
   private_lane :build_tauri_ios do
