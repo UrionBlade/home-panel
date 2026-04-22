@@ -1,6 +1,12 @@
 name: iOS TestFlight
 
 on:
+  # Fired by the release workflow when it bumps tauri.conf.json, so every
+  # new version lands on TestFlight without a manual click.
+  push:
+    branches: [main]
+    paths:
+      - "apps/mobile/src-tauri/tauri.conf.json"
   # Manual trigger from the Actions tab.
   workflow_dispatch:
   # Every 2 months at 03:00 UTC on the 1st. TestFlight builds expire after 90

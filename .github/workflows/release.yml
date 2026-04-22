@@ -1,0 +1,99 @@
+name: Release (mobile version bump)
+
+# Analyse commits landed on main that touch the mobile-facing code and, if
+# any of them look like a conventional "fix:" / "feat:" / breaking change,
+# bump apps/mobile/src-tauri/tauri.conf.json + tag the commit. The resulting
+# push (touching tauri.conf.json) re-enters the iOS TestFlight workflow,
+# which builds and uploads with the new version. We guard against infinite
+# loops by skipping our own "chore(release):" commits.
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    name: Compute and apply version bump
+    runs-on: ubuntu-latest
+    # Self-guard: never re-trigger on the bump commit we just created.
+    if: ${{ !startsWith(github.event.head_commit.message, 'chore(release):') }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout (full history + tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute bump from conventional commits
+        id: version
+        run: |
+          set -euo pipefail
+
+          last_tag=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || echo "")
+          if [ -n "$last_tag" ]; then
+            range="$last_tag..HEAD"
+          else
+            range="HEAD"
+          fi
+
+          # Only consider commits touching mobile-facing paths.
+          mobile_paths=(apps/mobile packages/shared apps/mobile/src-tauri)
+          commits=$(git log --format='%H' "$range" -- "${mobile_paths[@]}" 2>/dev/null || true)
+
+          bump=none
+          for sha in $commits; do
+            subject=$(git log -1 --format='%s' "$sha")
+            body=$(git log -1 --format='%B' "$sha")
+            # Breaking change: "feat!:" / "fix!:" / "BREAKING CHANGE:" footer.
+            if [[ "$subject" =~ ^[a-z]+(\([^)]*\))?!: ]] || echo "$body" | grep -qE '^BREAKING CHANGE:'; then
+              bump=major
+              break
+            fi
+            case "$subject" in
+              feat:*|feat\(*) [ "$bump" != "major" ] && bump=minor ;;
+              fix:*|fix\(*)   [ "$bump" = "none" ] && bump=patch ;;
+            esac
+          done
+
+          if [ "$bump" = "none" ]; then
+            echo "No release-worthy commits under mobile paths since $last_tag. Skipping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          current=$(jq -r '.version' apps/mobile/src-tauri/tauri.conf.json)
+          IFS=. read -r major minor patch <<< "$current"
+          case "$bump" in
+            major) new="$((major+1)).0.0" ;;
+            minor) new="${major}.$((minor+1)).0" ;;
+            patch) new="${major}.${minor}.$((patch+1))" ;;
+          esac
+
+          echo "Bumping $current -> $new ($bump)"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "version=$new" >> "$GITHUB_OUTPUT"
+          echo "bump=$bump" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and tag
+        if: steps.version.outputs.skip == 'false'
+        run: |
+          set -euo pipefail
+          new="${{ steps.version.outputs.version }}"
+          bump="${{ steps.version.outputs.bump }}"
+
+          tmp=$(mktemp)
+          jq ".version = \"$new\"" apps/mobile/src-tauri/tauri.conf.json > "$tmp"
+          mv "$tmp" apps/mobile/src-tauri/tauri.conf.json
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/src-tauri/tauri.conf.json
+          git commit -m "chore(release): v$new ($bump)"
+          git tag "v$new"
+          git push origin main --tags
