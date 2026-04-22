@@ -373,3 +373,47 @@ export const smartthingsConfig = sqliteTable("smartthings_config", {
   updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
 });
 export type SmartThingsConfigRow = typeof smartthingsConfig.$inferSelect;
+
+/*
+ * Lights — provider-agnostic switch/dimmer rows. One row per physical fixture,
+ * linked to a device_id on a chosen provider (eWeLink, Shelly, Tasmota, ...).
+ * UI treats all lights the same; only the backend dispatch cares about the
+ * provider.
+ */
+export const lights = sqliteTable("lights", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  room: text("room"),
+  /** Provider id, e.g. "ewelink". Must match one registered in
+   * apps/api/src/lib/lights/providers/*. */
+  provider: text("provider").notNull(),
+  /** Device id as seen by the provider. For eWeLink this is the deviceid
+   * string returned by the list API. */
+  deviceId: text("device_id").notNull(),
+  /** Last known "on" / "off" state reported by the provider. */
+  lastState: text("last_state", { enum: ["on", "off", "unknown"] })
+    .notNull()
+    .default("unknown"),
+  lastSeenAt: text("last_seen_at"),
+  createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+});
+export type LightRow = typeof lights.$inferSelect;
+export type NewLightRow = typeof lights.$inferInsert;
+
+/*
+ * Provider credentials — one row per provider, JSON config is provider-specific.
+ *
+ * For "ewelink" the config shape is:
+ *   { email: string, password: string, region: "eu" | "us" | "as" | "cn",
+ *     accessToken?: string, refreshToken?: string, expiresAt?: string }
+ *
+ * Credentials are stored as plain JSON: the SQLite file lives on the NAS and
+ * is not exposed externally, same threat model as the rest of .env secrets.
+ */
+export const providerCredentials = sqliteTable("provider_credentials", {
+  provider: text("provider").primaryKey(),
+  configJson: text("config_json").notNull().default("{}"),
+  updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+});
+export type ProviderCredentialsRow = typeof providerCredentials.$inferSelect;
