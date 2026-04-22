@@ -192,12 +192,15 @@ platform :ios do
     UI.user_error!("No .ipa produced under #{ipa_glob}") if ipa_path.nil?
     UI.message("Uploading #{ipa_path}")
 
+    # Drop changelog: setting it forces Fastlane to wait for the build to
+    # appear in App Store Connect so it can be attached, which adds 20+
+    # minutes of polling and occasionally times the job out. The commit SHA
+    # is already in the job's Git log.
     upload_to_testflight(
       api_key: api_key,
       ipa: ipa_path,
       skip_waiting_for_build_processing: true,
       skip_submission: true,
-      changelog: "Automated build from commit #{ENV['GITHUB_SHA'] || 'local'}",
     )
   end
 end
