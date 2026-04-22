@@ -196,6 +196,16 @@ body,
   height: 100%;
 }
 
+/* Lock the outer viewport so the page itself never scrolls — only the
+ * inner <main> does. Without this, on iOS the body can scroll under the
+ * status bar area (creating the "double scroll" where the black strip above
+ * is revealed) and the elastic bounce feels broken inside a native shell. */
+html,
+body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 html {
   touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
@@ -203,6 +213,14 @@ html {
 
 body {
   margin: 0;
+  /* Respect iOS safe areas: the top padding keeps a thin strip above the
+   * app for the status bar / notch, the bottom one clears the home
+   * indicator. `box-sizing: border-box` makes the `height: 100%` rule above
+   * include this padding, so #root gets the remaining space and never
+   * overflows — no double scroll. */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  box-sizing: border-box;
   background-color: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);

@@ -75,7 +75,7 @@ export function AppShell({ children, hideClock, title }: AppShellProps) {
               <VoiceProvider>
                 <KioskActivator />
                 <SSEConnector />
-                <div className="flex h-screen w-screen overflow-hidden bg-bg text-text">
+                <div className="flex h-full w-full overflow-hidden bg-bg text-text">
                   <SideNav
                     isMobileOpen={mobileNavOpen}
                     onMobileClose={() => setMobileNavOpen(false)}
