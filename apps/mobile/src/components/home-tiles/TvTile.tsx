@@ -58,71 +58,68 @@ export function TvTile() {
 
   /* ---- Off: single-tap powers on. Mirrors the on-state layout exactly so
    * the tile footprint doesn't change — the inner controls are greyed out
-   * and inert, and a pill overlay reads "tap to turn on". ---- */
+   * and inert, and a pill overlay reads "tap to turn on". Note: no
+   * PendingControl wrapper here because its inline-flex collapses the grid
+   * cell width; we display the loading pulse via the overlay instead. ---- */
   if (status?.power === "off") {
     const noop = () => {};
     return (
-      <PendingControl
-        isPending={power.isPending}
-        isSuccess={power.isSuccess}
-        isError={power.isError}
-        className="w-full h-full"
-      >
-        <Tile size="md" onClick={() => power.mutate({ on: true })} ariaLabel={t("tile.powerOn")}>
-          <BackdropPaint />
-          <div className="relative flex flex-col h-full z-10 gap-4 opacity-50 pointer-events-none select-none">
-            <div className="flex items-start justify-between gap-3">
-              <span className="label-mono text-accent" style={{ fontWeight: 900 }}>
-                {t("title")}
-              </span>
-            </div>
-            <PresetRow
-              presets={presets.slice(0, 4)}
-              onLaunch={noop}
-              pendingAppId={undefined}
-              isError={false}
+      <Tile size="md" onClick={() => power.mutate({ on: true })} ariaLabel={t("tile.powerOn")}>
+        <BackdropPaint />
+        <div className="relative flex flex-col h-full z-10 gap-4 opacity-50 pointer-events-none select-none">
+          <div className="flex items-start justify-between gap-3">
+            <span className="label-mono text-accent" style={{ fontWeight: 900 }}>
+              {t("title")}
+            </span>
+          </div>
+          <PresetRow
+            presets={presets.slice(0, 4)}
+            onLaunch={noop}
+            pendingAppId={undefined}
+            isError={false}
+            isSuccess={false}
+            lastLaunchedAppId={undefined}
+          />
+          <div className="flex flex-col lg:flex-row items-center justify-center gap-3 lg:gap-8">
+            <StepperStack
+              label={t("tile.volume")}
+              readout={null}
+              onUp={noop}
+              onDown={noop}
+              isPending={false}
               isSuccess={false}
-              lastLaunchedAppId={undefined}
+              isError={false}
+              ariaRoot={t("tile.volume")}
             />
-            <div className="flex flex-col lg:flex-row items-center justify-center gap-3 lg:gap-8">
-              <StepperStack
-                label={t("tile.volume")}
-                readout={null}
-                onUp={noop}
-                onDown={noop}
-                isPending={false}
-                isSuccess={false}
-                isError={false}
-                ariaRoot={t("tile.volume")}
-              />
-              <StepperStack
-                label={t("tile.channel")}
-                readout={null}
-                onUp={noop}
-                onDown={noop}
-                isPending={false}
-                isSuccess={false}
-                isError={false}
-                ariaRoot={t("tile.channel")}
-              />
-            </div>
-            <div className="flex items-center justify-center gap-3 mt-auto">
-              <IconButton label={t("tile.muted")} onClick={noop}>
-                <SpeakerHighIcon size={22} weight="duotone" />
-              </IconButton>
-              <IconButton label={t("tile.powerOn")} onClick={noop}>
-                <PowerIcon size={22} weight="duotone" />
-              </IconButton>
-            </div>
+            <StepperStack
+              label={t("tile.channel")}
+              readout={null}
+              onUp={noop}
+              onDown={noop}
+              isPending={false}
+              isSuccess={false}
+              isError={false}
+              ariaRoot={t("tile.channel")}
+            />
           </div>
-          <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-            <div className="flex items-center gap-2 px-5 py-3 rounded-full bg-accent text-white font-semibold shadow-lg">
-              <PowerIcon size={20} weight="duotone" />
-              <span>{t("tile.offCta")}</span>
-            </div>
+          <div className="flex items-center justify-center gap-3 mt-auto">
+            <IconButton label={t("tile.muted")} onClick={noop}>
+              <SpeakerHighIcon size={22} weight="duotone" />
+            </IconButton>
+            <IconButton label={t("tile.powerOn")} onClick={noop}>
+              <PowerIcon size={22} weight="duotone" />
+            </IconButton>
           </div>
-        </Tile>
-      </PendingControl>
+        </div>
+        <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+          <div
+            className={`flex items-center gap-2 px-5 py-3 rounded-full bg-accent text-white font-semibold shadow-lg ${power.isPending ? "animate-pulse" : ""}`}
+          >
+            <PowerIcon size={20} weight="duotone" />
+            <span>{t("tile.offCta")}</span>
+          </div>
+        </div>
+      </Tile>
     );
   }
 
