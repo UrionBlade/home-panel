@@ -51,14 +51,16 @@ jobs:
             subject=$(git log -1 --format='%s' "$sha")
             body=$(git log -1 --format='%B' "$sha")
             # Breaking change: "feat!:" / "fix!:" / "BREAKING CHANGE:" footer.
-            if [[ "$subject" =~ ^[a-z]+(\([^)]*\))?!: ]] || echo "$body" | grep -qE '^BREAKING CHANGE:'; then
+            head="${subject%%:*}"
+            if [[ "$head" == *"!" ]] || printf '%s' "$body" | grep -qE '^BREAKING CHANGE:'; then
               bump=major
               break
             fi
-            case "$subject" in
-              feat:*|feat\(*) [ "$bump" != "major" ] && bump=minor ;;
-              fix:*|fix\(*)   [ "$bump" = "none" ] && bump=patch ;;
-            esac
+            if [[ "$subject" == feat:* || "$subject" == feat\(* ]]; then
+              case "$bump" in major) ;; *) bump=minor ;; esac
+            elif [[ "$subject" == fix:* || "$subject" == fix\(* ]]; then
+              case "$bump" in none) bump=patch ;; esac
+            fi
           done
 
           if [ "$bump" = "none" ]; then
