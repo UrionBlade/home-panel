@@ -15,6 +15,8 @@ import { stopAllLiveSessions } from "./lib/blink/liveview-manager.js";
 import { startBlinkScheduler } from "./lib/blink/scheduler.js";
 import { startSyncScheduler } from "./lib/calendar-sync.js";
 import { startAcScheduler } from "./lib/ge/scheduler.js";
+import { geTokenStore } from "./lib/ge/store.js";
+import { startAcWsSubscriber } from "./lib/ge/ws-subscriber.js";
 import { apiAuth } from "./middleware/auth.js";
 import { acRouter } from "./routes/ac.js";
 import { blinkRouter } from "./routes/blink.js";
@@ -179,6 +181,7 @@ serve({ fetch: app.fetch, port, hostname }, (info) => {
   startBlinkScheduler();
   startTimersScheduler();
   startAcScheduler();
+  startAcWsSubscriber(geTokenStore);
 });
 
 /* Tear down ffmpeg children + notify Blink on graceful shutdown so the

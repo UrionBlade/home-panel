@@ -7,7 +7,9 @@ import type {
   GeSetupInput,
 } from "@home-panel/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { apiClient } from "../api-client";
+import { sseClient } from "../sse-client";
 
 const AC_CONFIG_KEY = ["ac", "config"] as const;
 const AC_DEVICES_KEY = ["ac", "devices"] as const;
@@ -22,15 +24,35 @@ export function useAcConfig() {
 }
 
 /** Devices discovered from GE. Only enabled once the link is active.
- * Polls every 30s so the tile reflects cloud state without the user
- * having to refresh. */
+ *
+ * Fresh state arrives via SSE `ac:update` events fanned out from the
+ * backend WS subscriber, so we don't need a wall-clock poll here — we
+ * just patch the cache on push and fall back to a refetch on window
+ * focus. A 5-min interval stays as a sanity backstop in case the SSE
+ * stream is dropped for a long time (e.g. laptop sleep). */
 export function useAcDevices(enabled: boolean) {
-  return useQuery({
+  const qc = useQueryClient();
+  const query = useQuery({
     queryKey: AC_DEVICES_KEY,
     queryFn: () => apiClient.get<AcDevice[]>("/api/v1/ac/devices"),
     enabled,
-    refetchInterval: enabled ? 30_000 : false,
+    refetchInterval: enabled ? 5 * 60_000 : false,
+    refetchOnWindowFocus: true,
   });
+
+  useEffect(() => {
+    if (!enabled) return;
+    const unsub = sseClient.subscribe("ac:update", (data) => {
+      const update = data as { id?: string; state?: AcState } | null;
+      if (!update?.id || !update.state) return;
+      qc.setQueryData<AcDevice[]>(AC_DEVICES_KEY, (old) =>
+        old?.map((d) => (d.id === update.id ? { ...d, state: update.state ?? d.state } : d)),
+      );
+    });
+    return unsub;
+  }, [enabled, qc]);
+
+  return query;
 }
 
 /** Submit email + password to link GE Appliances. The backend performs

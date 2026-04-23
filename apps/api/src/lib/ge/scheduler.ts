@@ -1,22 +1,20 @@
 /**
- * Background poller that keeps `ge_devices.lastState` in sync with the
- * cloud. Each tick:
- *   1. exits early if the user hasn't linked GE Appliances yet
- *   2. reads the full ERD bag for each known device
- *   3. decodes it and stores the result
+ * Safety-net poller for `ge_devices.lastState`.
  *
- * Reads happen sequentially — GE has been known to throttle parallel
- * ERD fetches from the same account — but errors on one device don't
- * stop the others.
+ * Live updates arrive through the WebSocket subscriber (ws-subscriber.ts);
+ * this scheduler only runs on a slow interval to catch the rare cases
+ * where the push path is down (socket closed, account token rotated,
+ * network blip). When WS is healthy these ticks are essentially idempotent
+ * overhead — cheap enough to keep as a backstop.
  */
 
 import { pollAcDevice } from "../../routes/ac.js";
 import { listAcDevices } from "./device-repo.js";
 import { geTokenStore } from "./store.js";
 
-/** GE updates the cloud snapshot every few seconds; 60s is a good
- * tradeoff between freshness and rate-limit friendliness. */
-const POLL_INTERVAL_MS = 60 * 1000;
+/** Safety-net interval: 5 minutes. The primary sync path is the WS
+ * subscriber, so this only has to guarantee eventual consistency. */
+const POLL_INTERVAL_MS = 5 * 60 * 1000;
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let inflight = false;
