@@ -17,15 +17,26 @@
 
 import type { AcFanSpeed, AcMode, AcState, AcSwing } from "@home-panel/shared";
 
-/* ----- ERD codes ----- */
+/* ----- ERD codes -----
+ *
+ * Brillion rejects anything but the canonical "0x<UPPERCASE HEX>" form
+ * with 400 "erd is not in the correct format", so we keep the literals
+ * in the shape the server wants and re-normalise every incoming hex
+ * string through `normalizeErdCode` just in case. */
 
 export const ERD_AC_TARGET_TEMPERATURE = "0x7003"; // int, 2 bytes, °F
 export const ERD_AC_TARGET_HEATING_TEMPERATURE = "0x7002"; // int, 2 bytes, °F
-export const ERD_AC_FAN_SETTING = "0x7a00"; // enum, 1 byte
-export const ERD_AC_OPERATION_MODE = "0x7a01"; // enum, 1 byte
-export const ERD_AC_AMBIENT_TEMPERATURE = "0x7a02"; // int, 2 bytes, °F (read-only)
-export const ERD_AC_POWER_STATUS = "0x7a0f"; // bool, 1 byte
-export const ERD_SAC_AUTO_SWING_MODE = "0x7b07"; // bool, 1 byte (split AC only)
+export const ERD_AC_FAN_SETTING = "0x7A00"; // enum, 1 byte
+export const ERD_AC_OPERATION_MODE = "0x7A01"; // enum, 1 byte
+export const ERD_AC_AMBIENT_TEMPERATURE = "0x7A02"; // int, 2 bytes, °F (read-only)
+export const ERD_AC_POWER_STATUS = "0x7A0F"; // bool, 1 byte
+export const ERD_SAC_AUTO_SWING_MODE = "0x7B07"; // bool, 1 byte (split AC only)
+
+/** Coerce any "0x…" hex code into the `0xAB12` form Brillion expects. */
+export function normalizeErdCode(code: string): string {
+  const stripped = code.replace(/^0x/i, "");
+  return `0x${stripped.toUpperCase()}`;
+}
 
 /* ----- Enum values (from ErdAcOperationMode, ErdAcFanSetting) ----- */
 

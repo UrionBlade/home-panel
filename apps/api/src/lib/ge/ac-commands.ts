@@ -21,6 +21,7 @@ import {
   ERD_AC_TARGET_TEMPERATURE,
   ERD_SAC_AUTO_SWING_MODE,
   type ErdBag,
+  normalizeErdCode,
 } from "./ac-erd.js";
 import { type GeTokenStore, geFetch, geFetchJson } from "./client.js";
 import { GE_BRILLION_API_URL } from "./const.js";
@@ -60,22 +61,28 @@ export async function readAcState(store: GeTokenStore, jid: string): Promise<AcS
 }
 
 /** Post a single ERD write. `valueHex` must be upper-case hex without
- * leading "0x". */
+ * leading "0x". Brillion requires both `userId` and `applianceId` in the
+ * body plus the canonical `0xAB12` ERD form — anything else comes back
+ * as 400 "Invalid JSON" / "erd is not in the correct format". */
 async function writeErd(
   store: GeTokenStore,
   jid: string,
+  userId: string,
   erdCode: string,
   valueHex: string,
 ): Promise<void> {
+  const normalized = normalizeErdCode(erdCode);
   const resp = await geFetch(
     store,
-    `/v1/appliance/${encodeURIComponent(jid)}/erd/${erdCode}`,
+    `/v1/appliance/${encodeURIComponent(jid)}/erd/${normalized}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         kind: "appliance#erdListEntry",
-        erd: erdCode,
+        userId,
+        applianceId: jid,
+        erd: normalized,
         value: valueHex,
         ackTimeout: 10,
         delay: 0,
@@ -86,7 +93,7 @@ async function writeErd(
   if (!resp.ok) {
     const body = await resp.text().catch(() => "");
     throw new Error(
-      `GE ERD write ${erdCode}=${valueHex} failed: ${resp.status} ${body.slice(0, 200)}`,
+      `GE ERD write ${normalized}=${valueHex} failed: ${resp.status} ${body.slice(0, 200)}`,
     );
   }
 }
@@ -97,26 +104,34 @@ async function writeErd(
 export async function applyAcCommand(
   store: GeTokenStore,
   jid: string,
+  userId: string,
   input: AcCommandInput,
 ): Promise<void> {
   if (typeof input.power === "boolean") {
-    await writeErd(store, jid, ERD_AC_POWER_STATUS, acErdCodec.encodePower(input.power));
+    await writeErd(store, jid, userId, ERD_AC_POWER_STATUS, acErdCodec.encodePower(input.power));
   }
   if (input.mode !== undefined) {
-    await writeErd(store, jid, ERD_AC_OPERATION_MODE, acErdCodec.encodeMode(input.mode));
+    await writeErd(store, jid, userId, ERD_AC_OPERATION_MODE, acErdCodec.encodeMode(input.mode));
   }
   if (typeof input.targetTemp === "number") {
     await writeErd(
       store,
       jid,
+      userId,
       ERD_AC_TARGET_TEMPERATURE,
       acErdCodec.encodeTargetTemperature(input.targetTemp),
     );
   }
   if (input.fanSpeed !== undefined) {
-    await writeErd(store, jid, ERD_AC_FAN_SETTING, acErdCodec.encodeFan(input.fanSpeed));
+    await writeErd(store, jid, userId, ERD_AC_FAN_SETTING, acErdCodec.encodeFan(input.fanSpeed));
   }
   if (input.swing !== undefined) {
-    await writeErd(store, jid, ERD_SAC_AUTO_SWING_MODE, acErdCodec.encodeSwing(input.swing));
+    await writeErd(
+      store,
+      jid,
+      userId,
+      ERD_SAC_AUTO_SWING_MODE,
+      acErdCodec.encodeSwing(input.swing),
+    );
   }
 }

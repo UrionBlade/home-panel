@@ -43,12 +43,20 @@ interface SmartHqDevice {
 interface SmartHqDeviceListResponse {
   total?: number;
   devices?: SmartHqDevice[];
+  /** Brillion-assigned user id; required in every ERD write body. */
+  userId?: string;
 }
 
 function isAirConditioner(d: SmartHqDevice): boolean {
   const t = (d.deviceType ?? "").toLowerCase();
   return t.includes("airconditioner") || t.includes("ac");
 }
+
+/** In-memory cache of the Brillion userId. Populated by the device
+ * listing response and required by every ERD write. Survives a single
+ * process but not a restart — the first `GET /devices` after boot
+ * refills it. */
+let cachedUserId: string | null = null;
 
 const VALID_MODES: readonly AcMode[] = ["cool", "heat", "dry", "fan", "auto"] as const;
 const VALID_FAN: readonly AcFanSpeed[] = ["auto", "low", "mid", "high"] as const;
@@ -114,6 +122,7 @@ function parsePatch(raw: unknown): AcDeviceUpdateInput | { error: string } {
  * the same string. Returns the list of mac addresses currently linked. */
 async function refreshDeviceRegistry(): Promise<string[]> {
   const resp = await geFetchJson<SmartHqDeviceListResponse>(geTokenStore, "/v2/device");
+  if (resp.userId) cachedUserId = resp.userId;
   const acs = (resp.devices ?? []).filter((d) => isAirConditioner(d) && !!d.macAddress);
   upsertDiscoveredDevices(
     acs.map((d) => ({
@@ -230,7 +239,24 @@ export const acRouter = new Hono()
     if ("error" in parsed) return c.json({ error: parsed.error }, 400);
 
     try {
-      await applyAcCommand(geTokenStore, id, parsed);
+      /* userId is required in every ERD write body. After a cold boot
+       * the cache is empty until the first discovery call — refill it
+       * on demand so the very first command doesn't have to wait for
+       * the poller or a tile refresh. */
+      if (!cachedUserId) {
+        try {
+          await refreshDeviceRegistry();
+        } catch (err) {
+          console.warn(
+            "[ac] userId refresh failed before command:",
+            err instanceof Error ? err.message : err,
+          );
+        }
+      }
+      if (!cachedUserId) {
+        return c.json({ error: "userId GE non disponibile, riprova tra un istante" }, 503);
+      }
+      await applyAcCommand(geTokenStore, id, cachedUserId, parsed);
       /* GE takes a beat to apply the command before `/erd` reflects it.
        * We don't block the request on a read-your-writes loop — the
        * scheduler will converge within ~60s. Return the optimistic
