@@ -452,3 +452,48 @@ export const providerCredentials = sqliteTable("provider_credentials", {
   updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
 });
 export type ProviderCredentialsRow = typeof providerCredentials.$inferSelect;
+
+/*
+ * GE Appliances (Comfort / SmartHQ) — OAuth2 ROPC credentials.
+ * Singleton: single row with id = 1.
+ *
+ * Only tokens and the login email are persisted. The password transits in
+ * RAM during the initial POST /config and is discarded once the first token
+ * pair is obtained. When the refresh token eventually dies the user
+ * re-enters credentials from the Settings UI.
+ */
+export const geCredentials = sqliteTable("ge_credentials", {
+  id: integer("id").primaryKey().default(1),
+  email: text("email"),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  /** ISO timestamp when the access token expires. */
+  expiresAt: text("expires_at"),
+  updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+});
+export type GeCredentialsRow = typeof geCredentials.$inferSelect;
+export type NewGeCredentialsRow = typeof geCredentials.$inferInsert;
+
+/*
+ * GE Appliances devices — air conditioners discovered via the GE cloud.
+ * One row per physical appliance. `lastState` is a JSON blob matching
+ * `AcState` from the shared package; the schema keeps it opaque so new
+ * features (presets, timers, ...) don't require migrations.
+ */
+export const geDevices = sqliteTable("ge_devices", {
+  id: text("id").primaryKey(),
+  /** GE serial number / JID, stable per unit. */
+  serial: text("serial").notNull(),
+  model: text("model"),
+  nickname: text("nickname"),
+  /** Nullable room assignment — same semantics as other device roomId
+   * fields (null = "Senza stanza", stale ids silently orphaned). */
+  roomId: text("room_id"),
+  /** Last known AcState serialised as JSON. Null until first poll succeeds. */
+  lastState: text("last_state"),
+  lastSeenAt: text("last_seen_at"),
+  createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+});
+export type GeDeviceRow = typeof geDevices.$inferSelect;
+export type NewGeDeviceRow = typeof geDevices.$inferInsert;

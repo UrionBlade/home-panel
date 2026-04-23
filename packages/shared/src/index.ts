@@ -13,6 +13,7 @@ export type HealthResponse = {
 export * from "./blink.js";
 export * from "./calendar.js";
 export * from "./family.js";
+export * from "./ge.js";
 export * from "./kiosk.js";
 export * from "./laundry.js";
 export * from "./lights.js";
