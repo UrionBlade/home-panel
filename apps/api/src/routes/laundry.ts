@@ -492,3 +492,49 @@ export const laundryOauthCallbackRouter = new Hono().get("/", async (c) => {
     return c.html(CALLBACK_ERROR_HTML(detail), 500);
   }
 });
+
+/* ----- SmartThings SmartApp lifecycle webhook -----
+ *
+ * SmartThings requires every registered SmartApp to expose a Target URL
+ * that answers the lifecycle handshake. We only care about the OAuth
+ * authorization flow; the lifecycle calls are acknowledged but not
+ * otherwise processed. PING is the one call that _must_ echo the
+ * challenge verbatim — the initial "Verify App" step fails without it.
+ */
+
+interface StLifecycleRequest {
+  lifecycle: string;
+  executionId?: string;
+  pingData?: { challenge: string };
+  confirmationData?: { appId?: string; confirmationUrl?: string };
+  [key: string]: unknown;
+}
+
+export const smartthingsWebhookRouter = new Hono().post("/", async (c) => {
+  const body = (await c.req.json().catch(() => null)) as StLifecycleRequest | null;
+  if (!body?.lifecycle) {
+    return c.json({ error: "body mancante" }, 400);
+  }
+  switch (body.lifecycle) {
+    case "PING":
+      /* Registration handshake — echo the challenge so SmartThings knows
+       * the Target URL is actually ours. */
+      return c.json({ pingData: { challenge: body.pingData?.challenge ?? "" } });
+    case "CONFIRMATION":
+      /* "App confirmation" step used for enterprise flows; we don't hit
+       * the confirmationUrl because the public consumer OAuth flow
+       * doesn't require it. Returning 200 keeps SmartThings happy. */
+      return c.json({ targetUrl: c.req.url });
+    case "CONFIGURATION":
+    case "INSTALL":
+    case "UPDATE":
+    case "UNINSTALL":
+    case "EVENT":
+    case "OAUTH_CALLBACK":
+      /* Not used by this integration — we only consume the device API
+       * with the user's OAuth token, no SmartApp-style event wiring. */
+      return c.json({});
+    default:
+      return c.json({});
+  }
+});

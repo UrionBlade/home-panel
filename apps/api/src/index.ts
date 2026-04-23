@@ -21,7 +21,11 @@ import { calendarRouter } from "./routes/calendar.js";
 import { calendarSourcesRouter } from "./routes/calendar-sources.js";
 import { familyRouter } from "./routes/family.js";
 import { kioskRouter } from "./routes/kiosk.js";
-import { laundryOauthCallbackRouter, laundryRouter } from "./routes/laundry.js";
+import {
+  laundryOauthCallbackRouter,
+  laundryRouter,
+  smartthingsWebhookRouter,
+} from "./routes/laundry.js";
 import { lightsRouter } from "./routes/lights.js";
 import { postitsRouter } from "./routes/postits.js";
 import { recipesRouter } from "./routes/recipes.js";
@@ -124,6 +128,11 @@ app.use("/api/*", async (c, next) => {
   if (c.req.path === `/api/${API_VERSION}/laundry/oauth/callback`) {
     return next();
   }
+  // SmartThings SmartApp lifecycle webhook (PING/CONFIRMATION/...). The
+  // SmartThings servers hit this to verify the app — no Bearer header.
+  if (c.req.path === `/api/${API_VERSION}/smartthings/webhook`) {
+    return next();
+  }
   return apiAuth(c, next);
 });
 
@@ -139,6 +148,7 @@ app.route(`/api/${API_VERSION}/voice`, voiceRouter);
 app.route(`/api/${API_VERSION}/blink`, blinkRouter);
 app.route(`/api/${API_VERSION}/laundry`, laundryRouter);
 app.route(`/api/${API_VERSION}/laundry/oauth/callback`, laundryOauthCallbackRouter);
+app.route(`/api/${API_VERSION}/smartthings/webhook`, smartthingsWebhookRouter);
 app.route(`/api/${API_VERSION}/lights`, lightsRouter);
 app.route(`/api/${API_VERSION}/tv`, tvRouter);
 app.route(`/api/${API_VERSION}/recipes`, recipesRouter);
