@@ -6,12 +6,47 @@ import type {
   SmartThingsAssignInput,
   SmartThingsConfig,
   SmartThingsDevice,
-  SmartThingsSetupInput,
 } from "@home-panel/shared";
 import { Hono } from "hono";
 import { db } from "../db/client.js";
 import { smartthingsConfig } from "../db/schema.js";
-import { getSmartThingsConfig, stFetch, stPost } from "../lib/smartthings/client.js";
+import {
+  exchangeCodeForTokens,
+  getSmartThingsConfig,
+  isSmartThingsConfigured,
+  SmartThingsHttpError,
+  stFetch,
+  stPost,
+} from "../lib/smartthings/client.js";
+
+/** OAuth2 scopes requested from the SmartApp at authorization time.
+ * Matches the minimum needed to list devices, read state and command
+ * washer / dryer / TV. */
+const ST_OAUTH_SCOPES = ["r:devices:*", "x:devices:*", "r:locations:*"];
+const ST_AUTHORIZE_URL = "https://api.smartthings.com/oauth/authorize";
+
+/* ----- In-memory OAuth state store (CSRF nonce, TTL 10 min) ----- */
+interface PendingStOauth {
+  redirectUri: string;
+  expiresAt: number;
+}
+const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+const pendingOauthStates = new Map<string, PendingStOauth>();
+
+function setPendingOauth(state: string, redirectUri: string) {
+  const now = Date.now();
+  for (const [k, v] of pendingOauthStates) {
+    if (v.expiresAt < now) pendingOauthStates.delete(k);
+  }
+  pendingOauthStates.set(state, { redirectUri, expiresAt: now + OAUTH_STATE_TTL_MS });
+}
+function takePendingOauth(state: string): PendingStOauth | null {
+  const entry = pendingOauthStates.get(state);
+  if (!entry) return null;
+  pendingOauthStates.delete(state);
+  if (entry.expiresAt < Date.now()) return null;
+  return entry;
+}
 
 /* ---- In-memory cache for polling ---- */
 let applianceCache: LaundryAppliance[] = [];
@@ -28,20 +63,19 @@ function detectType(capabilities: string[]): LaundryApplianceType | "unknown" {
 }
 
 async function fetchDeviceStatus(
-  pat: string,
   deviceId: string,
   type: LaundryApplianceType,
 ): Promise<LaundryAppliance | null> {
   try {
     // Fetch device info + status in parallel
     const [info, status] = await Promise.all([
-      stFetch<{ deviceId: string; label: string; name: string }>(pat, `/devices/${deviceId}`),
+      stFetch<{ deviceId: string; label: string; name: string }>(`/devices/${deviceId}`),
       stFetch<{
         components: Record<
           string,
           Record<string, Record<string, { value: unknown; timestamp: string }>>
         >;
-      }>(pat, `/devices/${deviceId}/status`),
+      }>(`/devices/${deviceId}/status`),
     ]);
 
     const main = status.components?.main ?? {};
@@ -111,7 +145,7 @@ async function fetchDeviceStatus(
 }
 
 /** Auto-discovery: if the PAT exists but devices are not assigned, search and assign */
-async function autoAssignDevices(pat: string): Promise<{
+async function autoAssignDevices(): Promise<{
   washerDeviceId: string | null;
   dryerDeviceId: string | null;
 }> {
@@ -123,7 +157,7 @@ async function autoAssignDevices(pat: string): Promise<{
         label: string;
         components: Array<{ capabilities: Array<{ id: string }> }>;
       }>;
-    }>(pat, "/devices");
+    }>("/devices");
 
     let washerDeviceId: string | null = null;
     let dryerDeviceId: string | null = null;
@@ -159,7 +193,7 @@ async function autoAssignDevices(pat: string): Promise<{
 
 async function pollAppliances(): Promise<LaundryAppliance[]> {
   const config = getConfig();
-  if (!config?.pat) return [];
+  if (!isSmartThingsConfigured() || !config) return [];
 
   // Auto-assign if device IDs are missing
   let { washerDeviceId, dryerDeviceId } = {
@@ -167,17 +201,17 @@ async function pollAppliances(): Promise<LaundryAppliance[]> {
     dryerDeviceId: config.dryerDeviceId,
   };
   if (!washerDeviceId && !dryerDeviceId) {
-    const assigned = await autoAssignDevices(config.pat);
+    const assigned = await autoAssignDevices();
     washerDeviceId = assigned.washerDeviceId;
     dryerDeviceId = assigned.dryerDeviceId;
   }
 
   const tasks: Promise<LaundryAppliance | null>[] = [];
   if (washerDeviceId) {
-    tasks.push(fetchDeviceStatus(config.pat, washerDeviceId, "washer"));
+    tasks.push(fetchDeviceStatus(washerDeviceId, "washer"));
   }
   if (dryerDeviceId) {
-    tasks.push(fetchDeviceStatus(config.pat, dryerDeviceId, "dryer"));
+    tasks.push(fetchDeviceStatus(dryerDeviceId, "dryer"));
   }
 
   const results = await Promise.all(tasks);
@@ -215,8 +249,7 @@ export const laundryRouter = new Hono()
 
   /* Current washer/dryer state */
   .get("/status", async (c) => {
-    const config = getConfig();
-    if (!config?.pat) {
+    if (!isSmartThingsConfigured()) {
       return c.json<LaundryStatus>({ configured: false, appliances: [] });
     }
     const appliances = await getCachedAppliances();
@@ -234,7 +267,7 @@ export const laundryRouter = new Hono()
   .get("/config", (c) => {
     const config = getConfig();
     return c.json<SmartThingsConfig>({
-      configured: !!config?.pat,
+      configured: isSmartThingsConfigured(),
       washerDeviceId: config?.washerDeviceId ?? null,
       dryerDeviceId: config?.dryerDeviceId ?? null,
       washerRoomId: config?.washerRoomId ?? null,
@@ -242,36 +275,40 @@ export const laundryRouter = new Hono()
     });
   })
 
-  /* PAT setup */
-  .post("/config", async (c) => {
-    const body = (await c.req.json().catch(() => null)) as SmartThingsSetupInput | null;
-    if (!body?.pat?.trim()) {
-      return c.json({ error: "pat required" }, 400);
+  /* Start the SmartThings OAuth dance. The client passes the public
+   * redirect URI (must match the one registered on the SmartApp) and
+   * receives an `authorizationUrl` to open in an external browser. */
+  .post("/oauth/start", async (c) => {
+    const clientId = process.env.SMARTTHINGS_CLIENT_ID;
+    if (!clientId) {
+      return c.json({ error: "SMARTTHINGS_CLIENT_ID mancante nel .env del backend" }, 500);
     }
 
-    // Verify the PAT is valid
+    const body = (await c.req.json().catch(() => null)) as { redirectUri?: string } | null;
+    const redirectUri = body?.redirectUri?.trim();
+    if (!redirectUri) {
+      return c.json({ error: "redirectUri obbligatorio" }, 400);
+    }
     try {
-      await stFetch(body.pat.trim(), "/devices?capability=washerOperatingState");
+      const parsed = new URL(redirectUri);
+      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+        return c.json({ error: "redirectUri deve usare http(s)" }, 400);
+      }
     } catch {
-      return c.json({ error: "PAT non valido o scaduto" }, 400);
+      return c.json({ error: "redirectUri non valido" }, 400);
     }
 
-    const existing = getConfig();
-    if (existing) {
-      db.update(smartthingsConfig)
-        .set({ pat: body.pat.trim(), updatedAt: new Date().toISOString() })
-        .run();
-    } else {
-      db.insert(smartthingsConfig)
-        .values({ pat: body.pat.trim(), updatedAt: new Date().toISOString() })
-        .run();
-    }
+    const state = crypto.randomUUID();
+    setPendingOauth(state, redirectUri);
 
-    // Reset cache
-    applianceCache = [];
-    lastPoll = 0;
+    const authorize = new URL(ST_AUTHORIZE_URL);
+    authorize.searchParams.set("client_id", clientId);
+    authorize.searchParams.set("response_type", "code");
+    authorize.searchParams.set("scope", ST_OAUTH_SCOPES.join(" "));
+    authorize.searchParams.set("redirect_uri", redirectUri);
+    authorize.searchParams.set("state", state);
 
-    return c.json({ ok: true });
+    return c.json({ authorizationUrl: authorize.toString(), state });
   })
 
   /* Disconnect (clear config) */
@@ -284,8 +321,7 @@ export const laundryRouter = new Hono()
 
   /* List SmartThings devices (for washer/dryer selection) */
   .get("/devices", async (c) => {
-    const config = getConfig();
-    if (!config?.pat) {
+    if (!isSmartThingsConfigured()) {
       return c.json({ error: "SmartThings non configurato" }, 400);
     }
 
@@ -298,7 +334,7 @@ export const laundryRouter = new Hono()
           capabilities: Array<{ id: string }>;
         }>;
       }>;
-    }>(config.pat, "/devices");
+    }>("/devices");
 
     const devices: SmartThingsDevice[] = data.items
       .map((d) => {
@@ -318,8 +354,7 @@ export const laundryRouter = new Hono()
 
   /* Assign washer/dryer devices */
   .patch("/config/devices", async (c) => {
-    const config = getConfig();
-    if (!config?.pat) {
+    if (!isSmartThingsConfigured()) {
       return c.json({ error: "SmartThings non configurato" }, 400);
     }
 
@@ -352,7 +387,7 @@ export const laundryRouter = new Hono()
   /* Send command (start/stop/pause) to a device */
   .post("/command", async (c) => {
     const config = getConfig();
-    if (!config?.pat) {
+    if (!isSmartThingsConfigured() || !config) {
       return c.json({ error: "SmartThings non configurato" }, 400);
     }
 
@@ -379,7 +414,7 @@ export const laundryRouter = new Hono()
       : mappedCommand.capability.replace("washer", "dryer");
 
     try {
-      await stPost(config.pat, `/devices/${body.deviceId}/commands`, {
+      await stPost(`/devices/${body.deviceId}/commands`, {
         commands: [
           {
             component: "main",
@@ -398,3 +433,62 @@ export const laundryRouter = new Hono()
       return c.json({ error: err instanceof Error ? err.message : "Errore invio comando" }, 500);
     }
   });
+
+/* ----- Public callback ----- */
+
+const CALLBACK_SUCCESS_HTML = `<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><title>SmartThings collegato</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font-family:system-ui,sans-serif;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f1013;color:#f5f5f4}
+.card{text-align:center;padding:2.5rem;max-width:400px}
+h1{font-size:1.5rem;margin:0 0 .5rem}
+p{color:#a8a29e;margin:0}
+.check{font-size:3rem;margin-bottom:1rem}</style></head>
+<body><div class="card"><div class="check">&#10003;</div>
+<h1>SmartThings collegato</h1>
+<p>Puoi tornare al pannello, la connessione &egrave; attiva.</p></div></body></html>`;
+
+const CALLBACK_ERROR_HTML = (msg: string) => `<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><title>Errore collegamento SmartThings</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{font-family:system-ui,sans-serif;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f1013;color:#f5f5f4}
+.card{text-align:center;padding:2.5rem;max-width:420px}
+h1{font-size:1.5rem;margin:0 0 .5rem;color:#f87171}
+p{color:#a8a29e;margin:0;font-size:.875rem}</style></head>
+<body><div class="card"><h1>Collegamento non riuscito</h1><p>${msg}</p></div></body></html>`;
+
+export const laundryOauthCallbackRouter = new Hono().get("/", async (c) => {
+  const code = c.req.query("code");
+  const state = c.req.query("state");
+  const errorQuery = c.req.query("error");
+
+  if (errorQuery) {
+    return c.html(CALLBACK_ERROR_HTML(`SmartThings ha risposto: ${errorQuery}`), 400);
+  }
+  if (!code || !state) {
+    return c.html(CALLBACK_ERROR_HTML("Risposta senza code o state."), 400);
+  }
+
+  const pending = takePendingOauth(state);
+  if (!pending) {
+    return c.html(
+      CALLBACK_ERROR_HTML("Richiesta scaduta o non valida. Riapri il collegamento dal pannello."),
+      400,
+    );
+  }
+
+  try {
+    await exchangeCodeForTokens({ code, redirectUri: pending.redirectUri });
+    /* Reset any cached appliance state so the next poll uses the new token. */
+    applianceCache = [];
+    lastPoll = 0;
+    return c.html(CALLBACK_SUCCESS_HTML);
+  } catch (err) {
+    console.error("[laundry] SmartThings token exchange failed:", err);
+    const detail =
+      err instanceof SmartThingsHttpError && err.status === 400
+        ? "code non valido o scaduto"
+        : "errore interno durante lo scambio del token";
+    return c.html(CALLBACK_ERROR_HTML(detail), 500);
+  }
+});

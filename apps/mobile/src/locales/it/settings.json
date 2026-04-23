@@ -46,7 +46,11 @@
   "laundry": {
     "confirmDisconnect": "Disconnettere SmartThings?",
     "loadingDevices": "Caricamento dispositivi...",
-    "noDevices": "Nessuna lavatrice o asciugatrice trovata nel tuo account SmartThings."
+    "noDevices": "Nessuna lavatrice o asciugatrice trovata nel tuo account SmartThings.",
+    "setupDescription": "Collega il tuo account SmartThings per controllare lavatrice, asciugatrice e TV. Si apre la pagina di login Samsung nel browser: accedi e torna qui.",
+    "link": "Collega SmartThings",
+    "linking": "Avvio...",
+    "setupError": "Impossibile avviare il collegamento"
   },
   "ac": {
     "connected": "Collegato a GE Appliances",

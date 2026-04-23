@@ -5,17 +5,33 @@ import {
   WashingMachineIcon,
   WindIcon,
 } from "@phosphor-icons/react";
-import { type FormEvent, useState } from "react";
+import { useState } from "react";
 import {
   useAssignDevices,
   useLaundryConfig,
+  useLaundryStartOauth,
   useSmartThingsDevices,
   useSmartThingsLogout,
-  useSmartThingsSetup,
 } from "../../lib/hooks/useLaundry";
 import { useT } from "../../lib/useT";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { Dropdown, type DropdownOption } from "../ui/Dropdown";
+
+/** True when running inside the Tauri WebView (same check used by
+ * AcSettings / VoiceSettings). In a plain browser the authorization URL
+ * opens in a new tab; inside Tauri the OS browser handles it. */
+function isTauri(): boolean {
+  return !!(window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__;
+}
+
+async function openExternal(url: string): Promise<void> {
+  if (isTauri()) {
+    const { openUrl } = await import("@tauri-apps/plugin-opener");
+    await openUrl(url);
+  } else {
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+}
 
 export function LaundrySettings() {
   const { t: tSettings } = useT("settings");
@@ -155,56 +171,54 @@ function ConnectedView({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Form di setup SmartThings PAT                                      */
+/*  OAuth link: opens SmartThings login in an external browser         */
 /* ------------------------------------------------------------------ */
 function SetupForm() {
-  const setup = useSmartThingsSetup();
-  const [pat, setPat] = useState("");
+  const { t: tSettings } = useT("settings");
+  const start = useLaundryStartOauth();
 
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!pat.trim()) return;
-    setup.mutate({ pat: pat.trim() });
-  }
-
-  const inputClass =
-    "rounded-md border border-border bg-surface px-4 py-3 text-base focus:outline-2 focus:outline-accent";
   const btnClass =
     "rounded-md bg-accent text-accent-foreground px-6 py-3 font-medium text-base transition-opacity hover:opacity-90 disabled:opacity-50";
 
+  async function handleLink() {
+    /* The SmartApp's redirect_uri must match this value exactly. Read
+     * from VITE_API_PUBLIC_URL (HTTPS URL of the Funnel) or fall back
+     * to the regular API base for local development. */
+    const publicBase =
+      (import.meta.env.VITE_API_PUBLIC_URL as string | undefined) ??
+      (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
+      "http://localhost:3000";
+    const redirectUri = `${publicBase.replace(/\/$/, "")}/api/v1/laundry/oauth/callback`;
+    try {
+      const { authorizationUrl } = await start.mutateAsync(redirectUri);
+      await openExternal(authorizationUrl);
+    } catch (err) {
+      console.error("[laundry] start oauth failed", err);
+    }
+  }
+
+  const errMsg = start.error
+    ? (() => {
+        const e = start.error as Error & { body?: { error?: string } };
+        return e.body?.error ?? e.message ?? tSettings("laundry.setupError");
+      })()
+    : null;
+
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <p className="text-sm text-text-muted">
-        Inserisci un Personal Access Token SmartThings per monitorare lavatrice e asciugatrice.
-        Generalo su <span className="font-medium text-text">account.smartthings.com/tokens</span>.
-      </p>
+    <div className="flex flex-col gap-4">
+      <p className="text-sm text-text-muted">{tSettings("laundry.setupDescription")}</p>
 
-      <label className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium">Personal Access Token</span>
-        <input
-          type="password"
-          value={pat}
-          onChange={(e) => setPat(e.target.value)}
-          required
-          placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-          className={inputClass}
-        />
-      </label>
+      {errMsg && <p className="text-sm text-danger">{errMsg}</p>}
 
-      {setup.isError && (
-        <p className="text-sm text-danger">
-          {(setup.error as Error & { message?: string })?.message ?? "Token non valido"}
-        </p>
-      )}
-
-      <button type="submit" disabled={setup.isPending} className={btnClass}>
-        {setup.isPending ? <SpinnerIcon size={18} className="animate-spin inline mr-2" /> : null}
-        {setup.isPending ? "Verifica..." : "Collega"}
+      <button
+        type="button"
+        onClick={() => void handleLink()}
+        disabled={start.isPending}
+        className={btnClass}
+      >
+        {start.isPending ? <SpinnerIcon size={18} className="animate-spin inline mr-2" /> : null}
+        {start.isPending ? tSettings("laundry.linking") : tSettings("laundry.link")}
       </button>
-
-      <p className="text-xs text-text-muted">
-        Il token viene salvato in modo sicuro sul tuo server locale.
-      </p>
-    </form>
+    </div>
   );
 }

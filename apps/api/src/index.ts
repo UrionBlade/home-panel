@@ -21,7 +21,7 @@ import { calendarRouter } from "./routes/calendar.js";
 import { calendarSourcesRouter } from "./routes/calendar-sources.js";
 import { familyRouter } from "./routes/family.js";
 import { kioskRouter } from "./routes/kiosk.js";
-import { laundryRouter } from "./routes/laundry.js";
+import { laundryOauthCallbackRouter, laundryRouter } from "./routes/laundry.js";
 import { lightsRouter } from "./routes/lights.js";
 import { postitsRouter } from "./routes/postits.js";
 import { recipesRouter } from "./routes/recipes.js";
@@ -97,8 +97,9 @@ app.get("/health", (c) => {
 });
 
 // Everything under /api/* requires Bearer token, EXCEPT the Blink media proxy,
-// the Blink live HLS chunks, and SSE — all of which are consumed by browser
-// primitives that cannot attach Authorization headers.
+// the Blink live HLS chunks, SSE, and the SmartThings OAuth callback — all
+// of which are consumed by browser primitives that cannot attach
+// Authorization headers.
 app.use("/api/*", async (c, next) => {
   // The Blink proxy is used by <img> which cannot add Auth headers
   if (c.req.path === `/api/${API_VERSION}/blink/proxy`) {
@@ -116,6 +117,13 @@ app.use("/api/*", async (c, next) => {
     }
     return next();
   }
+  // SmartThings OAuth2 callback: the SmartThings auth server redirects a
+  // raw browser here with the code. Security comes from the one-shot
+  // state nonce validated in the route itself, not from a Bearer token
+  // the browser can't send.
+  if (c.req.path === `/api/${API_VERSION}/laundry/oauth/callback`) {
+    return next();
+  }
   return apiAuth(c, next);
 });
 
@@ -130,6 +138,7 @@ app.route(`/api/${API_VERSION}/kiosk`, kioskRouter);
 app.route(`/api/${API_VERSION}/voice`, voiceRouter);
 app.route(`/api/${API_VERSION}/blink`, blinkRouter);
 app.route(`/api/${API_VERSION}/laundry`, laundryRouter);
+app.route(`/api/${API_VERSION}/laundry/oauth/callback`, laundryOauthCallbackRouter);
 app.route(`/api/${API_VERSION}/lights`, lightsRouter);
 app.route(`/api/${API_VERSION}/tv`, tvRouter);
 app.route(`/api/${API_VERSION}/recipes`, recipesRouter);

@@ -78,11 +78,6 @@ export interface SmartThingsConfig {
   dryerRoomId: string | null;
 }
 
-/** Input per setup SmartThings */
-export interface SmartThingsSetupInput {
-  pat: string;
-}
-
 /** Device scoperto da SmartThings (per selezione) */
 export interface SmartThingsDevice {
   deviceId: string;

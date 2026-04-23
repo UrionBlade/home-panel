@@ -17,6 +17,7 @@ import { db } from "../db/client.js";
 import { smartthingsConfig } from "../db/schema.js";
 import {
   getSmartThingsConfig,
+  isSmartThingsConfigured,
   SmartThingsHttpError,
   stListDevices,
 } from "../lib/smartthings/client.js";
@@ -37,7 +38,7 @@ import {
 } from "../lib/smartthings/tv.js";
 import { TV_APP_PRESETS } from "../lib/smartthings/tv-presets.js";
 
-type TvContext = { pat: string; deviceId: string };
+type TvContext = { deviceId: string };
 
 /** Narrow an unknown JSON body into a record for validation. */
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -51,13 +52,13 @@ function resolveContext():
   | { ok: true; ctx: TvContext }
   | { ok: false; error: { status: 400 | 404; body: { error: string } } } {
   const config = getSmartThingsConfig();
-  if (!config?.pat) {
+  if (!isSmartThingsConfigured()) {
     return { ok: false, error: { status: 400, body: { error: "SmartThings non configurato" } } };
   }
-  if (!config.tvDeviceId) {
+  if (!config?.tvDeviceId) {
     return { ok: false, error: { status: 404, body: { error: "TV non configurata" } } };
   }
-  return { ok: true, ctx: { pat: config.pat, deviceId: config.tvDeviceId } };
+  return { ok: true, ctx: { deviceId: config.tvDeviceId } };
 }
 
 /** Map upstream errors into HTTP responses the client can reason about. */
@@ -107,7 +108,7 @@ export const tvRouter = new Hono()
   .get("/config", (c) => {
     const config = getSmartThingsConfig();
     const body: TvConfig = {
-      smartThingsConfigured: !!config?.pat,
+      smartThingsConfigured: isSmartThingsConfigured(),
       tvDeviceId: config?.tvDeviceId ?? null,
       tvRoomId: config?.tvRoomId ?? null,
     };
@@ -115,12 +116,11 @@ export const tvRouter = new Hono()
   })
 
   .get("/devices", async (c) => {
-    const config = getSmartThingsConfig();
-    if (!config?.pat) {
+    if (!isSmartThingsConfigured()) {
       return c.json({ error: "SmartThings non configurato" }, 400);
     }
     try {
-      const items = await stListDevices(config.pat);
+      const items = await stListDevices();
       const devices: TvDeviceSummary[] = items.filter(looksLikeTv).map((d) => ({
         deviceId: d.deviceId,
         label: d.label || d.name,
@@ -135,8 +135,7 @@ export const tvRouter = new Hono()
   })
 
   .patch("/config", async (c) => {
-    const config = getSmartThingsConfig();
-    if (!config?.pat) {
+    if (!isSmartThingsConfigured()) {
       return c.json({ error: "SmartThings non configurato" }, 400);
     }
     const body = (await c.req.json().catch(() => null)) as TvConfigUpdateInput | null;
@@ -154,7 +153,7 @@ export const tvRouter = new Hono()
     /* Validate the requested id belongs to a TV-shaped device. */
     if (body.tvDeviceId) {
       try {
-        const items = await stListDevices(config.pat);
+        const items = await stListDevices();
         const match = items.find((d) => d.deviceId === body.tvDeviceId);
         if (!match || !looksLikeTv(match)) {
           return c.json({ error: "Device non trovato o non è una TV" }, 400);
@@ -187,7 +186,7 @@ export const tvRouter = new Hono()
     const resolved = resolveContext();
     if (!resolved.ok) return c.json(resolved.error.body, resolved.error.status);
     try {
-      const status: TvStatus = await getCachedTvStatus(resolved.ctx.pat, resolved.ctx.deviceId);
+      const status: TvStatus = await getCachedTvStatus(resolved.ctx.deviceId);
       return c.json(status);
     } catch (err) {
       const mapped = mapUpstreamError(err);
@@ -199,11 +198,7 @@ export const tvRouter = new Hono()
     const resolved = resolveContext();
     if (!resolved.ok) return c.json(resolved.error.body, resolved.error.status);
     try {
-      const status: TvStatus = await getCachedTvStatus(
-        resolved.ctx.pat,
-        resolved.ctx.deviceId,
-        true,
-      );
+      const status: TvStatus = await getCachedTvStatus(resolved.ctx.deviceId, true);
       return c.json(status);
     } catch (err) {
       const mapped = mapUpstreamError(err);
@@ -219,7 +214,7 @@ export const tvRouter = new Hono()
       return c.json({ error: "on è richiesto (boolean)" }, 400);
     }
     try {
-      await sendPower(resolved.ctx.pat, resolved.ctx.deviceId, body.on);
+      await sendPower(resolved.ctx.deviceId, body.on);
       invalidateTvCache(resolved.ctx.deviceId);
       return c.json({ ok: true }, 202);
     } catch (err) {
@@ -243,14 +238,14 @@ export const tvRouter = new Hono()
         if (typeof level !== "number" || !Number.isInteger(level) || level < 0 || level > 100) {
           return c.json({ error: "level deve essere intero tra 0 e 100" }, 400);
         }
-        await sendSetVolume(resolved.ctx.pat, resolved.ctx.deviceId, level);
+        await sendSetVolume(resolved.ctx.deviceId, level);
       } else {
         const delta = body?.delta;
         if (delta !== "up" && delta !== "down") {
           return c.json({ error: "delta deve essere 'up' o 'down'" }, 400);
         }
-        if (delta === "up") await sendVolumeUp(resolved.ctx.pat, resolved.ctx.deviceId);
-        else await sendVolumeDown(resolved.ctx.pat, resolved.ctx.deviceId);
+        if (delta === "up") await sendVolumeUp(resolved.ctx.deviceId);
+        else await sendVolumeDown(resolved.ctx.deviceId);
       }
       invalidateTvCache(resolved.ctx.deviceId);
       return c.json({ ok: true }, 202);
@@ -270,13 +265,13 @@ export const tvRouter = new Hono()
     try {
       let shouldMute: boolean;
       if (body.muted === "toggle") {
-        const current = await getCachedTvStatus(resolved.ctx.pat, resolved.ctx.deviceId);
+        const current = await getCachedTvStatus(resolved.ctx.deviceId);
         shouldMute = !current.muted;
       } else {
         shouldMute = body.muted;
       }
-      if (shouldMute) await sendMute(resolved.ctx.pat, resolved.ctx.deviceId);
-      else await sendUnmute(resolved.ctx.pat, resolved.ctx.deviceId);
+      if (shouldMute) await sendMute(resolved.ctx.deviceId);
+      else await sendUnmute(resolved.ctx.deviceId);
       invalidateTvCache(resolved.ctx.deviceId);
       return c.json({ ok: true, muted: shouldMute }, 202);
     } catch (err) {
@@ -293,7 +288,7 @@ export const tvRouter = new Hono()
       return c.json({ error: "source è richiesto (string)" }, 400);
     }
     try {
-      const current = await getCachedTvStatus(resolved.ctx.pat, resolved.ctx.deviceId);
+      const current = await getCachedTvStatus(resolved.ctx.deviceId);
       if (!current.supportedInputs.includes(body.source)) {
         return c.json(
           {
@@ -303,7 +298,7 @@ export const tvRouter = new Hono()
           400,
         );
       }
-      await sendSetInput(resolved.ctx.pat, resolved.ctx.deviceId, body.source);
+      await sendSetInput(resolved.ctx.deviceId, body.source);
       invalidateTvCache(resolved.ctx.deviceId);
       return c.json({ ok: true }, 202);
     } catch (err) {
@@ -320,7 +315,7 @@ export const tvRouter = new Hono()
       return c.json({ error: "appId è richiesto" }, 400);
     }
     try {
-      await sendLaunchApp(resolved.ctx.pat, resolved.ctx.deviceId, body.appId.trim());
+      await sendLaunchApp(resolved.ctx.deviceId, body.appId.trim());
       invalidateTvCache(resolved.ctx.deviceId);
       return c.json({ ok: true }, 202);
     } catch (err) {
@@ -337,8 +332,8 @@ export const tvRouter = new Hono()
       return c.json({ error: "delta deve essere 'up' o 'down'" }, 400);
     }
     try {
-      if (body.delta === "up") await sendChannelUp(resolved.ctx.pat, resolved.ctx.deviceId);
-      else await sendChannelDown(resolved.ctx.pat, resolved.ctx.deviceId);
+      if (body.delta === "up") await sendChannelUp(resolved.ctx.deviceId);
+      else await sendChannelDown(resolved.ctx.deviceId);
       invalidateTvCache(resolved.ctx.deviceId);
       return c.json({ ok: true }, 202);
     } catch (err) {
@@ -355,7 +350,7 @@ export const tvRouter = new Hono()
       return c.json({ error: "command è richiesto" }, 400);
     }
     try {
-      const current = await getCachedTvStatus(resolved.ctx.pat, resolved.ctx.deviceId);
+      const current = await getCachedTvStatus(resolved.ctx.deviceId);
       if (
         current.supportedPlaybackCommands.length > 0 &&
         !current.supportedPlaybackCommands.includes(body.command)
@@ -368,7 +363,7 @@ export const tvRouter = new Hono()
           400,
         );
       }
-      await sendPlayback(resolved.ctx.pat, resolved.ctx.deviceId, body.command);
+      await sendPlayback(resolved.ctx.deviceId, body.command);
       invalidateTvCache(resolved.ctx.deviceId);
       return c.json({ ok: true }, 202);
     } catch (err) {

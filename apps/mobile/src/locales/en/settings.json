@@ -46,7 +46,11 @@
   "laundry": {
     "confirmDisconnect": "Disconnect SmartThings?",
     "loadingDevices": "Loading devices...",
-    "noDevices": "No washer or dryer found in your SmartThings account."
+    "noDevices": "No washer or dryer found in your SmartThings account.",
+    "setupDescription": "Link your SmartThings account to control washer, dryer and TV. The Samsung login page opens in your browser — sign in and come back here.",
+    "link": "Link SmartThings",
+    "linking": "Starting...",
+    "setupError": "Could not start the link"
   },
   "ac": {
     "connected": "Connected to GE Appliances",

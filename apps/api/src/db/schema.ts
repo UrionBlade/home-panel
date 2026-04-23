@@ -369,7 +369,17 @@ export type SpotifyCredentialsRow = typeof spotifyCredentials.$inferSelect;
  */
 export const smartthingsConfig = sqliteTable("smartthings_config", {
   id: integer("id").primaryKey().default(1),
+  /** Legacy Personal Access Token. Samsung capped new PATs at 24h in
+   * December 2024, so we moved to OAuth2. Kept nullable for backward
+   * compatibility with pre-migration rows; new rows never set it. */
   pat: text("pat"),
+  /** OAuth2 access token from accounts.smartthings.com. */
+  accessToken: text("access_token"),
+  /** OAuth2 refresh token — rolls on every refresh, good for 30 days from
+   * last use so the polling loop keeps it alive indefinitely. */
+  refreshToken: text("refresh_token"),
+  /** ISO timestamp when accessToken expires. */
+  expiresAt: text("expires_at"),
   washerDeviceId: text("washer_device_id"),
   dryerDeviceId: text("dryer_device_id"),
   tvDeviceId: text("tv_device_id"),

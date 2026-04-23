@@ -4,7 +4,6 @@ import type {
   SmartThingsAssignInput,
   SmartThingsConfig,
   SmartThingsDevice,
-  SmartThingsSetupInput,
 } from "@home-panel/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUiStore } from "../../store/ui-store";
@@ -40,17 +39,18 @@ export function useSmartThingsDevices(enabled: boolean) {
   });
 }
 
-/** Setup PAT SmartThings */
-export function useSmartThingsSetup() {
-  const qc = useQueryClient();
+interface OauthStartResponse {
+  authorizationUrl: string;
+  state: string;
+}
+
+/** Kick off the SmartThings OAuth dance. Returns the authorization URL
+ * for the caller to open in an external browser (or the same window in
+ * web mode). */
+export function useLaundryStartOauth() {
   return useMutation({
-    mutationFn: (input: SmartThingsSetupInput) =>
-      apiClient.post<{ ok: boolean }>("/api/v1/laundry/config", input),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: LAUNDRY_CONFIG_KEY });
-      void qc.invalidateQueries({ queryKey: LAUNDRY_STATUS_KEY });
-      void qc.invalidateQueries({ queryKey: LAUNDRY_DEVICES_KEY });
-    },
+    mutationFn: (redirectUri: string) =>
+      apiClient.post<OauthStartResponse>("/api/v1/laundry/oauth/start", { redirectUri }),
   });
 }
 
