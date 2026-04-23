@@ -73,16 +73,17 @@ async function getUsableTokens(store: GeTokenStore): Promise<GeTokenPair> {
 }
 
 /** Fetch wrapper that attaches the Bearer token and transparently refreshes
- * on 401. `path` is relative to the SmartHQ API base. */
+ * on 401. `path` is relative to `baseUrl` (defaults to SmartHQ). */
 export async function geFetch(
   store: GeTokenStore,
   path: string,
   init: RequestInit = {},
+  baseUrl: string = GE_API_URL,
 ): Promise<Response> {
   let tokens = await getUsableTokens(store);
 
   const doFetch = () =>
-    fetch(`${GE_API_URL}${path}`, {
+    fetch(`${baseUrl}${path}`, {
       ...init,
       headers: {
         ...init.headers,
@@ -106,8 +107,9 @@ export async function geFetchJson<T>(
   store: GeTokenStore,
   path: string,
   init: RequestInit = {},
+  baseUrl: string = GE_API_URL,
 ): Promise<T> {
-  const resp = await geFetch(store, path, init);
+  const resp = await geFetch(store, path, init, baseUrl);
   if (!resp.ok) {
     const body = await resp.text().catch(() => "");
     throw new GeAuthError(

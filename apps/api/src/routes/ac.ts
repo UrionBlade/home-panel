@@ -1,9 +1,25 @@
-import type { AcDevice, GeCredentialsStatus, GeSetupInput } from "@home-panel/shared";
+import type {
+  AcCommandInput,
+  AcDeviceUpdateInput,
+  AcFanSpeed,
+  AcMode,
+  AcSwing,
+  GeCredentialsStatus,
+  GeSetupInput,
+} from "@home-panel/shared";
 import { Hono } from "hono";
 import { db } from "../db/client.js";
 import { geCredentials } from "../db/schema.js";
+import { applyAcCommand, readAcState } from "../lib/ge/ac-commands.js";
 import { GeAuthError, loginWithCredentials } from "../lib/ge/auth.js";
 import { GeNotConfiguredError, geFetchJson } from "../lib/ge/client.js";
+import {
+  getAcDevice,
+  listAcDevices,
+  saveAcState,
+  updateAcDeviceMeta,
+  upsertDiscoveredDevices,
+} from "../lib/ge/device-repo.js";
 import { geTokenStore, getCredentialsEmail } from "../lib/ge/store.js";
 
 /* ----- SmartHQ Digital Twin API response shape (only the fields we use) ----- */
@@ -22,16 +38,79 @@ interface SmartHqDeviceListResponse {
   devices: SmartHqDevice[];
 }
 
-function toAcDevice(d: SmartHqDevice): AcDevice {
-  return {
-    id: d.deviceId,
-    serial: d.serial,
-    model: d.model ?? null,
-    nickname: d.nickname ?? null,
-    roomId: null,
-    state: null,
-    lastSeenAt: d.lastPresenceTime ?? null,
-  };
+const VALID_MODES: readonly AcMode[] = ["cool", "heat", "dry", "fan", "auto"] as const;
+const VALID_FAN: readonly AcFanSpeed[] = ["auto", "low", "mid", "high"] as const;
+const VALID_SWING: readonly AcSwing[] = ["off", "on"] as const;
+
+function parseCommand(raw: unknown): AcCommandInput | { error: string } {
+  if (!raw || typeof raw !== "object") return { error: "body JSON richiesto" };
+  const body = raw as Record<string, unknown>;
+  const out: AcCommandInput = {};
+
+  if (body.power !== undefined) {
+    if (typeof body.power !== "boolean") return { error: "power deve essere booleano" };
+    out.power = body.power;
+  }
+  if (body.mode !== undefined) {
+    if (!VALID_MODES.includes(body.mode as AcMode)) return { error: "mode non valido" };
+    out.mode = body.mode as AcMode;
+  }
+  if (body.fanSpeed !== undefined) {
+    if (!VALID_FAN.includes(body.fanSpeed as AcFanSpeed)) {
+      return { error: "fanSpeed non valido" };
+    }
+    out.fanSpeed = body.fanSpeed as AcFanSpeed;
+  }
+  if (body.swing !== undefined) {
+    if (!VALID_SWING.includes(body.swing as AcSwing)) return { error: "swing non valido" };
+    out.swing = body.swing as AcSwing;
+  }
+  if (body.targetTemp !== undefined) {
+    if (typeof body.targetTemp !== "number" || !Number.isFinite(body.targetTemp)) {
+      return { error: "targetTemp deve essere numero" };
+    }
+    out.targetTemp = body.targetTemp;
+  }
+
+  if (Object.keys(out).length === 0) return { error: "nessun campo da aggiornare" };
+  return out;
+}
+
+function parsePatch(raw: unknown): AcDeviceUpdateInput | { error: string } {
+  if (!raw || typeof raw !== "object") return { error: "body JSON richiesto" };
+  const body = raw as Record<string, unknown>;
+  const out: AcDeviceUpdateInput = {};
+
+  if ("roomId" in body) {
+    const v = body.roomId;
+    if (v !== null && typeof v !== "string") return { error: "roomId deve essere stringa o null" };
+    out.roomId = v as string | null;
+  }
+  if ("nickname" in body) {
+    const v = body.nickname;
+    if (v !== null && typeof v !== "string") {
+      return { error: "nickname deve essere stringa o null" };
+    }
+    out.nickname = v as string | null;
+  }
+  if (Object.keys(out).length === 0) return { error: "nessun campo da aggiornare" };
+  return out;
+}
+
+/** Fetch the SmartHQ device list and persist a row per appliance.
+ * Returns the list of `deviceId` strings currently linked. */
+async function refreshDeviceRegistry(): Promise<string[]> {
+  const resp = await geFetchJson<SmartHqDeviceListResponse>(geTokenStore, "/v2/device");
+  upsertDiscoveredDevices(
+    resp.devices.map((d) => ({
+      id: d.deviceId,
+      serial: d.serial,
+      model: d.model ?? null,
+      nickname: d.nickname ?? null,
+      lastSeenAt: d.lastPresenceTime ?? null,
+    })),
+  );
+  return resp.devices.map((d) => d.deviceId);
 }
 
 /* ----- Router ----- */
@@ -88,20 +167,91 @@ export const acRouter = new Hono()
     return c.json({ ok: true });
   })
 
-  /* Devices (live discovery against SmartHQ). */
+  /* Devices: refresh the registry from SmartHQ (upsert into DB preserving
+   * user metadata), then return the DB-backed view which carries roomId
+   * and last polled state. The poller keeps `lastState` fresh between
+   * calls; this handler stays cheap and predictable. */
   .get("/devices", async (c) => {
     try {
-      const resp = await geFetchJson<SmartHqDeviceListResponse>(geTokenStore, "/v2/device");
-      const devices = resp.devices.map(toAcDevice);
-      return c.json(devices);
+      await refreshDeviceRegistry();
+      return c.json(listAcDevices());
     } catch (err) {
       if (err instanceof GeNotConfiguredError) {
         return c.json({ error: "GE Appliances non configurato" }, 400);
       }
       if (err instanceof GeAuthError) {
-        return c.json({ error: `GE API errore ${err.status ?? "?"}` }, 502);
+        /* Don't fail the whole response when discovery is flaky — return
+         * whatever we have in the DB so the UI can still render. */
+        console.warn("[ac] discovery failed, falling back to DB:", err.message);
+        return c.json(listAcDevices());
       }
       console.error("[ac] device listing failed:", err);
       return c.json({ error: "errore interno" }, 500);
     }
+  })
+
+  /* Local metadata update (roomId / nickname). Goes through the DB only,
+   * no GE call. */
+  .patch("/devices/:id", async (c) => {
+    const id = c.req.param("id");
+    const body = await c.req.json().catch(() => null);
+    const parsed = parsePatch(body);
+    if ("error" in parsed) return c.json({ error: parsed.error }, 400);
+
+    const updated = updateAcDeviceMeta(id, parsed);
+    if (!updated) return c.json({ error: "dispositivo non trovato" }, 404);
+    return c.json(updated);
+  })
+
+  /* Send a command to the appliance and refresh its state. We write all
+   * specified ERDs sequentially, then poll once to return the resulting
+   * state so the UI can reconcile its optimistic update. */
+  .post("/devices/:id/command", async (c) => {
+    const id = c.req.param("id");
+    const device = getAcDevice(id);
+    if (!device) return c.json({ error: "dispositivo non trovato" }, 404);
+
+    const body = await c.req.json().catch(() => null);
+    const parsed = parseCommand(body);
+    if ("error" in parsed) return c.json({ error: parsed.error }, 400);
+
+    try {
+      await applyAcCommand(geTokenStore, id, parsed);
+      /* GE takes a beat to apply the command before `/erd` reflects it.
+       * We don't block the request on a read-your-writes loop — the
+       * scheduler will converge within ~60s. Return the optimistic
+       * merge so the UI has something to show immediately. */
+      const optimistic = {
+        ...(device.state ?? {
+          power: false,
+          mode: "cool" as AcMode,
+          currentTemp: null,
+          targetTemp: 24,
+          fanSpeed: "auto" as AcFanSpeed,
+          swing: "off" as AcSwing,
+          updatedAt: new Date().toISOString(),
+        }),
+        ...(parsed.power !== undefined && { power: parsed.power }),
+        ...(parsed.mode !== undefined && { mode: parsed.mode }),
+        ...(parsed.fanSpeed !== undefined && { fanSpeed: parsed.fanSpeed }),
+        ...(parsed.swing !== undefined && { swing: parsed.swing }),
+        ...(parsed.targetTemp !== undefined && { targetTemp: parsed.targetTemp }),
+        updatedAt: new Date().toISOString(),
+      };
+      saveAcState(id, optimistic);
+      return c.json({ ok: true, state: optimistic });
+    } catch (err) {
+      if (err instanceof GeNotConfiguredError) {
+        return c.json({ error: "GE Appliances non configurato" }, 400);
+      }
+      console.error("[ac] command failed:", err);
+      return c.json({ error: "errore invio comando" }, 502);
+    }
   });
+
+/** Invoked by the poller. Exposed here so the scheduler can trigger a
+ * fresh fetch per device without duplicating the listing logic. */
+export async function pollAcDevice(id: string): Promise<void> {
+  const state = await readAcState(geTokenStore, id);
+  saveAcState(id, state);
+}

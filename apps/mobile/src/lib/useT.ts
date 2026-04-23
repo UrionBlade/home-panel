@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 type Namespace =
+  | "ac"
   | "board"
   | "cameras"
   | "common"

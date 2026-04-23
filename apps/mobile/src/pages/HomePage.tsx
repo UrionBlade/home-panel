@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { BoardTile } from "../components/home-tiles/BoardTile";
 import { CamerasTile } from "../components/home-tiles/CamerasTile";
+import { ClimateTile } from "../components/home-tiles/ClimateTile";
 import { LaundryTile } from "../components/home-tiles/LaundryTile";
 import { LightsTile } from "../components/home-tiles/LightsTile";
 import { ShoppingTile } from "../components/home-tiles/ShoppingTile";
@@ -39,6 +40,10 @@ const tiles = [
   },
   { key: "events", Component: TodayEventsTile, span: "md:col-span-3" },
   { key: "laundry", Component: LaundryTile, span: "md:col-span-3" },
+  /* Climate: 3×2 so the tile has room for power + 5-mode selector + fan
+   * speeds + temperature stepper. It sits right under the 4×2 weather
+   * hero so the two "environment" tiles share the top of the mosaic. */
+  { key: "climate", Component: ClimateTile, span: "md:col-span-3 md:row-span-2" },
   { key: "shopping", Component: ShoppingTile, span: "md:col-span-3" },
   { key: "cameras", Component: CamerasTile, span: "md:col-span-3" },
   { key: "lights", Component: LightsTile, span: "md:col-span-3" },

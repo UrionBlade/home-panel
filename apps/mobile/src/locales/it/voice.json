@@ -380,6 +380,55 @@
         "Le luci non rispondono, riprova tra un attimo"
       ]
     },
+    "ac": {
+      "mode": {
+        "cool": "freddo",
+        "heat": "caldo",
+        "dry": "deumidifica",
+        "fan": "ventola",
+        "auto": "automatico"
+      },
+      "fan": {
+        "auto": "automatica",
+        "low": "bassa",
+        "mid": "media",
+        "high": "alta"
+      },
+      "unnamed": "condizionatore",
+      "oneOn": ["Ho acceso il condizionatore di {{name}}", "{{name}}: condizionatore acceso"],
+      "oneOff": ["Ho spento il condizionatore di {{name}}", "{{name}}: condizionatore spento"],
+      "manyOn": ["Ho acceso {{count}} condizionatori", "{{count}} condizionatori accesi"],
+      "manyOff": ["Ho spento {{count}} condizionatori", "{{count}} condizionatori spenti"],
+      "tempSet": [
+        "Imposto {{temp}} gradi al condizionatore di {{name}}",
+        "{{name}}: target a {{temp}} gradi"
+      ],
+      "modeSet": ["Modalità {{mode}} al condizionatore di {{name}}", "{{name}}: imposto {{mode}}"],
+      "fanSet": ["Ventola {{fan}} al condizionatore di {{name}}", "{{name}}: ventola {{fan}}"],
+      "statusOn": "Il condizionatore di {{name}} è acceso in modalità {{mode}} a {{target}} gradi. {{current}}",
+      "statusOff": "Il condizionatore di {{name}} è spento",
+      "statusUnknown": "Non ho ancora letto lo stato del condizionatore di {{name}}",
+      "statusCurrent": "Temperatura in casa {{temp}} gradi",
+      "tempMissing": "Non ho capito la temperatura, prova a dire «venti gradi» o «21»",
+      "modeMissing": "Non ho capito la modalità. Prova con freddo, caldo, deumidifica o ventola",
+      "fanMissing": "Non ho capito la velocità. Prova con auto, bassa, media o alta",
+      "notFound": [
+        "Non trovo un condizionatore che corrisponde a «{{subject}}»",
+        "Non ho trovato «{{subject}}», prova con il nome della stanza"
+      ],
+      "noDevices": [
+        "Non hai ancora collegato nessun condizionatore",
+        "Prima devi collegare GE Appliances dalle impostazioni"
+      ],
+      "notConfigured": [
+        "GE Appliances non è ancora configurato, vai nelle impostazioni",
+        "Prima devi collegare il tuo account GE Appliances"
+      ],
+      "upstreamError": [
+        "Non riesco a raggiungere il condizionatore in questo momento",
+        "Il condizionatore non risponde, riprova tra un attimo"
+      ]
+    },
     "errors": {
       "generic": "Si è verificato un errore"
     }

@@ -14,6 +14,7 @@ import { seedVoiceSettings } from "./db/seed-voice-settings.js";
 import { stopAllLiveSessions } from "./lib/blink/liveview-manager.js";
 import { startBlinkScheduler } from "./lib/blink/scheduler.js";
 import { startSyncScheduler } from "./lib/calendar-sync.js";
+import { startAcScheduler } from "./lib/ge/scheduler.js";
 import { apiAuth } from "./middleware/auth.js";
 import { acRouter } from "./routes/ac.js";
 import { blinkRouter } from "./routes/blink.js";
@@ -177,6 +178,7 @@ serve({ fetch: app.fetch, port, hostname }, (info) => {
   startSyncScheduler();
   startBlinkScheduler();
   startTimersScheduler();
+  startAcScheduler();
 });
 
 /* Tear down ffmpeg children + notify Blink on graceful shutdown so the

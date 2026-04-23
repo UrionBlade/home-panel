@@ -15,7 +15,8 @@
   "groups": {
     "cameras": "Telecamere",
     "lights": "Luci",
-    "smartthings": "SmartThings"
+    "smartthings": "SmartThings",
+    "ac": "Climatizzatori"
   },
   "labels": {
     "washer": "Lavatrice",

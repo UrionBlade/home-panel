@@ -1,0 +1,44 @@
+{
+  "title": "Clima",
+  "tile": {
+    "notConfigured": "Configura i condizionatori",
+    "notConfiguredHint": "Collega GE Appliances dalle impostazioni",
+    "noDevices": "Nessun condizionatore",
+    "noDevicesHint": "Tocca per aprire le impostazioni",
+    "offLabel": "Spento",
+    "targetLabel": "Target",
+    "currentLabel": "Ambiente",
+    "tempUnit": "°C",
+    "powerOn": "Accendi {{name}}",
+    "powerOff": "Spegni {{name}}",
+    "increaseTemp": "Aumenta temperatura",
+    "decreaseTemp": "Diminuisci temperatura",
+    "switchTo": "Passa a {{name}}",
+    "unnamed": "Condizionatore",
+    "modeLabel": "Modalità",
+    "fanLabel": "Ventola",
+    "swingLabel": "Oscillazione",
+    "swingOn": "Attiva",
+    "swingOff": "Ferma"
+  },
+  "mode": {
+    "cool": "Freddo",
+    "heat": "Caldo",
+    "dry": "Deumidifica",
+    "fan": "Ventola",
+    "auto": "Auto"
+  },
+  "fan": {
+    "auto": "Auto",
+    "low": "Bassa",
+    "mid": "Media",
+    "high": "Alta"
+  },
+  "rooms": {
+    "groupLabel": "Climatizzatori",
+    "unassigned": "Senza stanza"
+  },
+  "toast": {
+    "commandError": "Errore invio comando condizionatore"
+  }
+}

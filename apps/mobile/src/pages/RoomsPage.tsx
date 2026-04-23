@@ -28,6 +28,7 @@ import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { Dropdown, type DropdownOption } from "../components/ui/Dropdown";
 import { Input } from "../components/ui/Input";
 import { Modal } from "../components/ui/Modal";
+import { useAcConfig, useAcDevices, useUpdateAcDevice } from "../lib/hooks/useAc";
 import { useCameras, useUpdateCameraRoom } from "../lib/hooks/useBlink";
 import { useAssignDevices, useLaundryConfig } from "../lib/hooks/useLaundry";
 import { useLights, useUpdateLight } from "../lib/hooks/useLights";
@@ -170,11 +171,14 @@ function DevicesSection({ rooms }: { rooms: Room[] }) {
   const { data: lights = [] } = useLights();
   const { data: tvConfig } = useTvConfig();
   const { data: laundryConfig } = useLaundryConfig();
+  const { data: acConfig } = useAcConfig();
+  const { data: acDevices = [] } = useAcDevices(acConfig?.configured ?? false);
 
   const updateCamera = useUpdateCameraRoom();
   const updateLight = useUpdateLight();
   const assignLaundry = useAssignDevices();
   const assignTv = useTvAssign();
+  const updateAc = useUpdateAcDevice();
 
   const roomOptions: DropdownOption[] = useMemo(
     () => [
@@ -187,7 +191,8 @@ function DevicesSection({ rooms }: { rooms: Room[] }) {
   const hasTv = !!tvConfig?.tvDeviceId;
   const hasWasher = !!laundryConfig?.washerDeviceId;
   const hasDryer = !!laundryConfig?.dryerDeviceId;
-  const hasAny = cameras.length > 0 || lights.length > 0 || hasTv || hasWasher || hasDryer;
+  const hasAc = acDevices.length > 0;
+  const hasAny = cameras.length > 0 || lights.length > 0 || hasTv || hasWasher || hasDryer || hasAc;
 
   if (!hasAny) {
     return (
@@ -233,6 +238,22 @@ function DevicesSection({ rooms }: { rooms: Room[] }) {
               options={roomOptions}
               disabled={updateLight.isPending}
               onChange={(v) => updateLight.mutate({ id: light.id, input: { roomId: v || null } })}
+            />
+          ))}
+        </DeviceGroup>
+      )}
+
+      {hasAc && (
+        <DeviceGroup icon={<WindIcon size={18} weight="duotone" />} title={t("groups.ac")}>
+          {acDevices.map((ac) => (
+            <DeviceRow
+              key={ac.id}
+              icon={<WindIcon size={16} weight="duotone" />}
+              label={ac.nickname?.trim() || ac.model?.trim() || ac.serial}
+              value={ac.roomId ?? ""}
+              options={roomOptions}
+              disabled={updateAc.isPending}
+              onChange={(v) => updateAc.mutate({ id: ac.id, roomId: v || null })}
             />
           ))}
         </DeviceGroup>

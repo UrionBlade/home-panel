@@ -10,6 +10,7 @@ import { apiClient } from "../api-client";
 import { i18next } from "../i18n";
 import { primeAudio } from "../timers/alertSound";
 import { dismissActiveAlert, hasActiveAlert } from "../timers/alertStore";
+import { handleAcIntent, isAcIntent } from "./acIntents";
 import { handleLaundryIntent, isLaundryIntent } from "./laundryIntents";
 import { handleLightIntent, isLightIntent } from "./lightIntents";
 import { nativeVoiceClient } from "./nativeVoiceClient";
@@ -235,6 +236,10 @@ export async function handleIntent(command: ParsedCommand): Promise<string> {
   if (isLightIntent(command.intent)) {
     const lightResponse = await handleLightIntent(command, _queryClient);
     if (lightResponse !== null) return lightResponse;
+  }
+  if (isAcIntent(command.intent)) {
+    const acResponse = await handleAcIntent(command, _queryClient);
+    if (acResponse !== null) return acResponse;
   }
 
   switch (command.intent) {
@@ -621,6 +626,12 @@ export async function handleIntent(command: ParsedCommand): Promise<string> {
     case "light_off":
     case "lights_all_on":
     case "lights_all_off":
+    case "ac_power_on":
+    case "ac_power_off":
+    case "ac_set_temp":
+    case "ac_set_mode":
+    case "ac_set_fan":
+    case "ac_status":
       return vt("errors.generic");
   }
 }

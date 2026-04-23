@@ -15,7 +15,8 @@
   "groups": {
     "cameras": "Cameras",
     "lights": "Lights",
-    "smartthings": "SmartThings"
+    "smartthings": "SmartThings",
+    "ac": "Air conditioners"
   },
   "labels": {
     "washer": "Washer",

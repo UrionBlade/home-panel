@@ -384,6 +384,52 @@
         "The lights are not responding, try again in a moment"
       ]
     },
+    "ac": {
+      "mode": {
+        "cool": "cool",
+        "heat": "heat",
+        "dry": "dry",
+        "fan": "fan",
+        "auto": "auto"
+      },
+      "fan": {
+        "auto": "auto",
+        "low": "low",
+        "mid": "medium",
+        "high": "high"
+      },
+      "unnamed": "air conditioner",
+      "oneOn": ["Turned on the AC in {{name}}", "{{name}} AC is on"],
+      "oneOff": ["Turned off the AC in {{name}}", "{{name}} AC is off"],
+      "manyOn": ["Turned on {{count}} air conditioners", "{{count}} ACs on"],
+      "manyOff": ["Turned off {{count}} air conditioners", "{{count}} ACs off"],
+      "tempSet": ["Setting {{name}} AC to {{temp}} degrees", "{{name}}: target {{temp}}°"],
+      "modeSet": ["{{name}} AC set to {{mode}}", "Mode {{mode}} for {{name}}"],
+      "fanSet": ["{{name}} fan at {{fan}}", "Fan {{fan}} for {{name}}"],
+      "statusOn": "The {{name}} AC is on, mode {{mode}} at {{target}} degrees. {{current}}",
+      "statusOff": "The {{name}} AC is off",
+      "statusUnknown": "I haven't read the {{name}} AC state yet",
+      "statusCurrent": "Room is {{temp}} degrees",
+      "tempMissing": "I didn't catch the temperature, try \"twenty degrees\" or \"21\"",
+      "modeMissing": "I didn't catch the mode. Try cool, heat, dry or fan",
+      "fanMissing": "I didn't catch the speed. Try auto, low, medium or high",
+      "notFound": [
+        "I can't find an AC matching \"{{subject}}\"",
+        "No match for \"{{subject}}\", try the room name"
+      ],
+      "noDevices": [
+        "You haven't linked any air conditioners yet",
+        "Connect GE Appliances from settings first"
+      ],
+      "notConfigured": [
+        "GE Appliances is not set up yet, check the settings",
+        "You need to link your GE Appliances account first"
+      ],
+      "upstreamError": [
+        "I can't reach the AC right now",
+        "The AC is not responding, try again in a moment"
+      ]
+    },
     "errors": {
       "generic": "Something went wrong"
     }

@@ -20,6 +20,10 @@ export const GE_CLIENT_SECRET =
 
 export const GE_LOGIN_URL = "https://accounts.brillion.geappliances.com";
 export const GE_API_URL = "https://client.mysmarthq.com";
+/** Legacy Brillion REST endpoint used for per-ERD reads/writes. The
+ * mysmarthq.com host above only exposes device discovery; per-ERD
+ * GETs / POSTs (`/v1/appliance/{jid}/erd/{erd}`) live here. */
+export const GE_BRILLION_API_URL = "https://api.brillion.geappliances.com";
 
 /** Redirect URI registered for the public consumer client_id. Brillion
  * rejects any other value with `invalid_request`, which is why the

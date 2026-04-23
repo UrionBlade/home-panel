@@ -1,0 +1,44 @@
+{
+  "title": "Climate",
+  "tile": {
+    "notConfigured": "Set up air conditioners",
+    "notConfiguredHint": "Link GE Appliances from settings",
+    "noDevices": "No air conditioners",
+    "noDevicesHint": "Tap to open settings",
+    "offLabel": "Off",
+    "targetLabel": "Target",
+    "currentLabel": "Room",
+    "tempUnit": "°C",
+    "powerOn": "Turn on {{name}}",
+    "powerOff": "Turn off {{name}}",
+    "increaseTemp": "Increase temperature",
+    "decreaseTemp": "Decrease temperature",
+    "switchTo": "Switch to {{name}}",
+    "unnamed": "Air conditioner",
+    "modeLabel": "Mode",
+    "fanLabel": "Fan",
+    "swingLabel": "Swing",
+    "swingOn": "Start",
+    "swingOff": "Stop"
+  },
+  "mode": {
+    "cool": "Cool",
+    "heat": "Heat",
+    "dry": "Dry",
+    "fan": "Fan",
+    "auto": "Auto"
+  },
+  "fan": {
+    "auto": "Auto",
+    "low": "Low",
+    "mid": "Mid",
+    "high": "High"
+  },
+  "rooms": {
+    "groupLabel": "Air conditioners",
+    "unassigned": "Unassigned"
+  },
+  "toast": {
+    "commandError": "Error sending AC command"
+  }
+}

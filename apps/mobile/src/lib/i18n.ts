@@ -1,6 +1,7 @@
 import i18next from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import { initReactI18next } from "react-i18next";
+import acEn from "../locales/en/ac.json";
 import boardEn from "../locales/en/board.json";
 import calendarEn from "../locales/en/calendar.json";
 import camerasEn from "../locales/en/cameras.json";
@@ -20,6 +21,7 @@ import tvEn from "../locales/en/tv.json";
 import voiceEn from "../locales/en/voice.json";
 import wasteEn from "../locales/en/waste.json";
 import weatherEn from "../locales/en/weather.json";
+import acIt from "../locales/it/ac.json";
 import boardIt from "../locales/it/board.json";
 import calendarIt from "../locales/it/calendar.json";
 import camerasIt from "../locales/it/cameras.json";
@@ -66,9 +68,11 @@ void i18next
       "rooms",
       "waste",
       "tv",
+      "ac",
     ],
     resources: {
       it: {
+        ac: acIt,
         board: boardIt,
         cameras: camerasIt,
         common: commonIt,
@@ -90,6 +94,7 @@ void i18next
         tv: tvIt,
       },
       en: {
+        ac: acEn,
         board: boardEn,
         cameras: camerasEn,
         common: commonEn,

@@ -63,7 +63,13 @@ export type VoiceIntent =
   | "light_on"
   | "light_off"
   | "lights_all_off"
-  | "lights_all_on";
+  | "lights_all_on"
+  | "ac_power_on"
+  | "ac_power_off"
+  | "ac_set_temp"
+  | "ac_set_mode"
+  | "ac_set_fan"
+  | "ac_status";
 
 export interface ParsedCommand {
   intent: VoiceIntent;

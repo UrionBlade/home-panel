@@ -1,3 +1,4 @@
+import type acIt from "../locales/it/ac.json";
 import type boardIt from "../locales/it/board.json";
 import type calendarIt from "../locales/it/calendar.json";
 import type camerasIt from "../locales/it/cameras.json";
@@ -22,6 +23,7 @@ declare module "i18next" {
   interface CustomTypeOptions {
     defaultNS: "common";
     resources: {
+      ac: typeof acIt;
       board: typeof boardIt;
       cameras: typeof camerasIt;
       common: typeof commonIt;
