@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { FamilyManager } from "../components/family/FamilyManager";
 import { PageContainer } from "../components/layout/PageContainer";
 import { PageHeader } from "../components/layout/PageHeader";
+import { AcSettings } from "../components/settings/AcSettings";
 import { CalendarSourcesSettings } from "../components/settings/CalendarSourcesSettings";
 import { CameraSettings } from "../components/settings/CameraSettings";
 import { KioskSettings } from "../components/settings/KioskSettings";
@@ -143,6 +144,7 @@ export function SettingsPage() {
         <>
           <CameraSettings />
           <LaundrySettings />
+          <AcSettings />
           <TvSettings />
           <LightsSettings />
         </>

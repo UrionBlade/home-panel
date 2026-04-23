@@ -6,6 +6,7 @@
     "cameras": "Cameras",
     "laundry": "Laundry",
     "tv": "TV",
+    "ac": "Air conditioners",
     "appearance": "Appearance",
     "info": "Info"
   },
@@ -46,6 +47,22 @@
     "confirmDisconnect": "Disconnect SmartThings?",
     "loadingDevices": "Loading devices...",
     "noDevices": "No washer or dryer found in your SmartThings account."
+  },
+  "ac": {
+    "connected": "Connected to GE Appliances",
+    "connectedAs": "Connected as {{email}}",
+    "setupDescription": "Link your GE Comfort / SmartHQ account to control your air conditioners. I'll open the login page in your browser — sign in and come back here.",
+    "link": "Link GE Appliances",
+    "linking": "Starting...",
+    "setupError": "Could not start the link",
+    "disconnect": "Disconnect",
+    "confirmDisconnect": "Disconnect GE Appliances?",
+    "waitingForBrowser": "Finish the login in the browser we just opened. This page will update automatically once the link is active.",
+    "polling": "Waiting for GE to confirm...",
+    "cancel": "Cancel",
+    "loadingDevices": "Loading devices...",
+    "devicesError": "Failed to fetch devices.",
+    "noDevices": "No GE device found in your account."
   },
   "calendar": {
     "editSource": "Edit {{name}}",

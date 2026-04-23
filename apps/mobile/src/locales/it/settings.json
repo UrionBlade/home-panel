@@ -6,6 +6,7 @@
     "cameras": "Telecamere",
     "laundry": "Lavanderia",
     "tv": "TV",
+    "ac": "Condizionatori",
     "appearance": "Aspetto",
     "info": "Info"
   },
@@ -46,6 +47,22 @@
     "confirmDisconnect": "Disconnettere SmartThings?",
     "loadingDevices": "Caricamento dispositivi...",
     "noDevices": "Nessuna lavatrice o asciugatrice trovata nel tuo account SmartThings."
+  },
+  "ac": {
+    "connected": "Collegato a GE Appliances",
+    "connectedAs": "Collegato come {{email}}",
+    "setupDescription": "Collega il tuo account GE Comfort / SmartHQ per controllare i condizionatori. Ti aprirò la pagina di login nel browser: completa l'accesso e torna qui.",
+    "link": "Collega GE Appliances",
+    "linking": "Avvio...",
+    "setupError": "Impossibile avviare il collegamento",
+    "disconnect": "Disconnetti",
+    "confirmDisconnect": "Disconnettere GE Appliances?",
+    "waitingForBrowser": "Completa il login nel browser appena aperto. Questa pagina si aggiornerà da sola quando la connessione sarà attiva.",
+    "polling": "In attesa della conferma di GE...",
+    "cancel": "Annulla",
+    "loadingDevices": "Caricamento dispositivi...",
+    "devicesError": "Impossibile recuperare i dispositivi.",
+    "noDevices": "Nessun dispositivo GE trovato nel tuo account."
   },
   "calendar": {
     "editSource": "Modifica {{name}}",
