@@ -108,6 +108,15 @@ interface RawTokenResponse {
 async function postToken(body: Record<string, string>): Promise<GeTokenPair> {
   const authHeader = `Basic ${Buffer.from(`${GE_CLIENT_ID}:${GE_CLIENT_SECRET}`).toString("base64")}`;
 
+  /* Brillion wants `client_id` + `client_secret` in the form body _and_
+   * Basic Auth in the header — sending only the latter comes back as a
+   * bare 400 with no hint. Same pattern as `gehome`. */
+  const fullBody = {
+    ...body,
+    client_id: GE_CLIENT_ID,
+    client_secret: GE_CLIENT_SECRET,
+  };
+
   const resp = await fetch(`${GE_LOGIN_URL}/oauth2/token`, {
     method: "POST",
     headers: {
@@ -115,7 +124,7 @@ async function postToken(body: Record<string, string>): Promise<GeTokenPair> {
       "Content-Type": "application/x-www-form-urlencoded",
       Accept: "application/json",
     },
-    body: new URLSearchParams(body).toString(),
+    body: new URLSearchParams(fullBody).toString(),
   });
 
   if (!resp.ok) {
@@ -205,7 +214,6 @@ export async function loginWithCredentials(params: {
       grant_type: "authorization_code",
       code,
       redirect_uri: GE_OAUTH_REDIRECT_URI,
-      client_id: GE_CLIENT_ID,
     });
   }
 
@@ -229,11 +237,12 @@ export async function loginWithCredentials(params: {
 
 /** Refresh using a stored refresh token. GE rotates the refresh token on
  * every call, so callers must persist the new pair even on "refresh only"
- * paths. */
+ * paths. `redirect_uri` is required by Brillion even on refresh (quirk
+ * confirmed by gehome). */
 export async function refreshAccessToken(refreshToken: string): Promise<GeTokenPair> {
   return postToken({
     grant_type: "refresh_token",
     refresh_token: refreshToken,
-    client_id: GE_CLIENT_ID,
+    redirect_uri: GE_OAUTH_REDIRECT_URI,
   });
 }
