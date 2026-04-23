@@ -105,16 +105,22 @@ app.get("/health", (c) => {
 // of which are consumed by browser primitives that cannot attach
 // Authorization headers.
 app.use("/api/*", async (c, next) => {
+  /* Tailscale Funnel normalises `path/` / `path` inconsistently, so the
+   * path the backend sees can carry a trailing slash the SmartThings /
+   * blink endpoints never generate themselves. Strip it before the
+   * string comparisons below. */
+  const normalized = c.req.path.replace(/\/$/, "");
+
   // The Blink proxy is used by <img> which cannot add Auth headers
-  if (c.req.path === `/api/${API_VERSION}/blink/proxy`) {
+  if (normalized === `/api/${API_VERSION}/blink/proxy`) {
     return next();
   }
   // HLS playlist + segments consumed by <video> / hls.js
-  if (c.req.path.startsWith(`/api/${API_VERSION}/blink/live/`)) {
+  if (normalized.startsWith(`/api/${API_VERSION}/blink/live/`)) {
     return next();
   }
   // SSE: EventSource does not support custom headers, uses ?token= query param
-  if (c.req.path === `/api/${API_VERSION}/sse`) {
+  if (normalized === `/api/${API_VERSION}/sse`) {
     const token = c.req.query("token");
     if (!token || token !== process.env.API_TOKEN) {
       return c.json({ error: "invalid_token" }, 401);
@@ -125,12 +131,12 @@ app.use("/api/*", async (c, next) => {
   // raw browser here with the code. Security comes from the one-shot
   // state nonce validated in the route itself, not from a Bearer token
   // the browser can't send.
-  if (c.req.path === `/api/${API_VERSION}/laundry/oauth/callback`) {
+  if (normalized === `/api/${API_VERSION}/laundry/oauth/callback`) {
     return next();
   }
   // SmartThings SmartApp lifecycle webhook (PING/CONFIRMATION/...). The
   // SmartThings servers hit this to verify the app — no Bearer header.
-  if (c.req.path === `/api/${API_VERSION}/smartthings/webhook`) {
+  if (normalized === `/api/${API_VERSION}/smartthings/webhook`) {
     return next();
   }
   return apiAuth(c, next);
