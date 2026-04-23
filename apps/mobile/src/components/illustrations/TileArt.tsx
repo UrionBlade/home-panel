@@ -599,3 +599,123 @@ export function RecipeArt({ size = 180, className }: ArtProps) {
     </svg>
   );
 }
+
+export function LightbulbArt({ size = 180, className }: ArtProps) {
+  return (
+    <svg
+      viewBox="0 0 200 200"
+      width={size}
+      height={size}
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        {/* Warm glass bulb — amber glow from within */}
+        <radialGradient id="lb-glass" cx="0.4" cy="0.35">
+          <stop offset="0%" stopColor="#FFF8D6" />
+          <stop offset="45%" stopColor="#FFD37A" />
+          <stop offset="85%" stopColor="#E89A2E" />
+          <stop offset="100%" stopColor="#9E5E14" />
+        </radialGradient>
+        {/* Soft halo of light spilling outside the glass */}
+        <radialGradient id="lb-halo" cx="0.5" cy="0.42">
+          <stop offset="0%" stopColor="#FFE9A8" stopOpacity="0.75" />
+          <stop offset="60%" stopColor="#FFD37A" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="#FFD37A" stopOpacity="0" />
+        </radialGradient>
+        {/* Screw-in base — brushed brass */}
+        <linearGradient id="lb-base" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#D7B070" />
+          <stop offset="45%" stopColor="#9E7D44" />
+          <stop offset="100%" stopColor="#5E4823" />
+        </linearGradient>
+        {/* Filament glow */}
+        <radialGradient id="lb-filament" cx="0.5" cy="0.5">
+          <stop offset="0%" stopColor="#FFFFFF" />
+          <stop offset="55%" stopColor="#FFB347" />
+          <stop offset="100%" stopColor="#FF7A18" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+
+      {/* Ground shadow */}
+      <ellipse cx="105" cy="188" rx="56" ry="5" fill="#000" opacity="0.22" />
+
+      {/* Outer halo — the "it's glowing" cue */}
+      <circle cx="100" cy="82" r="78" fill="url(#lb-halo)" />
+
+      {/* Glass envelope — classic pear shape */}
+      <path
+        d="M 100 22
+           C 62 22 42 52 42 80
+           C 42 102 56 118 68 130
+           C 74 136 76 142 76 150
+           L 124 150
+           C 124 142 126 136 132 130
+           C 144 118 158 102 158 80
+           C 158 52 138 22 100 22 Z"
+        fill="url(#lb-glass)"
+      />
+
+      {/* Inner filament halo */}
+      <circle cx="100" cy="82" r="24" fill="url(#lb-filament)" opacity="0.9" />
+
+      {/* Tungsten filament — looped wire */}
+      <path
+        d="M 86 92 L 90 70 L 94 90 L 98 70 L 102 90 L 106 70 L 110 90 L 114 70"
+        fill="none"
+        stroke="#FFE08A"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M 86 92 L 90 70 L 94 90 L 98 70 L 102 90 L 106 70 L 110 90 L 114 70"
+        fill="none"
+        stroke="#FFFFFF"
+        strokeWidth="1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.85"
+      />
+      {/* Support wires from filament down to the stem */}
+      <line
+        x1="92"
+        y1="92"
+        x2="96"
+        y2="120"
+        stroke="#7A5B22"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="108"
+        y1="92"
+        x2="104"
+        y2="120"
+        stroke="#7A5B22"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+
+      {/* Glass highlight — upper-left sheen */}
+      <ellipse cx="72" cy="55" rx="9" ry="22" fill="#FFFFFF" opacity="0.55" />
+      <ellipse cx="80" cy="75" rx="3" ry="8" fill="#FFFFFF" opacity="0.35" />
+
+      {/* Collar between glass and base (dark gasket) */}
+      <rect x="74" y="148" width="52" height="6" rx="2" fill="#2A2420" opacity="0.85" />
+
+      {/* Screw base with thread rings */}
+      <path
+        d="M 76 154 L 124 154 L 120 176 Q 118 180 114 180 L 86 180 Q 82 180 80 176 Z"
+        fill="url(#lb-base)"
+      />
+      <g stroke="#5E4823" strokeWidth="1.5" opacity="0.7">
+        <line x1="78" y1="162" x2="122" y2="162" />
+        <line x1="79" y1="168" x2="121" y2="168" />
+        <line x1="80" y1="174" x2="120" y2="174" />
+      </g>
+      {/* Tiny contact tip at the bottom */}
+      <rect x="94" y="180" width="12" height="4" rx="1" fill="#2A2420" />
+    </svg>
+  );
+}

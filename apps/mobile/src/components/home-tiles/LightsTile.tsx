@@ -1,7 +1,7 @@
-import { LightbulbFilamentIcon } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 import { useLights } from "../../lib/hooks/useLights";
 import { useT } from "../../lib/useT";
+import { LightbulbArt } from "../illustrations/TileArt";
 import { Tile } from "../ui/Tile";
 
 export function LightsTile() {
@@ -26,12 +26,17 @@ export function LightsTile() {
         }}
       />
 
-      <LightbulbFilamentIcon
+      <LightbulbArt
         size={74}
-        weight={anyOn ? "fill" : "duotone"}
-        className="absolute top-3 right-3 pointer-events-none select-none text-accent/80"
-        style={{ opacity: anyOn ? 0.95 : 0.6 }}
+        className="absolute top-2 right-2 pointer-events-none select-none anim-drift"
+        /* Dim the bulb when nothing is on so the tile reads "all off" at a glance. */
       />
+      {!anyOn && (
+        <div
+          aria-hidden
+          className="absolute top-2 right-2 w-[74px] h-[74px] pointer-events-none rounded-full bg-surface/55"
+        />
+      )}
 
       <div className="relative flex flex-col justify-between h-full z-10 pr-20 md:pr-24">
         <span className="label-mono text-accent" style={{ fontWeight: 900 }}>

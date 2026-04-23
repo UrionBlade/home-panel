@@ -8,6 +8,7 @@ import {
 import { motion } from "framer-motion";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { LightbulbArt } from "../components/illustrations/TileArt";
 import { PageContainer } from "../components/layout/PageContainer";
 import { PageHeader } from "../components/layout/PageHeader";
 import {
@@ -123,18 +124,14 @@ export function LightsPage() {
         <PageHeader
           title={t("title")}
           subtitle={t("subtitle")}
-          artwork={<LightbulbFilamentIcon size={72} weight="duotone" className="text-accent" />}
+          artwork={<LightbulbArt size={96} />}
         />
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="max-w-md mx-auto mt-16 flex flex-col items-center gap-5 text-center"
         >
-          <LightbulbFilamentIcon
-            size={56}
-            weight="duotone"
-            className="text-text-muted opacity-50"
-          />
+          <LightbulbArt size={140} className="opacity-75 anim-drift" />
           <h2 className="font-display text-2xl text-text">{t("notConfigured.title")}</h2>
           <p className="text-text-muted">{t("notConfigured.body")}</p>
           <button
@@ -155,7 +152,7 @@ export function LightsPage() {
       <PageHeader
         title={t("title")}
         subtitle={t("subtitle")}
-        artwork={<LightbulbFilamentIcon size={72} weight="duotone" className="text-accent" />}
+        artwork={<LightbulbArt size={96} />}
         actions={
           <button
             type="button"
@@ -179,11 +176,7 @@ export function LightsPage() {
           animate={{ opacity: 1, y: 0 }}
           className="max-w-md mx-auto mt-16 flex flex-col items-center gap-5 text-center"
         >
-          <LightbulbFilamentIcon
-            size={56}
-            weight="duotone"
-            className="text-text-muted opacity-50"
-          />
+          <LightbulbArt size={140} className="opacity-75 anim-drift" />
           <h2 className="font-display text-2xl text-text">{t("empty.noneAdopted.title")}</h2>
           <p className="text-text-muted">{t("empty.noneAdopted.body")}</p>
           <button
