@@ -520,11 +520,25 @@ export const smartthingsWebhookRouter = new Hono().post("/", async (c) => {
       /* Registration handshake — echo the challenge so SmartThings knows
        * the Target URL is actually ours. */
       return c.json({ pingData: { challenge: body.pingData?.challenge ?? "" } });
-    case "CONFIRMATION":
-      /* "App confirmation" step used for enterprise flows; we don't hit
-       * the confirmationUrl because the public consumer OAuth flow
-       * doesn't require it. Returning 200 keeps SmartThings happy. */
+    case "CONFIRMATION": {
+      /* SmartThings publishes a single-use `confirmationUrl`; we must
+       * GET it before the token expires to mark the SmartApp as
+       * verified. Fire it in parallel and respond with our own target
+       * URL so the HTTP request that brought us here can close. */
+      const confirmationUrl = body.confirmationData?.confirmationUrl;
+      if (confirmationUrl) {
+        fetch(confirmationUrl)
+          .then((res) => {
+            console.log(`[smartthings] confirmation GET → ${res.status}`);
+          })
+          .catch((err) => {
+            console.error("[smartthings] confirmation GET failed:", err);
+          });
+      } else {
+        console.warn("[smartthings] CONFIRMATION without confirmationUrl");
+      }
       return c.json({ targetUrl: c.req.url });
+    }
     case "CONFIGURATION":
     case "INSTALL":
     case "UPDATE":
