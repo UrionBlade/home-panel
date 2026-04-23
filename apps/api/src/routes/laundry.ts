@@ -457,7 +457,9 @@ h1{font-size:1.5rem;margin:0 0 .5rem;color:#f87171}
 p{color:#a8a29e;margin:0;font-size:.875rem}</style></head>
 <body><div class="card"><h1>Collegamento non riuscito</h1><p>${msg}</p></div></body></html>`;
 
-export const laundryOauthCallbackRouter = new Hono().get("/", async (c) => {
+import type { Context } from "hono";
+
+export async function laundryOauthCallbackHandler(c: Context): Promise<Response> {
   const code = c.req.query("code");
   const state = c.req.query("state");
   const errorQuery = c.req.query("error");
@@ -491,7 +493,7 @@ export const laundryOauthCallbackRouter = new Hono().get("/", async (c) => {
         : "errore interno durante lo scambio del token";
     return c.html(CALLBACK_ERROR_HTML(detail), 500);
   }
-});
+}
 
 /* ----- SmartThings SmartApp lifecycle webhook -----
  *
@@ -510,7 +512,7 @@ interface StLifecycleRequest {
   [key: string]: unknown;
 }
 
-export const smartthingsWebhookRouter = new Hono().post("/", async (c) => {
+export async function smartthingsWebhookHandler(c: Context): Promise<Response> {
   const body = (await c.req.json().catch(() => null)) as StLifecycleRequest | null;
   if (!body?.lifecycle) {
     return c.json({ error: "body mancante" }, 400);
@@ -551,4 +553,4 @@ export const smartthingsWebhookRouter = new Hono().post("/", async (c) => {
     default:
       return c.json({});
   }
-});
+}

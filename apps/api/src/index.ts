@@ -22,9 +22,9 @@ import { calendarSourcesRouter } from "./routes/calendar-sources.js";
 import { familyRouter } from "./routes/family.js";
 import { kioskRouter } from "./routes/kiosk.js";
 import {
-  laundryOauthCallbackRouter,
+  laundryOauthCallbackHandler,
   laundryRouter,
-  smartthingsWebhookRouter,
+  smartthingsWebhookHandler,
 } from "./routes/laundry.js";
 import { lightsRouter } from "./routes/lights.js";
 import { postitsRouter } from "./routes/postits.js";
@@ -153,8 +153,11 @@ app.route(`/api/${API_VERSION}/kiosk`, kioskRouter);
 app.route(`/api/${API_VERSION}/voice`, voiceRouter);
 app.route(`/api/${API_VERSION}/blink`, blinkRouter);
 app.route(`/api/${API_VERSION}/laundry`, laundryRouter);
-app.route(`/api/${API_VERSION}/laundry/oauth/callback`, laundryOauthCallbackRouter);
-app.route(`/api/${API_VERSION}/smartthings/webhook`, smartthingsWebhookRouter);
+/* These two are registered as direct routes (not sub-routers) so they
+ * keep matching even when Tailscale Funnel adds a trailing slash — Hono
+ * sub-router mounts are strict about the exact path boundary. */
+app.get(`/api/${API_VERSION}/laundry/oauth/callback`, laundryOauthCallbackHandler);
+app.post(`/api/${API_VERSION}/smartthings/webhook`, smartthingsWebhookHandler);
 app.route(`/api/${API_VERSION}/lights`, lightsRouter);
 app.route(`/api/${API_VERSION}/tv`, tvRouter);
 app.route(`/api/${API_VERSION}/recipes`, recipesRouter);
