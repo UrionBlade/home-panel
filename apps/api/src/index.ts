@@ -15,6 +15,7 @@ import { stopAllLiveSessions } from "./lib/blink/liveview-manager.js";
 import { startBlinkScheduler } from "./lib/blink/scheduler.js";
 import { startSyncScheduler } from "./lib/calendar-sync.js";
 import { apiAuth } from "./middleware/auth.js";
+import { acOauthCallbackRouter, acRouter } from "./routes/ac.js";
 import { blinkRouter } from "./routes/blink.js";
 import { calendarRouter } from "./routes/calendar.js";
 import { calendarSourcesRouter } from "./routes/calendar-sources.js";
@@ -96,8 +97,8 @@ app.get("/health", (c) => {
 });
 
 // Everything under /api/* requires Bearer token, EXCEPT the Blink media proxy,
-// the Blink live HLS chunks, and SSE — all of which are consumed by browser
-// primitives that cannot attach Authorization headers.
+// the Blink live HLS chunks, SSE, and the GE OAuth2 callback — all of which
+// are consumed by browser primitives that cannot attach Authorization headers.
 app.use("/api/*", async (c, next) => {
   // The Blink proxy is used by <img> which cannot add Auth headers
   if (c.req.path === `/api/${API_VERSION}/blink/proxy`) {
@@ -113,6 +114,12 @@ app.use("/api/*", async (c, next) => {
     if (!token || token !== process.env.API_TOKEN) {
       return c.json({ error: "invalid_token" }, 401);
     }
+    return next();
+  }
+  // GE OAuth2 callback: Brillion redirects a raw browser here with the
+  // auth code. Security comes from the one-shot state nonce validated in
+  // the route itself, not from a Bearer token the browser can't send.
+  if (c.req.path === `/api/${API_VERSION}/ac/oauth/callback`) {
     return next();
   }
   return apiAuth(c, next);
@@ -136,6 +143,8 @@ app.route(`/api/${API_VERSION}/rooms`, roomsRouter);
 app.route(`/api/${API_VERSION}/timers`, timersRouter);
 app.route(`/api/${API_VERSION}/sse`, sseRouter);
 app.route(`/api/${API_VERSION}/spotify`, spotifyRouter);
+app.route(`/api/${API_VERSION}/ac`, acRouter);
+app.route(`/api/${API_VERSION}/ac/oauth/callback`, acOauthCallbackRouter);
 
 const port = Number(process.env.PORT ?? 3000);
 const hostname = process.env.HOST ?? "0.0.0.0";
