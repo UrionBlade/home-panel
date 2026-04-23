@@ -153,11 +153,13 @@ app.route(`/api/${API_VERSION}/kiosk`, kioskRouter);
 app.route(`/api/${API_VERSION}/voice`, voiceRouter);
 app.route(`/api/${API_VERSION}/blink`, blinkRouter);
 app.route(`/api/${API_VERSION}/laundry`, laundryRouter);
-/* These two are registered as direct routes (not sub-routers) so they
- * keep matching even when Tailscale Funnel adds a trailing slash — Hono
- * sub-router mounts are strict about the exact path boundary. */
+/* Registered in both with- and without-trailing-slash forms because
+ * Tailscale Funnel can rewrite the path either way depending on the
+ * client; Hono treats them as distinct routes. */
 app.get(`/api/${API_VERSION}/laundry/oauth/callback`, laundryOauthCallbackHandler);
+app.get(`/api/${API_VERSION}/laundry/oauth/callback/`, laundryOauthCallbackHandler);
 app.post(`/api/${API_VERSION}/smartthings/webhook`, smartthingsWebhookHandler);
+app.post(`/api/${API_VERSION}/smartthings/webhook/`, smartthingsWebhookHandler);
 app.route(`/api/${API_VERSION}/lights`, lightsRouter);
 app.route(`/api/${API_VERSION}/tv`, tvRouter);
 app.route(`/api/${API_VERSION}/recipes`, recipesRouter);
