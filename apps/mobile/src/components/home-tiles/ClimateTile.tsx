@@ -257,21 +257,21 @@ export function ClimateTile() {
               onClick={() => run({ id: active.id, fanSpeed: "low" })}
               label={t("fan.low")}
             >
-              1
+              <FanBars level={1} active={fan === "low"} />
             </FanChip>
             <FanChip
               active={fan === "mid"}
               onClick={() => run({ id: active.id, fanSpeed: "mid" })}
               label={t("fan.mid")}
             >
-              2
+              <FanBars level={2} active={fan === "mid"} />
             </FanChip>
             <FanChip
               active={fan === "high"}
               onClick={() => run({ id: active.id, fanSpeed: "high" })}
               label={t("fan.high")}
             >
-              3
+              <FanBars level={3} active={fan === "high"} />
             </FanChip>
           </div>
         </div>
@@ -426,6 +426,31 @@ function FanChip({
     >
       {children}
     </button>
+  );
+}
+
+/**
+ * Three rising bars à la signal-strength icon. `level` is how many bars
+ * are "lit" (1/2/3); the remaining bars are dimmed so the scale still
+ * reads visually even on the inactive chips.
+ */
+function FanBars({ level, active }: { level: 1 | 2 | 3; active: boolean }) {
+  const heights = ["4px", "7px", "10px"] as const;
+  return (
+    <span aria-hidden className="flex items-end gap-[2px] h-2.5">
+      {heights.map((h, i) => {
+        const lit = i < level;
+        const opacity = lit ? 1 : 0.35;
+        const bg = active ? "#FFFFFF" : "currentColor";
+        return (
+          <span
+            key={h}
+            className="w-[3px] rounded-[1px]"
+            style={{ height: h, background: bg, opacity }}
+          />
+        );
+      })}
+    </span>
   );
 }
 
