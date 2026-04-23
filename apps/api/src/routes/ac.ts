@@ -25,17 +25,29 @@ import { geTokenStore, getCredentialsEmail } from "../lib/ge/store.js";
 /* ----- SmartHQ Digital Twin API response shape (only the fields we use) ----- */
 
 interface SmartHqDevice {
+  /** SmartHQ-internal UUID. Unique but NOT the one accepted by the
+   * Brillion ERD endpoints — use `macAddress` for those. */
   deviceId: string;
-  deviceType: string;
-  serial: string;
+  deviceType?: string;
+  /** Stable hardware address. This is the "JID" the legacy Brillion v1
+   * API expects in `/v1/appliance/{jid}/erd`. We adopt it as our row PK
+   * so discovery, the poller and the command routes share the same id
+   * space. */
+  macAddress?: string;
   nickname?: string;
   model?: string;
   lastPresenceTime?: string;
+  personality?: string;
 }
 
 interface SmartHqDeviceListResponse {
-  total: number;
-  devices: SmartHqDevice[];
+  total?: number;
+  devices?: SmartHqDevice[];
+}
+
+function isAirConditioner(d: SmartHqDevice): boolean {
+  const t = (d.deviceType ?? "").toLowerCase();
+  return t.includes("airconditioner") || t.includes("ac");
 }
 
 const VALID_MODES: readonly AcMode[] = ["cool", "heat", "dry", "fan", "auto"] as const;
@@ -97,20 +109,22 @@ function parsePatch(raw: unknown): AcDeviceUpdateInput | { error: string } {
   return out;
 }
 
-/** Fetch the SmartHQ device list and persist a row per appliance.
- * Returns the list of `deviceId` strings currently linked. */
+/** Fetch the SmartHQ device list and persist a row per AC appliance.
+ * Uses `macAddress` as the stable id so downstream ERD calls can reuse
+ * the same string. Returns the list of mac addresses currently linked. */
 async function refreshDeviceRegistry(): Promise<string[]> {
   const resp = await geFetchJson<SmartHqDeviceListResponse>(geTokenStore, "/v2/device");
+  const acs = (resp.devices ?? []).filter((d) => isAirConditioner(d) && !!d.macAddress);
   upsertDiscoveredDevices(
-    resp.devices.map((d) => ({
-      id: d.deviceId,
-      serial: d.serial,
+    acs.map((d) => ({
+      id: d.macAddress ?? d.deviceId,
+      serial: d.macAddress ?? d.deviceId,
       model: d.model ?? null,
       nickname: d.nickname ?? null,
       lastSeenAt: d.lastPresenceTime ?? null,
     })),
   );
-  return resp.devices.map((d) => d.deviceId);
+  return acs.map((d) => d.macAddress ?? d.deviceId);
 }
 
 /* ----- Router ----- */
@@ -169,25 +183,25 @@ export const acRouter = new Hono()
 
   /* Devices: refresh the registry from SmartHQ (upsert into DB preserving
    * user metadata), then return the DB-backed view which carries roomId
-   * and last polled state. The poller keeps `lastState` fresh between
-   * calls; this handler stays cheap and predictable. */
+   * and last polled state. Refresh failures are non-fatal — we log and
+   * fall back to the DB so a flaky cloud call or a single bad row can't
+   * black-hole the tile. */
   .get("/devices", async (c) => {
+    if (!geTokenStore.loadTokens()) {
+      return c.json({ error: "GE Appliances non configurato" }, 400);
+    }
     try {
       await refreshDeviceRegistry();
-      return c.json(listAcDevices());
     } catch (err) {
       if (err instanceof GeNotConfiguredError) {
         return c.json({ error: "GE Appliances non configurato" }, 400);
       }
-      if (err instanceof GeAuthError) {
-        /* Don't fail the whole response when discovery is flaky — return
-         * whatever we have in the DB so the UI can still render. */
-        console.warn("[ac] discovery failed, falling back to DB:", err.message);
-        return c.json(listAcDevices());
-      }
-      console.error("[ac] device listing failed:", err);
-      return c.json({ error: "errore interno" }, 500);
+      console.warn(
+        "[ac] discovery/upsert failed, falling back to DB:",
+        err instanceof Error ? err.message : err,
+      );
     }
+    return c.json(listAcDevices());
   })
 
   /* Local metadata update (roomId / nickname). Goes through the DB only,
