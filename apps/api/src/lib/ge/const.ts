@@ -21,6 +21,18 @@ export const GE_CLIENT_SECRET =
 export const GE_LOGIN_URL = "https://accounts.brillion.geappliances.com";
 export const GE_API_URL = "https://client.mysmarthq.com";
 
+/** Redirect URI registered for the public consumer client_id. Brillion
+ * rejects any other value with `invalid_request`, which is why the
+ * authorization flow is driven server-side and the 302 to this custom
+ * scheme is intercepted rather than followed. */
+export const GE_OAUTH_REDIRECT_URI =
+  "brillion.4e617a766474657344444e562b5935566e51324a://oauth/redirect";
+
+/** Cookie that tells Brillion which regional backend to route the login
+ * request to. EU covers Italy; US is used by the North-American units. */
+export const GE_REGION_COOKIE_NAME = "abgea_region";
+export const GE_REGION_EU = "eu-west-1";
+
 /** Access tokens returned by GE last one hour. We refresh proactively a
  * minute before expiry to avoid racy 401s during polling. */
 export const GE_TOKEN_REFRESH_SKEW_MS = 60_000;

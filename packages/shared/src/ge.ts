@@ -43,7 +43,11 @@ export interface GeCredentialsStatus {
   email: string | null;
 }
 
-/** Input for POST /api/v1/ac/config — initial login. */
+/** Input for POST /api/v1/ac/config — initial login against Brillion. The
+ * backend drives the OAuth dance server-side against the same endpoints
+ * used by the GE Comfort Android app, then stores only the token triple.
+ * The password is used once and discarded; if the refresh token eventually
+ * dies the user re-submits the form. */
 export interface GeSetupInput {
   email: string;
   password: string;

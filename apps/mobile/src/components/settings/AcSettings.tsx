@@ -1,25 +1,15 @@
 import { CheckCircleIcon, SignOutIcon, SnowflakeIcon, SpinnerIcon } from "@phosphor-icons/react";
-import { useQueryClient } from "@tanstack/react-query";
-import { openUrl } from "@tauri-apps/plugin-opener";
-import { useEffect, useState } from "react";
-import { useAcConfig, useAcDevices, useAcDisconnect, useAcStartOauth } from "../../lib/hooks/useAc";
+import { type FormEvent, useState } from "react";
+import { useAcConfig, useAcDevices, useAcDisconnect, useAcSetup } from "../../lib/hooks/useAc";
 import { useT } from "../../lib/useT";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 
 /* ------------------------------------------------------------------ */
-/*  GE Appliances settings — browser OAuth link + device discovery     */
+/*  GE Appliances settings — direct credential login (gehome-style)    */
 /* ------------------------------------------------------------------ */
 export function AcSettings() {
   const { t: tSettings } = useT("settings");
-  const [isLinking, setIsLinking] = useState(false);
-  const { data: config, isLoading } = useAcConfig(isLinking);
-
-  /* Stop polling as soon as the backend confirms the link. */
-  useEffect(() => {
-    if (isLinking && config?.configured) {
-      setIsLinking(false);
-    }
-  }, [isLinking, config?.configured]);
+  const { data: config, isLoading } = useAcConfig();
 
   if (isLoading) return null;
 
@@ -33,11 +23,7 @@ export function AcSettings() {
           <h3 className="font-display text-xl">GE Appliances</h3>
         </div>
 
-        {config?.configured ? (
-          <ConnectedView email={config.email} />
-        ) : (
-          <SetupView isLinking={isLinking} setIsLinking={setIsLinking} />
-        )}
+        {config?.configured ? <ConnectedView email={config.email} /> : <SetupForm />}
       </div>
     </section>
   );
@@ -112,80 +98,72 @@ function ConnectedView({ email }: { email: string | null }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Not connected: one-click browser OAuth                            */
+/*  Not connected: email + password form                              */
 /* ------------------------------------------------------------------ */
-function SetupView({
-  isLinking,
-  setIsLinking,
-}: {
-  isLinking: boolean;
-  setIsLinking: (v: boolean) => void;
-}) {
+function SetupForm() {
   const { t: tSettings } = useT("settings");
-  const qc = useQueryClient();
-  const start = useAcStartOauth();
+  const setup = useAcSetup();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!email.trim() || !password) return;
+    setup.mutate({ email: email.trim(), password });
+  }
+
+  const inputClass =
+    "rounded-md border border-border bg-surface px-4 py-3 text-base focus:outline-2 focus:outline-accent";
   const btnClass =
     "rounded-md bg-accent text-accent-foreground px-6 py-3 font-medium text-base transition-opacity hover:opacity-90 disabled:opacity-50";
 
-  async function handleLink() {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
-    const redirectUri = `${baseUrl}/api/v1/ac/oauth/callback`;
-    try {
-      const { authorizationUrl } = await start.mutateAsync(redirectUri);
-      await openUrl(authorizationUrl);
-      setIsLinking(true);
-      /* Kick the first poll immediately so the spinner switches to
-       * "connected" the moment the user finishes the browser flow. */
-      void qc.invalidateQueries({ queryKey: ["ac", "config"] });
-    } catch (err) {
-      console.error("[ac] start oauth failed", err);
-      setIsLinking(false);
-    }
-  }
-
-  function handleCancel() {
-    setIsLinking(false);
-  }
-
-  if (isLinking) {
-    return (
-      <div className="flex flex-col gap-3">
-        <p className="text-sm text-text-muted">{tSettings("ac.waitingForBrowser")}</p>
-        <div className="flex items-center gap-2 text-sm">
-          <SpinnerIcon size={18} className="animate-spin text-accent" />
-          <span>{tSettings("ac.polling")}</span>
-        </div>
-        <button
-          type="button"
-          onClick={handleCancel}
-          className="self-start text-sm text-text-muted hover:text-text underline"
-        >
-          {tSettings("ac.cancel")}
-        </button>
-      </div>
-    );
-  }
+  /* Surface backend error messages directly — the API already returns
+   * user-friendly Italian strings for the expected cases (bad creds,
+   * MFA pending, terms to accept). */
+  const errMsg = setup.error
+    ? (() => {
+        const e = setup.error as Error & { body?: { error?: string } };
+        return e.body?.error ?? e.message ?? tSettings("ac.setupError");
+      })()
+    : null;
 
   return (
-    <div className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <p className="text-sm text-text-muted">{tSettings("ac.setupDescription")}</p>
 
-      {start.isError && (
-        <p className="text-sm text-danger">
-          {(start.error as Error & { message?: string })?.message ?? tSettings("ac.setupError")}
-        </p>
-      )}
+      <label className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium">{tSettings("ac.emailLabel")}</span>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          autoComplete="username"
+          placeholder="mario.rossi@example.com"
+          className={inputClass}
+        />
+      </label>
 
-      <button
-        type="button"
-        onClick={() => void handleLink()}
-        disabled={start.isPending}
-        className={btnClass}
-      >
-        {start.isPending ? <SpinnerIcon size={18} className="animate-spin inline mr-2" /> : null}
-        {start.isPending ? tSettings("ac.linking") : tSettings("ac.link")}
+      <label className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium">{tSettings("ac.passwordLabel")}</span>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          autoComplete="current-password"
+          className={inputClass}
+        />
+      </label>
+
+      {errMsg && <p className="text-sm text-danger">{errMsg}</p>}
+
+      <button type="submit" disabled={setup.isPending} className={btnClass}>
+        {setup.isPending ? <SpinnerIcon size={18} className="animate-spin inline mr-2" /> : null}
+        {setup.isPending ? tSettings("ac.linking") : tSettings("ac.link")}
       </button>
-    </div>
+
+      <p className="text-xs text-text-muted">{tSettings("ac.passwordHint")}</p>
+    </form>
   );
 }

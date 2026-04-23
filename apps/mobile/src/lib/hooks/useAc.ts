@@ -1,18 +1,16 @@
-import type { AcDevice, GeCredentialsStatus } from "@home-panel/shared";
+import type { AcDevice, GeCredentialsStatus, GeSetupInput } from "@home-panel/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../api-client";
 
 const AC_CONFIG_KEY = ["ac", "config"] as const;
 const AC_DEVICES_KEY = ["ac", "devices"] as const;
 
-/** Link status. Accepts a `polling` flag so the Settings screen can switch
- * to a 2-second cadence while the user is completing the external OAuth
- * flow, then drop back to a one-shot fetch once the backend confirms. */
-export function useAcConfig(polling = false) {
+/** Link status — one-shot fetch, cached until a setup/disconnect
+ * mutation invalidates the key. */
+export function useAcConfig() {
   return useQuery({
     queryKey: AC_CONFIG_KEY,
     queryFn: () => apiClient.get<GeCredentialsStatus>("/api/v1/ac/config"),
-    refetchInterval: polling ? 2_000 : false,
   });
 }
 
@@ -25,17 +23,17 @@ export function useAcDevices(enabled: boolean) {
   });
 }
 
-interface OauthStartResponse {
-  authorizationUrl: string;
-  state: string;
-}
-
-/** Kick off the OAuth dance. Returns the authorization URL for the caller
- * to open in an external browser (Tauri shell opener). */
-export function useAcStartOauth() {
+/** Submit email + password to link GE Appliances. The backend performs
+ * the OAuth dance against Brillion and stores the resulting tokens. */
+export function useAcSetup() {
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: (redirectUri: string) =>
-      apiClient.post<OauthStartResponse>("/api/v1/ac/oauth/start", { redirectUri }),
+    mutationFn: (input: GeSetupInput) =>
+      apiClient.post<{ ok: boolean }>("/api/v1/ac/config", input),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: AC_CONFIG_KEY });
+      void qc.invalidateQueries({ queryKey: AC_DEVICES_KEY });
+    },
   });
 }
 
