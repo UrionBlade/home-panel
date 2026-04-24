@@ -33,7 +33,8 @@
     "rinseCycles": "Risciacqui",
     "energy": "Consumo",
     "remoteControl": "Controllo remoto",
-    "endAt": "Fine alle {{time}}"
+    "endAt": "Fine alle {{time}}",
+    "remaining": "Finisce fra"
   },
   "remoteControl": {
     "on": "Abilitato",

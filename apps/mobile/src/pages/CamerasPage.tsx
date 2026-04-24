@@ -8,35 +8,27 @@ import {
   LockIcon,
   LockOpenIcon,
   PlayIcon,
-  SpinnerIcon,
   TrashIcon,
   VideoCameraIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { CameraFullscreenOverlay } from "../components/cameras/CameraFullscreenOverlay";
 import { CameraArt } from "../components/illustrations/TileArt";
 import { PageContainer } from "../components/layout/PageContainer";
 import { PageHeader } from "../components/layout/PageHeader";
-import { ApiError } from "../lib/api-client";
+import { proxyUrl } from "../lib/blink/proxyUrl";
 import {
   useArmCamera,
   useBlinkStatus,
   useCameras,
   useClips,
   useDeleteClip,
-  useRequestSnapshot,
   useSyncCameras,
 } from "../lib/hooks/useBlink";
 import { useT } from "../lib/useT";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
-
-function proxyUrl(blinkUrl: string | null | undefined): string | null {
-  if (!blinkUrl) return null;
-  return `${API_BASE}/api/v1/blink/proxy?url=${encodeURIComponent(blinkUrl)}`;
-}
 
 /* ------------------------------------------------------------------ */
 /*  Video player overlay                                               */
@@ -81,141 +73,6 @@ function ClipPlayer({ clip, onClose }: { clip: BlinkMotionClip; onClose: () => v
             minute: "2-digit",
           })}
         </p>
-      </div>
-    </motion.div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Camera card                                                        */
-/* ------------------------------------------------------------------ */
-/*  Live View (quasi-live via thumbnail refresh)                        */
-/* ------------------------------------------------------------------ */
-/**
- * Live view for Blink cameras.
- *
- * Blink's RTSPS stream includes a query-string token in the Request-URI that
- * no generic RTSP client (ffmpeg, MediaMTX's gortsplib) preserves, so the
- * server closes the connection right after TLS. The community path
- * (Home Assistant included) is snapshot polling: wake the camera, re-sync
- * the thumbnail URL, refresh the <img>.
- *
- * Each tick drives a single backend call chain:
- *   POST /cameras/:id/snapshot  → Blink wakes the camera
- *   (wait ~7s for the JPEG to land)
- *   POST /cameras/sync          → DB gets the new thumbnailUrl
- *   <img src=…?_t=tick>         → browser loads the fresh frame
- */
-const SNAPSHOT_POLL_INTERVAL_MS = 250;
-
-function LiveView({ camera, onClose }: { camera: BlinkCamera; onClose: () => void }) {
-  const { t: tCommon } = useT("common");
-  const snapshot = useRequestSnapshot();
-  const [tick, setTick] = useState(0);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  /* Chain snapshots back-to-back. Each `mutateAsync` already waits for
-   * Blink to produce the new thumbnail + backend sync, so the natural
-   * cadence is "as fast as Blink allows" (~7-10s per frame). The short
-   * setTimeout between iterations prevents a tight loop if the API starts
-   * failing fast. `snapshot` comes from useMutation and is stable. */
-  // biome-ignore lint/correctness/useExhaustiveDependencies: mutation ref stable
-  useEffect(() => {
-    let cancelled = false;
-    const cameraId = camera.id;
-    async function loop() {
-      while (!cancelled) {
-        try {
-          await snapshot.mutateAsync(cameraId);
-          if (!cancelled) {
-            setErrorMessage(null);
-            setTick((n) => n + 1);
-          }
-        } catch (err: unknown) {
-          if (cancelled) return;
-          let msg = "Errore snapshot";
-          if (err instanceof ApiError) {
-            const body = err.body as { error?: string } | null;
-            msg = body?.error ?? err.message;
-          } else if (err instanceof Error) {
-            msg = err.message;
-          }
-          setErrorMessage(msg);
-        }
-        if (!cancelled) await new Promise((r) => setTimeout(r, SNAPSHOT_POLL_INTERVAL_MS));
-      }
-    }
-    void loop();
-    return () => {
-      cancelled = true;
-    };
-  }, [camera.id]);
-
-  const thumbUrl = proxyUrl(camera.thumbnailUrl);
-  const imgSrc = thumbUrl ? `${thumbUrl}&_t=${tick}` : null;
-  const isWaitingFirstFrame = tick === 0 && !errorMessage;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[9999] bg-bg/95 backdrop-blur-md flex flex-col items-center justify-center"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute top-6 right-6 text-text-muted hover:text-text p-2 transition-colors"
-        aria-label={tCommon("actions.close")}
-      >
-        <XIcon size={32} weight="bold" />
-      </button>
-
-      <div className="w-full max-w-4xl px-6 flex flex-col items-center gap-4">
-        <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-surface border border-border">
-          {imgSrc ? (
-            <img src={imgSrc} alt={camera.name} className="w-full h-full object-cover bg-black" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-black">
-              <VideoCameraIcon size={48} weight="duotone" className="text-text-muted opacity-40" />
-            </div>
-          )}
-
-          <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-danger/90 text-white text-xs font-bold">
-            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-            LIVE
-          </div>
-
-          {snapshot.isPending && !isWaitingFirstFrame ? (
-            <div className="absolute bottom-4 right-4 flex items-center gap-2 px-2.5 py-1 rounded-full bg-black/55 text-white/80 text-xs">
-              <SpinnerIcon size={14} className="animate-spin" />
-              aggiorno…
-            </div>
-          ) : null}
-
-          {isWaitingFirstFrame ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/40 text-white">
-              <SpinnerIcon size={36} className="animate-spin" />
-              <span className="text-sm">Risveglio camera…</span>
-            </div>
-          ) : null}
-
-          {errorMessage && tick === 0 ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70 text-white p-8 text-center">
-              <VideoCameraIcon size={48} weight="duotone" className="opacity-60" />
-              <p className="text-base font-medium">Impossibile contattare Blink</p>
-              <p className="text-xs text-white/70 max-w-sm">{errorMessage}</p>
-            </div>
-          ) : null}
-        </div>
-
-        <div className="text-center">
-          <h3 className="font-display text-xl text-text">{camera.name}</h3>
-          <p className="text-sm text-text-muted mt-1">Aggiornamento automatico (3-5s per frame)</p>
-        </div>
       </div>
     </motion.div>
   );
@@ -545,7 +402,9 @@ export function CamerasPage() {
       <ClipsSection cameraId={selectedCameraId ?? undefined} />
 
       <AnimatePresence>
-        {liveCamera && <LiveView camera={liveCamera} onClose={() => setLiveCameraId(null)} />}
+        {liveCamera && (
+          <CameraFullscreenOverlay camera={liveCamera} onClose={() => setLiveCameraId(null)} />
+        )}
       </AnimatePresence>
     </PageContainer>
   );

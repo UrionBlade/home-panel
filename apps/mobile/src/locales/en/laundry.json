@@ -33,7 +33,8 @@
     "rinseCycles": "Rinse cycles",
     "energy": "Energy usage",
     "remoteControl": "Remote control",
-    "endAt": "Ends at {{time}}"
+    "endAt": "Ends at {{time}}",
+    "remaining": "Finishes in"
   },
   "remoteControl": {
     "on": "Enabled",
