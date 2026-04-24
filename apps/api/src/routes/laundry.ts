@@ -270,6 +270,8 @@ export const laundryRouter = new Hono()
       configured: isSmartThingsConfigured(),
       washerDeviceId: config?.washerDeviceId ?? null,
       dryerDeviceId: config?.dryerDeviceId ?? null,
+      washerNickname: config?.washerNickname ?? null,
+      dryerNickname: config?.dryerNickname ?? null,
       washerRoomId: config?.washerRoomId ?? null,
       dryerRoomId: config?.dryerRoomId ?? null,
     });
@@ -373,6 +375,16 @@ export const laundryRouter = new Hono()
     }
     if (body.dryerRoomId !== undefined) {
       updates.dryerRoomId = body.dryerRoomId ? body.dryerRoomId.trim() || null : null;
+    }
+    /* Nicknames: null o stringa vuota rimuove l'override e fa tornare il
+     * label SmartThings originale. */
+    if (body.washerNickname !== undefined) {
+      const v = body.washerNickname;
+      updates.washerNickname = typeof v === "string" && v.trim() ? v.trim() : null;
+    }
+    if (body.dryerNickname !== undefined) {
+      const v = body.dryerNickname;
+      updates.dryerNickname = typeof v === "string" && v.trim() ? v.trim() : null;
     }
 
     db.update(smartthingsConfig).set(updates).run();

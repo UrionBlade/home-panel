@@ -6,7 +6,10 @@ export type BlinkDeviceType = "camera" | "owl" | "doorbell";
 
 export interface BlinkCamera {
   id: string;
+  /** Nome originale della camera secondo Blink — usato come fallback. */
   name: string;
+  /** Nome custom dato dall'utente dal pannello. Null = usa `name`. */
+  nickname: string | null;
   networkId: string | null;
   model: string | null;
   deviceType: BlinkDeviceType;

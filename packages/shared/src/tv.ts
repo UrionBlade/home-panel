@@ -31,6 +31,8 @@ export interface TvConfig {
   tvDeviceId: string | null;
   /** Room assignment for the bound TV, nullable. */
   tvRoomId: string | null;
+  /** Nome custom scelto dal pannello, null = usa il label SmartThings. */
+  tvNickname: string | null;
 }
 
 /** A Samsung OCF TV visible to the configured PAT. */
@@ -48,6 +50,7 @@ export interface TvDeviceSummary {
 export interface TvConfigUpdateInput {
   tvDeviceId?: string | null;
   tvRoomId?: string | null;
+  tvNickname?: string | null;
 }
 
 /** Body of POST /tv/power. */

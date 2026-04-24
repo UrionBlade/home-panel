@@ -256,7 +256,12 @@ export type NewBlinkCredentialsRow = typeof blinkCredentials.$inferInsert;
 
 export const blinkCameras = sqliteTable("blink_cameras", {
   id: text("id").primaryKey(),
+  /** Nome assegnato dall'app Blink ufficiale — lo rispettiamo per la
+   * sincronizzazione, ma il pannello espone `nickname` come override
+   * locale quando l'utente rinomina la camera dalla Casa. */
   name: text("name").notNull(),
+  /** Nome custom dato dall'utente dal pannello. Null = mostra `name`. */
+  nickname: text("nickname"),
   networkId: text("network_id"),
   model: text("model"),
   serialNumber: text("serial_number"),
@@ -383,6 +388,11 @@ export const smartthingsConfig = sqliteTable("smartthings_config", {
   washerDeviceId: text("washer_device_id"),
   dryerDeviceId: text("dryer_device_id"),
   tvDeviceId: text("tv_device_id"),
+  /* Nickname override: quando popolati il pannello li usa al posto del
+   * label SmartThings. Null = mostra il label originale del provider. */
+  washerNickname: text("washer_nickname"),
+  dryerNickname: text("dryer_nickname"),
+  tvNickname: text("tv_nickname"),
   /* Per-device room assignments. The SmartThings config is singleton so the
    * room references are inlined here instead of in a separate join table. */
   washerRoomId: text("washer_room_id"),

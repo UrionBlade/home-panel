@@ -111,6 +111,7 @@ export const tvRouter = new Hono()
       smartThingsConfigured: isSmartThingsConfigured(),
       tvDeviceId: config?.tvDeviceId ?? null,
       tvRoomId: config?.tvRoomId ?? null,
+      tvNickname: config?.tvNickname ?? null,
     };
     return c.json(body);
   })
@@ -170,6 +171,12 @@ export const tvRouter = new Hono()
     if (body.tvDeviceId !== undefined) updates.tvDeviceId = body.tvDeviceId;
     if (body.tvRoomId !== undefined) {
       updates.tvRoomId = body.tvRoomId ? body.tvRoomId.trim() || null : null;
+    }
+    if (body.tvNickname !== undefined) {
+      updates.tvNickname =
+        typeof body.tvNickname === "string" && body.tvNickname.trim()
+          ? body.tvNickname.trim()
+          : null;
     }
 
     const existing = db.select().from(smartthingsConfig).get();

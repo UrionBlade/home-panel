@@ -28,6 +28,11 @@ interface CameraLiveFrameProps {
   className?: string;
   /** Se true, mostra il badge LIVE rosso quando attivo. Default true. */
   showLiveBadge?: boolean;
+  /** Come comportarsi se l'aspect ratio del wrapper non combacia col
+   * 16:9 della camera. "cover" (default) riempie e taglia, "contain"
+   * mostra l'immagine intera con eventuali bande nere. In fullscreen
+   * su iPad (4:3) usare "contain" per non perdere porzioni di scena. */
+  objectFit?: "cover" | "contain";
 }
 
 const SNAPSHOT_POLL_INTERVAL_MS = 250;
@@ -37,6 +42,7 @@ export function CameraLiveFrame({
   active,
   className,
   showLiveBadge = true,
+  objectFit = "cover",
 }: CameraLiveFrameProps) {
   const snapshot = useRequestSnapshot();
   const [tick, setTick] = useState(0);
@@ -87,7 +93,11 @@ export function CameraLiveFrame({
       className={`relative aspect-video rounded-lg overflow-hidden bg-surface border border-border ${className ?? ""}`}
     >
       {imgSrc ? (
-        <img src={imgSrc} alt={camera.name} className="w-full h-full object-cover bg-black" />
+        <img
+          src={imgSrc}
+          alt={camera.name}
+          className={`w-full h-full bg-black ${objectFit === "contain" ? "object-contain" : "object-cover"}`}
+        />
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-black">
           <VideoCameraIcon size={48} weight="duotone" className="text-text-muted opacity-40" />

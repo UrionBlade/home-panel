@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useAcCommand, useAcConfig, useAcDevices, useUpdateAcDevice } from "../hooks/useAc";
-import { useCameras, useUpdateCameraRoom } from "../hooks/useBlink";
+import { useCameras, useUpdateCamera, useUpdateCameraRoom } from "../hooks/useBlink";
 import { useIpCameras, useUpdateIpCamera } from "../hooks/useIpCameras";
 import { useAssignDevices, useLaundryConfig, useLaundryStatus } from "../hooks/useLaundry";
 import { useLightCommand, useLights, useUpdateLight } from "../hooks/useLights";
@@ -102,6 +102,7 @@ export function useDeviceActions() {
   const lightUpdate = useUpdateLight();
   const acCommand = useAcCommand();
   const acUpdate = useUpdateAcDevice();
+  const cameraUpdate = useUpdateCamera();
   const cameraRoomUpdate = useUpdateCameraRoom();
   const ipCameraUpdate = useUpdateIpCamera();
   const tvPower = useTvPower();
@@ -128,7 +129,9 @@ export function useDeviceActions() {
         }
       },
 
-      /** Rename where supported. No-op (rejected) for provider-owned names. */
+      /** Rename. Provider-owned names (Blink, SmartThings) vengono
+       * salvati come nickname override locale, lasciando intatto il
+       * nome originale che arriva dalla sync cloud. */
       rename(entity: DeviceEntity, newName: string): Promise<unknown> {
         if (!entity.renameable) {
           return Promise.reject(new Error("Non rinominabile da qui"));
@@ -138,11 +141,22 @@ export function useDeviceActions() {
             return lightUpdate.mutateAsync({ id: entity.id, input: { name: newName } });
           case "ac":
             return acUpdate.mutateAsync({ id: entity.id, nickname: newName });
+          case "camera":
+            return cameraUpdate.mutateAsync({
+              id: entity.id,
+              input: { nickname: newName },
+            });
           case "ip_camera":
             return ipCameraUpdate.mutateAsync({
               id: stripIpPrefix(entity.id),
               input: { name: newName },
             });
+          case "tv":
+            return tvAssign.mutateAsync({ tvNickname: newName });
+          case "washer":
+            return laundryAssign.mutateAsync({ washerNickname: newName });
+          case "dryer":
+            return laundryAssign.mutateAsync({ dryerNickname: newName });
           default:
             return Promise.reject(new Error("Rinomina non supportata per questo tipo"));
         }
@@ -178,6 +192,7 @@ export function useDeviceActions() {
       lightUpdate,
       acCommand,
       acUpdate,
+      cameraUpdate,
       cameraRoomUpdate,
       ipCameraUpdate,
       tvPower,

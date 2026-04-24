@@ -41,6 +41,7 @@ function cameraRowToDto(row: BlinkCameraRow): BlinkCamera {
   return {
     id: row.id,
     name: row.name,
+    nickname: row.nickname,
     networkId: row.networkId,
     model: row.model,
     deviceType: row.deviceType,
@@ -252,24 +253,48 @@ export const blinkRouter = new Hono()
     return c.json(cameraRowToDto(row));
   })
 
-  /* Assign (or clear) the room of a single camera. Body: `{ roomId: string | null }`.
-   * The id is stored as plain text; stale values are shown as "Senza stanza"
-   * by the client rather than rejected here. */
+  /* Camera panel-side metadata: room assignment and/or nickname override.
+   * Body: `{ roomId?: string | null, nickname?: string | null, name?: string }`.
+   * Il campo `name` è un alias user-friendly di `nickname` — il frontend
+   * universal-rename usa quello. Il nome originale di Blink resta intatto
+   * nella colonna `name`, così la sync futura non lo sovrascrive. */
   .patch("/cameras/:id", async (c) => {
     const id = c.req.param("id");
     const existing = db.select().from(blinkCameras).where(eq(blinkCameras.id, id)).get();
     if (!existing) return c.json({ error: "not_found" }, 404);
-    const body = (await c.req.json().catch(() => null)) as { roomId?: string | null } | null;
+    const body = (await c.req.json().catch(() => null)) as {
+      roomId?: string | null;
+      nickname?: string | null;
+      name?: string | null;
+    } | null;
     if (!body || typeof body !== "object") {
       return c.json({ error: "Body JSON obbligatorio" }, 400);
     }
+
+    const updates: Partial<BlinkCameraRow> = {};
     if (body.roomId !== undefined) {
-      const value =
+      updates.roomId =
         typeof body.roomId === "string" && body.roomId.trim() ? body.roomId.trim() : null;
-      db.update(blinkCameras)
-        .set({ roomId: value, updatedAt: new Date().toISOString() })
-        .where(eq(blinkCameras.id, id))
-        .run();
+    }
+    /* Accept both `nickname` and `name` as user-chosen override; empty
+     * string clears the override and restores the Blink-side name. */
+    const rawNickname = body.nickname ?? body.name;
+    if (rawNickname !== undefined) {
+      if (rawNickname === null) {
+        updates.nickname = null;
+      } else if (typeof rawNickname === "string") {
+        const trimmed = rawNickname.trim();
+        if (!trimmed) updates.nickname = null;
+        else if (trimmed.length > 64) return c.json({ error: "nome 1-64 caratteri" }, 400);
+        else updates.nickname = trimmed;
+      } else {
+        return c.json({ error: "nome deve essere stringa o null" }, 400);
+      }
+    }
+
+    if (Object.keys(updates).length > 0) {
+      updates.updatedAt = new Date().toISOString();
+      db.update(blinkCameras).set(updates).where(eq(blinkCameras.id, id)).run();
     }
     const updated = db.select().from(blinkCameras).where(eq(blinkCameras.id, id)).get();
     if (!updated) return c.json({ error: "not_found" }, 404);

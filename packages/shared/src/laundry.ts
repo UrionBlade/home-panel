@@ -72,6 +72,9 @@ export interface SmartThingsConfig {
   /** Device IDs selezionati */
   washerDeviceId: string | null;
   dryerDeviceId: string | null;
+  /** Nome custom scelti dal pannello, override del label SmartThings. */
+  washerNickname: string | null;
+  dryerNickname: string | null;
   /** Room assignments, nullable — same semantics as other device roomId
    * fields (null = "Senza stanza", stale ids silently orphaned). */
   washerRoomId: string | null;
@@ -92,4 +95,6 @@ export interface SmartThingsAssignInput {
   dryerDeviceId?: string | null;
   washerRoomId?: string | null;
   dryerRoomId?: string | null;
+  washerNickname?: string | null;
+  dryerNickname?: string | null;
 }

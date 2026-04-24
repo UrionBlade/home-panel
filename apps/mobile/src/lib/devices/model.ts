@@ -104,10 +104,13 @@ export function projectCamera(row: BlinkCamera): DeviceEntity {
   return {
     id: row.id,
     kind: "camera",
-    name: row.name,
+    /* Nickname locale ha la precedenza sul nome Blink: così l'utente
+     * può rinominare "Outdoor 4 - B9RM" in "Giardino" senza che la
+     * prossima sync dal provider glielo sovrascriva. */
+    name: row.nickname?.trim() || row.name,
     roomId: row.roomId ?? null,
     status: st,
-    renameable: false,
+    renameable: true,
     supportsToggle: false,
     raw: row,
   };
@@ -138,11 +141,11 @@ export function projectTv(
   return {
     id: config.tvDeviceId,
     kind: "tv",
-    name: "TV",
+    name: config.tvNickname?.trim() || "TV",
     roomId: config.tvRoomId ?? null,
     status: status?.power === "on" ? "on" : "off",
     subtitle: status?.input ?? undefined,
-    renameable: false,
+    renameable: true,
     supportsToggle: true,
     raw: { config, status },
   };
@@ -158,11 +161,11 @@ export function projectWasher(
   return {
     id: config.washerDeviceId,
     kind: "washer",
-    name: appliance?.name || "Lavatrice",
+    name: config.washerNickname?.trim() || appliance?.name || "Lavatrice",
     roomId: config.washerRoomId ?? null,
     status,
     subtitle: appliance?.mode ?? undefined,
-    renameable: false,
+    renameable: true,
     supportsToggle: false,
     raw: { config, appliance },
   };
@@ -178,11 +181,11 @@ export function projectDryer(
   return {
     id: config.dryerDeviceId,
     kind: "dryer",
-    name: appliance?.name || "Asciugatrice",
+    name: config.dryerNickname?.trim() || appliance?.name || "Asciugatrice",
     roomId: config.dryerRoomId ?? null,
     status,
     subtitle: appliance?.mode ?? undefined,
-    renameable: false,
+    renameable: true,
     supportsToggle: false,
     raw: { config, appliance },
   };

@@ -102,6 +102,21 @@ export function useUpdateCameraRoom() {
   });
 }
 
+/** Generic metadata update for a Blink camera (nickname + room). */
+export function useUpdateCamera() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      input,
+    }: {
+      id: string;
+      input: { nickname?: string | null; name?: string | null; roomId?: string | null };
+    }) => apiClient.patch<BlinkCamera>(`/api/v1/blink/cameras/${id}`, input),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: BLINK_CAMERAS_KEY }),
+  });
+}
+
 /* ---- Live HLS session (real RTSPS → HLS) ---- */
 
 export function useStartLiveSession() {

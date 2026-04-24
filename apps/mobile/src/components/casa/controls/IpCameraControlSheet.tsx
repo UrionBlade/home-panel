@@ -102,8 +102,7 @@ export function IpCameraControlSheet({ open, device, onClose }: IpCameraControlS
   );
 }
 
-/* Fullscreen overlay inline — riusa lo stesso IpCameraLiveFrame con
- * larghezza maggiore. Quando montato parte automaticamente la live. */
+/* Fullscreen overlay edge-to-edge per la IP camera. */
 function IpCameraFullscreen({ camera, onClose }: { camera: IpCamera; onClose: () => void }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -119,25 +118,27 @@ function IpCameraFullscreen({ camera, onClose }: { camera: IpCamera; onClose: ()
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.18 }}
-      className="fixed inset-0 z-[9999] bg-bg/95 backdrop-blur-md flex flex-col items-center justify-center"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+      className="fixed inset-0 z-[9999] bg-black flex items-center justify-center"
     >
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Chiudi"
-        className="absolute top-6 right-6 text-text-muted hover:text-text p-2 transition-colors text-3xl"
-      >
-        ×
-      </button>
-      <div className="w-full max-w-5xl px-6 flex flex-col items-center gap-4">
-        <IpCameraLiveFrame camera={camera} active className="w-full" />
-        <div className="text-center">
-          <h3 className="font-display text-2xl text-text">{camera.name}</h3>
-          <p className="text-sm text-text-muted mt-1">Flusso RTSP in diretta ({camera.host})</p>
+      <IpCameraLiveFrame
+        camera={camera}
+        active
+        objectFit="contain"
+        className="!rounded-none !border-0 w-screen h-screen !aspect-auto"
+      />
+      <div className="absolute top-0 left-0 right-0 flex items-start justify-between p-6 bg-gradient-to-b from-black/70 via-black/30 to-transparent pointer-events-none">
+        <div className="pointer-events-auto">
+          <h3 className="font-display text-2xl text-white drop-shadow">{camera.name}</h3>
+          <p className="text-xs text-white/70 mt-0.5">Flusso RTSP · {camera.host}</p>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Chiudi"
+          className="pointer-events-auto text-white/80 hover:text-white p-2 rounded-full bg-black/40 hover:bg-black/60 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        >
+          ×
+        </button>
       </div>
     </motion.div>
   );

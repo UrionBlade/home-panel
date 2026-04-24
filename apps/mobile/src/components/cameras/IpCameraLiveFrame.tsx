@@ -19,6 +19,9 @@ interface IpCameraLiveFrameProps {
   active: boolean;
   className?: string;
   showLiveBadge?: boolean;
+  /** Come nel CameraLiveFrame Blink — "contain" in fullscreen per non
+   * tagliare la scena quando il wrapper è 4:3 ma lo stream è 16:9. */
+  objectFit?: "cover" | "contain";
 }
 
 const POLL_DELAY_MS = 150;
@@ -28,6 +31,7 @@ export function IpCameraLiveFrame({
   active,
   className,
   showLiveBadge = true,
+  objectFit = "cover",
 }: IpCameraLiveFrameProps) {
   const [tick, setTick] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
@@ -80,7 +84,7 @@ export function IpCameraLiveFrame({
         alt={camera.name}
         onLoad={handleLoad}
         onError={handleError}
-        className="w-full h-full object-cover"
+        className={`w-full h-full ${objectFit === "contain" ? "object-contain" : "object-cover"}`}
       />
 
       {active && showLiveBadge && (
