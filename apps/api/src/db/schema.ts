@@ -505,6 +505,27 @@ export type IpCameraRow = typeof ipCameras.$inferSelect;
 export type NewIpCameraRow = typeof ipCameras.$inferInsert;
 
 /*
+ * IP camera recordings — clip MP4 generate dal backend via ffmpeg
+ * -c copy (niente transcoding, CPU quasi zero). Una riga per clip,
+ * file su disco nel volume BLINK_CLIPS_DIR/ipcam/.
+ */
+export const ipCameraRecordings = sqliteTable("ip_camera_recordings", {
+  id: text("id").primaryKey(),
+  cameraId: text("camera_id").notNull(),
+  /** Path relativo al BLINK_CLIPS_DIR (mount Docker). */
+  filePath: text("file_path").notNull(),
+  startedAt: text("started_at").notNull(),
+  endedAt: text("ended_at"),
+  durationSeconds: integer("duration_seconds"),
+  sizeBytes: integer("size_bytes"),
+  /** Etichetta opzionale ("campanello suona", "movimento cortile"). */
+  label: text("label"),
+  createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+});
+export type IpCameraRecordingRow = typeof ipCameraRecordings.$inferSelect;
+export type NewIpCameraRecordingRow = typeof ipCameraRecordings.$inferInsert;
+
+/*
  * GE Appliances (Comfort / SmartHQ) — OAuth2 ROPC credentials.
  * Singleton: single row with id = 1.
  *

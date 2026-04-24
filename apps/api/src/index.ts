@@ -130,6 +130,11 @@ app.use("/api/*", async (c, next) => {
   if (/^\/api\/v1\/ip-cameras\/[^/]+\/snapshot\.jpg$/.test(normalized)) {
     return next();
   }
+  // IP camera recording MP4 stream — <video> can't add Authorization,
+  // uses the same ?token= pattern as snapshot.
+  if (/^\/api\/v1\/ip-cameras\/recordings\/[^/]+\/stream$/.test(normalized)) {
+    return next();
+  }
   // HLS playlist + segments consumed by <video> / hls.js
   if (normalized.startsWith(`/api/${API_VERSION}/blink/live/`)) {
     return next();

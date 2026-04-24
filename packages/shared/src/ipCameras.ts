@@ -40,6 +40,20 @@ export interface IpCameraCreateInput {
   roomId?: string | null;
 }
 
+export interface IpCameraRecording {
+  id: string;
+  cameraId: string;
+  startedAt: string;
+  endedAt: string | null;
+  durationSeconds: number | null;
+  sizeBytes: number | null;
+  label: string | null;
+}
+
+export interface IpCameraRecordingStartInput {
+  label?: string | null;
+}
+
 export interface IpCameraUpdateInput {
   name?: string;
   host?: string;

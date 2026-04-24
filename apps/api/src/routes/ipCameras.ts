@@ -1,10 +1,12 @@
 import { randomUUID } from "node:crypto";
+import { createReadStream, existsSync, statSync, unlinkSync } from "node:fs";
 import type { IpCamera, IpCameraCreateInput, IpCameraUpdateInput } from "@home-panel/shared";
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db/client.js";
-import { type IpCameraRow, ipCameras } from "../db/schema.js";
+import { type IpCameraRow, ipCameraRecordings, ipCameras } from "../db/schema.js";
 import { deletePath, upsertPath, whepOffer } from "../lib/ipCameras/mediamtx.js";
+import { activeRecordingId, startRecording, stopRecording } from "../lib/ipCameras/recorder.js";
 import { captureSnapshot } from "../lib/ipCameras/snapshot.js";
 
 /**
@@ -191,4 +193,87 @@ ipCamerasRouter
       const message = err instanceof Error ? err.message : "snapshot_failed";
       return c.json({ error: message }, 502);
     }
+  })
+
+  /* Recording controls. Start spawna ffmpeg che scrive MP4 sul volume
+   * Docker; stop gli manda SIGTERM per chiudere il file pulitamente. */
+  .post("/:id/record/start", async (c) => {
+    const id = c.req.param("id");
+    const row = db.select().from(ipCameras).where(eq(ipCameras.id, id)).get();
+    if (!row) return c.json({ error: "not_found" }, 404);
+    if (!row.enabled) return c.json({ error: "disabled" }, 400);
+    const body = (await c.req.json().catch(() => null)) as { label?: string | null } | null;
+    try {
+      const result = startRecording(row, body?.label ?? undefined);
+      return c.json(result);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "start_failed";
+      return c.json({ error: msg }, 400);
+    }
+  })
+
+  .post("/:id/record/stop", (c) => {
+    const id = c.req.param("id");
+    const stopped = stopRecording(id);
+    if (!stopped) return c.json({ error: "not_recording" }, 400);
+    return c.json({ ok: true });
+  })
+
+  .get("/:id/record/status", (c) => {
+    const id = c.req.param("id");
+    return c.json({ recordingId: activeRecordingId(id) });
+  })
+
+  .get("/:id/recordings", (c) => {
+    const id = c.req.param("id");
+    const rows = db
+      .select()
+      .from(ipCameraRecordings)
+      .where(eq(ipCameraRecordings.cameraId, id))
+      .orderBy(desc(ipCameraRecordings.startedAt))
+      .all();
+    return c.json(
+      rows.map((r) => ({
+        id: r.id,
+        cameraId: r.cameraId,
+        startedAt: r.startedAt,
+        endedAt: r.endedAt,
+        durationSeconds: r.durationSeconds,
+        sizeBytes: r.sizeBytes,
+        label: r.label,
+      })),
+    );
+  })
+
+  .get("/recordings/:recId/stream", (c) => {
+    const token = c.req.query("token");
+    if (!token || token !== process.env.API_TOKEN) {
+      return c.json({ error: "invalid_token" }, 401);
+    }
+    const recId = c.req.param("recId");
+    const rec = db.select().from(ipCameraRecordings).where(eq(ipCameraRecordings.id, recId)).get();
+    if (!rec) return c.json({ error: "not_found" }, 404);
+    if (!existsSync(rec.filePath)) return c.json({ error: "file_missing" }, 410);
+    const stat = statSync(rec.filePath);
+    return new Response(createReadStream(rec.filePath) as unknown as ReadableStream, {
+      status: 200,
+      headers: {
+        "Content-Type": "video/mp4",
+        "Content-Length": String(stat.size),
+        "Cache-Control": "private, max-age=3600",
+      },
+    });
+  })
+
+  .delete("/recordings/:recId", (c) => {
+    const recId = c.req.param("recId");
+    const rec = db.select().from(ipCameraRecordings).where(eq(ipCameraRecordings.id, recId)).get();
+    if (!rec) return c.json({ error: "not_found" }, 404);
+    try {
+      if (existsSync(rec.filePath)) unlinkSync(rec.filePath);
+    } catch {
+      /* ignore: best-effort */
+    }
+    db.delete(ipCameraRecordings).where(eq(ipCameraRecordings.id, recId)).run();
+    return c.body(null, 204);
   });

@@ -1,8 +1,22 @@
 import type { IpCamera } from "@home-panel/shared";
-import { ArrowsOutIcon, BroadcastIcon, GlobeIcon, StopCircleIcon } from "@phosphor-icons/react";
+import {
+  ArrowsOutIcon,
+  BroadcastIcon,
+  GlobeIcon,
+  RecordIcon,
+  StopCircleIcon,
+} from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import type { DeviceEntity } from "../../../lib/devices/model";
+import {
+  ipCameraRecordingUrl,
+  useDeleteIpCameraRecording,
+  useIpCameraRecordings,
+  useIpCameraRecordStatus,
+  useStartIpCameraRecording,
+  useStopIpCameraRecording,
+} from "../../../lib/hooks/useIpCameras";
 import { useT } from "../../../lib/useT";
 import { IpCameraLiveFrame } from "../../cameras/IpCameraLiveFrame";
 import { BottomSheet } from "../BottomSheet";
@@ -82,6 +96,9 @@ export function IpCameraControlSheet({ open, device, onClose }: IpCameraControlS
             </button>
           </div>
 
+          {/* Recording */}
+          <RecordingControls cameraId={row.id} />
+
           {/* Info rete */}
           <div className="flex items-center gap-3 px-4 py-3 rounded-md bg-surface border border-border">
             <GlobeIcon size={18} weight="duotone" className="text-text-muted shrink-0" />
@@ -99,6 +116,88 @@ export function IpCameraControlSheet({ open, device, onClose }: IpCameraControlS
         {fullscreen && <IpCameraFullscreen camera={row} onClose={() => setFullscreen(false)} />}
       </AnimatePresence>
     </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Recording controls + clip list                                     */
+/* ------------------------------------------------------------------ */
+
+function RecordingControls({ cameraId }: { cameraId: string }) {
+  const statusQ = useIpCameraRecordStatus(cameraId);
+  const listQ = useIpCameraRecordings(cameraId);
+  const start = useStartIpCameraRecording();
+  const stop = useStopIpCameraRecording();
+  const del = useDeleteIpCameraRecording();
+
+  const isRecording = !!statusQ.data?.recordingId;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <button
+        type="button"
+        onClick={() => {
+          if (isRecording) stop.mutate(cameraId);
+          else start.mutate({ cameraId });
+        }}
+        disabled={start.isPending || stop.isPending}
+        className={`min-h-[3.25rem] rounded-md flex items-center justify-center gap-2 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-50 ${
+          isRecording
+            ? "bg-danger text-white animate-pulse"
+            : "bg-surface border border-border text-text hover:border-danger hover:text-danger"
+        }`}
+      >
+        <RecordIcon size={20} weight="fill" />
+        {isRecording ? "Registrazione in corso · tocca per fermare" : "Registra"}
+      </button>
+
+      {(listQ.data ?? []).length > 0 && (
+        <div className="flex flex-col gap-2">
+          <span className="text-xs text-text-muted">Registrazioni</span>
+          <ul className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+            {listQ.data?.map((rec) => (
+              <li
+                key={rec.id}
+                className="flex items-center gap-2 px-3 py-2 rounded-md bg-surface border border-border"
+              >
+                <div className="flex-1 min-w-0 flex flex-col">
+                  <span className="text-sm text-text truncate">
+                    {new Date(rec.startedAt).toLocaleString("it-IT", {
+                      day: "2-digit",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                  <span className="text-xs text-text-subtle">
+                    {rec.durationSeconds != null ? `${rec.durationSeconds}s` : "…"}
+                    {rec.sizeBytes != null
+                      ? ` · ${(rec.sizeBytes / 1024 / 1024).toFixed(1)} MB`
+                      : ""}
+                  </span>
+                </div>
+                <a
+                  href={ipCameraRecordingUrl(rec.id)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-accent hover:underline"
+                >
+                  apri
+                </a>
+                <button
+                  type="button"
+                  onClick={() => del.mutate({ cameraId, recId: rec.id })}
+                  className="text-xs text-text-subtle hover:text-danger"
+                  aria-label="Elimina"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }
 
