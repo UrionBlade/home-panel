@@ -8,6 +8,7 @@ import { useKioskMode } from "../../lib/kiosk";
 import { NightModeProvider } from "../../lib/kiosk/NightModeProvider";
 import { useIdleDetection } from "../../lib/kiosk/useIdleDetection";
 import { queryClient } from "../../lib/query-client";
+import { subscribeRoutineClientActions } from "../../lib/routines/sseListener";
 import { sseClient } from "../../lib/sse-client";
 import { ThemeProvider } from "../../lib/theme/ThemeProvider";
 import { VoiceProvider } from "../../lib/voice/VoiceProvider";
@@ -39,7 +40,11 @@ const SSE_URL = `${import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000"}
 function SSEConnector() {
   useEffect(() => {
     sseClient.connect(SSE_URL);
-    return () => sseClient.disconnect();
+    const unsubscribe = subscribeRoutineClientActions();
+    return () => {
+      unsubscribe();
+      sseClient.disconnect();
+    };
   }, []);
   return null;
 }

@@ -507,3 +507,44 @@ export const geDevices = sqliteTable("ge_devices", {
 });
 export type GeDeviceRow = typeof geDevices.$inferSelect;
 export type NewGeDeviceRow = typeof geDevices.$inferInsert;
+
+/*
+ * Routines — user-defined automations ("scenes").
+ *
+ * A routine links a trigger (time/cron schedule, voice phrase, manual button)
+ * to an ordered list of action steps (turn lights on, arm cameras, speak a
+ * custom response, ...). Triggers and steps are kept as JSON blobs to avoid
+ * a schema migration every time we introduce a new action type — the runtime
+ * validates them against the discriminated unions in `@home-panel/shared`.
+ *
+ * `lastRunStatus` reflects the most recent execution ("success" | "error"),
+ * `lastRunError` carries the failure message when applicable so the UI can
+ * surface it without consulting logs.
+ */
+export const routines = sqliteTable("routines", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  /** Phosphor icon name (free-form, client-validated). */
+  icon: text("icon"),
+  /** Accent color for tiles/list items. */
+  color: text("color"),
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  /** Discriminator for triggerConfig JSON. */
+  triggerType: text("trigger_type", { enum: ["time", "cron", "voice", "manual"] })
+    .notNull()
+    .default("manual"),
+  /** Shape depends on triggerType; see RoutineTrigger in shared. */
+  triggerConfig: text("trigger_config").notNull().default("{}"),
+  /** Optional text the voice assistant says before/after the steps run.
+   * Empty string = silent. */
+  voiceResponse: text("voice_response"),
+  /** JSON array of RoutineStep objects. */
+  steps: text("steps").notNull().default("[]"),
+  lastRunAt: text("last_run_at"),
+  lastRunStatus: text("last_run_status", { enum: ["success", "error"] }),
+  lastRunError: text("last_run_error"),
+  createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+});
+export type RoutineRow = typeof routines.$inferSelect;
+export type NewRoutineRow = typeof routines.$inferInsert;

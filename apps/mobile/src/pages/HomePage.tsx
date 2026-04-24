@@ -4,6 +4,7 @@ import { CamerasTile } from "../components/home-tiles/CamerasTile";
 import { ClimateTile } from "../components/home-tiles/ClimateTile";
 import { LaundryTile } from "../components/home-tiles/LaundryTile";
 import { LightsTile } from "../components/home-tiles/LightsTile";
+import { RoutinesTile } from "../components/home-tiles/RoutinesTile";
 import { ShoppingTile } from "../components/home-tiles/ShoppingTile";
 import { TimerTile } from "../components/home-tiles/TimerTile";
 import { TodayEventsTile } from "../components/home-tiles/TodayEventsTile";
@@ -47,6 +48,7 @@ const tiles = [
   { key: "shopping", Component: ShoppingTile, span: "md:col-span-3" },
   { key: "cameras", Component: CamerasTile, span: "md:col-span-3" },
   { key: "lights", Component: LightsTile, span: "md:col-span-3" },
+  { key: "routines", Component: RoutinesTile, span: "md:col-span-3" },
   { key: "timer", Component: TimerTile, span: "md:col-span-3" },
   { key: "board", Component: BoardTile, span: "md:col-span-3" },
   { key: "waste", Component: WasteTile, span: "md:col-span-3" },

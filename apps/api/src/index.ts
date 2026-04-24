@@ -17,6 +17,8 @@ import { startSyncScheduler } from "./lib/calendar-sync.js";
 import { startAcScheduler } from "./lib/ge/scheduler.js";
 import { geTokenStore } from "./lib/ge/store.js";
 import { startAcWsSubscriber } from "./lib/ge/ws-subscriber.js";
+import { registerAppFetch } from "./lib/internal-fetch.js";
+import { startRoutinesScheduler } from "./lib/routines/scheduler.js";
 import { apiAuth } from "./middleware/auth.js";
 import { acRouter } from "./routes/ac.js";
 import { blinkRouter } from "./routes/blink.js";
@@ -33,6 +35,7 @@ import { lightsRouter } from "./routes/lights.js";
 import { postitsRouter } from "./routes/postits.js";
 import { recipesRouter } from "./routes/recipes.js";
 import { roomsRouter } from "./routes/rooms.js";
+import { routinesRouter } from "./routes/routines.js";
 import { shoppingRouter } from "./routes/shopping.js";
 import { spotifyRouter } from "./routes/spotify.js";
 import { sseRouter } from "./routes/sse.js";
@@ -171,6 +174,11 @@ app.route(`/api/${API_VERSION}/timers`, timersRouter);
 app.route(`/api/${API_VERSION}/sse`, sseRouter);
 app.route(`/api/${API_VERSION}/spotify`, spotifyRouter);
 app.route(`/api/${API_VERSION}/ac`, acRouter);
+app.route(`/api/${API_VERSION}/routines`, routinesRouter);
+
+/* Register the Hono app with the internal-fetch dispatcher so routines can
+ * invoke peer routes in-process without duplicating handler logic. */
+registerAppFetch(app.fetch);
 
 const port = Number(process.env.PORT ?? 3000);
 const hostname = process.env.HOST ?? "0.0.0.0";
@@ -182,6 +190,7 @@ serve({ fetch: app.fetch, port, hostname }, (info) => {
   startTimersScheduler();
   startAcScheduler();
   startAcWsSubscriber(geTokenStore);
+  startRoutinesScheduler();
 });
 
 /* Tear down ffmpeg children + notify Blink on graceful shutdown so the

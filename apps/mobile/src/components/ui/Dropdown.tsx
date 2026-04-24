@@ -48,6 +48,10 @@ export function Dropdown({
 
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  /* Auto-flip: "down" by default, "up" when there's not enough room under the
+   * trigger (e.g. last step in a routine editor near the bottom of a
+   * scrollable page). Picked at open time. */
+  const [direction, setDirection] = useState<"down" | "up">("down");
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -164,7 +168,22 @@ export function Dropdown({
           aria-controls={listboxId}
           aria-invalid={!!error}
           disabled={disabled}
-          onClick={() => !disabled && setOpen((v) => !v)}
+          onClick={() => {
+            if (disabled) return;
+            setOpen((v) => {
+              if (v) return false;
+              /* Compute direction on open: if the trigger is closer to the
+               * bottom of the viewport than to the top AND there isn't at
+               * least ~260px below, flip the popover up. */
+              const rect = triggerRef.current?.getBoundingClientRect();
+              if (rect) {
+                const below = window.innerHeight - rect.bottom;
+                const above = rect.top;
+                setDirection(below < 260 && above > below ? "up" : "down");
+              }
+              return true;
+            });
+          }}
           onKeyDown={handleTriggerKey}
           className={clsx(
             "w-full min-h-[56px] rounded-md bg-surface pl-4 pr-10 text-left text-base text-text",
@@ -215,11 +234,12 @@ export function Dropdown({
               transition={{ duration: 0.16, ease: [0.2, 0, 0, 1] }}
               onAnimationComplete={() => popoverRef.current?.focus()}
               className={clsx(
-                "absolute z-50 mt-2 min-w-full max-h-64 overflow-y-auto",
+                "absolute z-50 min-w-full max-h-64 overflow-y-auto",
                 "rounded-md border border-border bg-surface shadow-lg",
                 "py-1",
                 "focus-visible:outline-none",
                 align === "right" ? "right-0" : "left-0",
+                direction === "up" ? "bottom-full mb-2" : "top-full mt-2",
               )}
               style={{
                 boxShadow: "0 18px 40px -20px oklch(15% 0.02 60 / 0.45)",

@@ -1,5 +1,6 @@
 import type {
   ParsedCommand,
+  RoutineRunResult,
   ShoppingItem,
   VoiceEventsResponse,
   VoiceWasteResponse,
@@ -475,6 +476,30 @@ export async function handleIntent(command: ParsedCommand): Promise<string> {
 
     case "what_date":
       return formatDate();
+
+    // ==== CUSTOM ROUTINE ====
+    case "run_routine": {
+      const routineId = command.entities.routineId;
+      if (!routineId) return vt("errors.generic");
+      try {
+        const result = await apiClient.post<RoutineRunResult>(
+          `/api/v1/routines/${encodeURIComponent(routineId)}/run`,
+        );
+        invalidate(["routines"], ["lights"], ["ac"], ["blink"], ["timers"], ["shopping"]);
+        /* Concatenate every voice.speak client action into a single spoken
+         * line — tighter than firing multiple TTS calls back-to-back. */
+        const spoken = result.clientActions
+          .filter((a) => a.action === "voice.speak")
+          .map((a) => a.text.trim())
+          .filter(Boolean)
+          .join(". ");
+        if (spoken) return spoken;
+        return result.overallOk ? vt("routine.runOk") : vt("routine.runPartial");
+      } catch (err) {
+        console.warn("[voice] run_routine:", err);
+        return vt("routine.runError");
+      }
+    }
 
     // ==== ROUTINE ====
     case "routine_morning": {

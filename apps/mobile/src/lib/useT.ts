@@ -12,6 +12,7 @@ type Namespace =
   | "music"
   | "recipes"
   | "rooms"
+  | "routines"
   | "settings"
   | "errors"
   | "shopping"

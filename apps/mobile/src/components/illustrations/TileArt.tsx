@@ -719,3 +719,73 @@ export function LightbulbArt({ size = 180, className }: ArtProps) {
     </svg>
   );
 }
+
+export function LightningArt({ size = 180, className }: ArtProps) {
+  return (
+    <svg
+      viewBox="0 0 200 200"
+      width={size}
+      height={size}
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        {/* Amber glow behind the bolt — "it's crackling" cue */}
+        <radialGradient id="lt-halo" cx="0.5" cy="0.45">
+          <stop offset="0%" stopColor="#FFE9A8" stopOpacity="0.85" />
+          <stop offset="55%" stopColor="#FFB347" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#FFB347" stopOpacity="0" />
+        </radialGradient>
+        {/* Main body gradient — polished amber-gold */}
+        <linearGradient id="lt-body" x1="0.2" y1="0" x2="0.8" y2="1">
+          <stop offset="0%" stopColor="#FFF1B8" />
+          <stop offset="35%" stopColor="#FFC663" />
+          <stop offset="75%" stopColor="#E69212" />
+          <stop offset="100%" stopColor="#8A4F0B" />
+        </linearGradient>
+        {/* Highlight strip down the leading edge */}
+        <linearGradient id="lt-edge" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
+          <stop offset="70%" stopColor="#FFFFFF" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+
+      {/* Ground shadow */}
+      <ellipse cx="100" cy="186" rx="46" ry="5" fill="#000" opacity="0.2" />
+
+      {/* Outer halo */}
+      <circle cx="100" cy="96" r="82" fill="url(#lt-halo)" />
+
+      {/* Bolt — two-segment zigzag, classic lightning silhouette */}
+      <path
+        d="M 112 22
+           L 70 108
+           L 96 108
+           L 82 178
+           L 138 88
+           L 112 88
+           L 128 22 Z"
+        fill="url(#lt-body)"
+        stroke="#5A3308"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+
+      {/* Leading-edge highlight — adds the "3D" sheen */}
+      <path
+        d="M 112 22 L 70 108 L 96 108 L 82 178"
+        fill="none"
+        stroke="url(#lt-edge)"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.75"
+      />
+
+      {/* Tiny sparkle accents */}
+      <circle cx="52" cy="62" r="3" fill="#FFF1B8" opacity="0.9" />
+      <circle cx="156" cy="128" r="2.5" fill="#FFF1B8" opacity="0.8" />
+      <circle cx="158" cy="62" r="2" fill="#FFE29A" opacity="0.85" />
+    </svg>
+  );
+}

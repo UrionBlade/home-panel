@@ -211,7 +211,10 @@
       "morningGreeting": "Buongiorno!",
       "todayList": "Oggi hai: {{list}}.",
       "todayEmpty": "Oggi non ci sono eventi.",
-      "nightGreeting": "Buonanotte! Dormi bene."
+      "nightGreeting": "Buonanotte! Dormi bene.",
+      "runOk": "Fatto.",
+      "runPartial": "Ho fatto quello che ho potuto, ma qualcosa non è andato.",
+      "runError": "Non sono riuscita a eseguire la routine."
     },
     "music": {
       "played": "Musica avviata!",

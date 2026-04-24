@@ -9,6 +9,8 @@ import { LightsPage } from "./pages/LightsPage";
 import { MusicPage } from "./pages/MusicPage";
 import { RecipesPage } from "./pages/RecipesPage";
 import { RoomsPage } from "./pages/RoomsPage";
+import { RoutineEditorPage } from "./pages/RoutineEditorPage";
+import { RoutinesPage } from "./pages/RoutinesPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { ShoppingPage } from "./pages/ShoppingPage";
 import { SpotifyCallbackPage } from "./pages/SpotifyCallbackPage";
@@ -113,6 +115,30 @@ const router = createBrowserRouter([
     element: (
       <AppShell>
         <RoomsPage />
+      </AppShell>
+    ),
+  },
+  {
+    path: "/routines",
+    element: (
+      <AppShell>
+        <RoutinesPage />
+      </AppShell>
+    ),
+  },
+  {
+    path: "/routines/new",
+    element: (
+      <AppShell>
+        <RoutineEditorPage />
+      </AppShell>
+    ),
+  },
+  {
+    path: "/routines/:id",
+    element: (
+      <AppShell>
+        <RoutineEditorPage />
       </AppShell>
     ),
   },

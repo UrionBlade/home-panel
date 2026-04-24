@@ -215,7 +215,10 @@
       "morningGreeting": "Good morning!",
       "todayList": "Today you have: {{list}}.",
       "todayEmpty": "No events today.",
-      "nightGreeting": "Good night! Sleep well."
+      "nightGreeting": "Good night! Sleep well.",
+      "runOk": "Done.",
+      "runPartial": "I did what I could, but something didn't go through.",
+      "runError": "I couldn't run that routine."
     },
     "music": {
       "played": "Music started!",

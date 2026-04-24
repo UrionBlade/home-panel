@@ -1,0 +1,183 @@
+{
+  "title": "Routine",
+  "subtitle": "Automatizza la casa con comandi vocali, orari o un tocco",
+  "tile": {
+    "title": "Routine",
+    "count": "{{count}} attiva",
+    "count_plural": "{{count}} attive",
+    "empty": "Nessuna routine"
+  },
+  "empty": {
+    "title": "Nessuna routine, ancora",
+    "body": "Crea la prima per accendere luci, armare telecamere e salutare con un solo comando.",
+    "cta": "Crea la prima routine"
+  },
+  "actions": {
+    "new": "Nuova routine",
+    "runNow": "Esegui ora",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "enable": "Attiva",
+    "disable": "Disattiva"
+  },
+  "list": {
+    "lastRun": "Ultima esecuzione",
+    "never": "Mai eseguita",
+    "statusSuccess": "OK",
+    "statusError": "Errore",
+    "disabled": "Disattivata"
+  },
+  "editor": {
+    "createTitle": "Nuova routine",
+    "editTitle": "Modifica routine",
+    "name": "Nome",
+    "namePlaceholder": "Es. Buonanotte",
+    "enabled": "Attiva",
+    "trigger": {
+      "label": "Attivazione",
+      "time": "Orario",
+      "cron": "Cron avanzato",
+      "voice": "Comando vocale",
+      "manual": "Manuale",
+      "hourMinute": "Ora",
+      "days": "Giorni",
+      "daysAll": "Tutti i giorni",
+      "everyDay": "Tutti i giorni",
+      "cronExpr": "Espressione cron",
+      "cronHint": "5 campi: minuto ora gg-mese mese gg-settimana",
+      "cronInvalid": "Espressione cron non valida",
+      "phrases": "Frasi da pronunciare",
+      "phrasesHint": "Separa più frasi con Invio. Es. «buongiorno», «sveglia»",
+      "phrasesPlaceholder": "Aggiungi una frase e premi Invio",
+      "modeToggleSimple": "Semplice",
+      "modeToggleAdvanced": "Avanzato"
+    },
+    "response": {
+      "label": "Risposta vocale",
+      "placeholder": "Cosa deve dire il panel quando parte la routine (opzionale)",
+      "hint": "Viene letto ad alta voce prima dell'esecuzione"
+    },
+    "steps": {
+      "label": "Passi",
+      "hint": "Gli step vengono eseguiti in ordine. Se uno fallisce la routine si ferma (a meno che non abiliti \"continua in caso di errore\").",
+      "addStep": "Aggiungi passo",
+      "empty": "Nessuno step. Aggiungine uno per iniziare.",
+      "continueOnError": "Continua anche se questo passo fallisce",
+      "drag": "Trascina per riordinare",
+      "remove": "Rimuovi passo"
+    },
+    "appearance": {
+      "label": "Aspetto",
+      "icon": "Icona",
+      "color": "Colore"
+    },
+    "actions": {
+      "save": "Salva",
+      "cancel": "Annulla",
+      "runNow": "Esegui ora"
+    },
+    "errors": {
+      "nameRequired": "Serve un nome",
+      "noSteps": "Aggiungi almeno uno step",
+      "noPhrases": "Aggiungi almeno una frase",
+      "stepIncomplete": "Completa tutti i campi dello step {{index}}"
+    }
+  },
+  "actionLabels": {
+    "light.set": "Luce: accendi/spegni",
+    "light.toggle": "Luce: inverti",
+    "lights.room": "Luci di una stanza",
+    "lights.all": "Tutte le luci",
+    "ac.power": "Condizionatore: accendi/spegni",
+    "ac.set_mode": "Condizionatore: modalità",
+    "ac.set_temp": "Condizionatore: temperatura",
+    "ac.set_fan": "Condizionatore: ventola",
+    "blink.arm": "Telecamera: arma",
+    "blink.disarm": "Telecamera: disarma",
+    "blink.arm_all": "Arma tutte le telecamere",
+    "blink.disarm_all": "Disarma tutte le telecamere",
+    "spotify.play": "Spotify: play",
+    "spotify.pause": "Spotify: pausa",
+    "spotify.next": "Spotify: prossimo brano",
+    "spotify.previous": "Spotify: brano precedente",
+    "spotify.volume": "Spotify: volume",
+    "spotify.play_uri": "Spotify: avvia playlist/album",
+    "tv.power": "TV: accendi/spegni",
+    "tv.volume": "TV: volume",
+    "tv.mute": "TV: muta/smuta",
+    "tv.launch_app": "TV: apri app",
+    "shopping.add": "Spesa: aggiungi voce",
+    "timer.start": "Avvia un timer",
+    "timer.stop_all": "Ferma tutti i timer",
+    "delay": "Aspetta alcuni ms",
+    "voice.speak": "Parla"
+  },
+  "groupLabels": {
+    "lights": "Luci",
+    "ac": "Condizionatore",
+    "cameras": "Telecamere",
+    "spotify": "Spotify",
+    "tv": "TV",
+    "shopping": "Spesa",
+    "timer": "Timer",
+    "meta": "Altro"
+  },
+  "params": {
+    "lightId": "Luce",
+    "roomId": "Stanza",
+    "deviceId": "Dispositivo",
+    "cameraId": "Telecamera",
+    "state": "Stato",
+    "stateOn": "Accesa",
+    "stateOff": "Spenta",
+    "power": "Accensione",
+    "powerOn": "Accesa",
+    "powerOff": "Spenta",
+    "mode": "Modalità",
+    "targetTemp": "Temperatura (°C)",
+    "fanSpeed": "Velocità ventola",
+    "fanAuto": "Auto",
+    "fanLow": "Bassa",
+    "fanMid": "Media",
+    "fanHigh": "Alta",
+    "modeCool": "Raffredda",
+    "modeHeat": "Riscalda",
+    "modeDry": "Deumidifica",
+    "modeFan": "Ventila",
+    "modeAuto": "Auto",
+    "volumePercent": "Volume (0-100)",
+    "contextUri": "URI Spotify",
+    "contextUriPlaceholder": "spotify:playlist:...",
+    "level": "Volume (0-100)",
+    "muted": "Muto",
+    "appId": "ID app",
+    "appIdPlaceholder": "youtube.leanback",
+    "on": "Accensione",
+    "name": "Nome voce",
+    "durationSeconds": "Durata (secondi)",
+    "label": "Etichetta (opzionale)",
+    "ms": "Millisecondi",
+    "text": "Testo da dire"
+  },
+  "create": {
+    "success": "Routine creata",
+    "error": "Non sono riuscito a creare la routine"
+  },
+  "update": {
+    "success": "Routine aggiornata",
+    "error": "Non sono riuscito ad aggiornare la routine"
+  },
+  "delete": {
+    "success": "Routine eliminata",
+    "confirmTitle": "Eliminare la routine?",
+    "confirmBody": "La routine \"{{name}}\" verrà rimossa e non potrà essere ripristinata."
+  },
+  "run": {
+    "success": "Routine eseguita",
+    "error": "Esecuzione fallita",
+    "partialError": "Alcuni passi sono falliti: {{error}}"
+  },
+  "weekdays": {
+    "short": ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"]
+  }
+}

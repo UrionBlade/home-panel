@@ -1,0 +1,183 @@
+{
+  "title": "Routines",
+  "subtitle": "Automate your home with voice commands, schedules, or a tap",
+  "tile": {
+    "title": "Routines",
+    "count": "{{count}} active",
+    "count_plural": "{{count}} active",
+    "empty": "No routines"
+  },
+  "empty": {
+    "title": "No routines yet",
+    "body": "Create your first to turn on lights, arm cameras and say hello with a single command.",
+    "cta": "Create your first routine"
+  },
+  "actions": {
+    "new": "New routine",
+    "runNow": "Run now",
+    "delete": "Delete",
+    "edit": "Edit",
+    "enable": "Enable",
+    "disable": "Disable"
+  },
+  "list": {
+    "lastRun": "Last run",
+    "never": "Never run",
+    "statusSuccess": "OK",
+    "statusError": "Error",
+    "disabled": "Disabled"
+  },
+  "editor": {
+    "createTitle": "New routine",
+    "editTitle": "Edit routine",
+    "name": "Name",
+    "namePlaceholder": "E.g. Good night",
+    "enabled": "Enabled",
+    "trigger": {
+      "label": "Trigger",
+      "time": "Time",
+      "cron": "Advanced cron",
+      "voice": "Voice command",
+      "manual": "Manual",
+      "hourMinute": "Time",
+      "days": "Days",
+      "daysAll": "Every day",
+      "everyDay": "Every day",
+      "cronExpr": "Cron expression",
+      "cronHint": "5 fields: minute hour dom month dow",
+      "cronInvalid": "Invalid cron expression",
+      "phrases": "Phrases to say",
+      "phrasesHint": "Separate phrases by pressing Enter. E.g. \"good morning\", \"wake up\"",
+      "phrasesPlaceholder": "Type a phrase and press Enter",
+      "modeToggleSimple": "Simple",
+      "modeToggleAdvanced": "Advanced"
+    },
+    "response": {
+      "label": "Voice response",
+      "placeholder": "What the panel should say when the routine runs (optional)",
+      "hint": "Spoken aloud before the routine executes"
+    },
+    "steps": {
+      "label": "Steps",
+      "hint": "Steps run in order. If one fails the routine stops (unless you enable \"continue on error\").",
+      "addStep": "Add step",
+      "empty": "No steps yet. Add one to get started.",
+      "continueOnError": "Continue even if this step fails",
+      "drag": "Drag to reorder",
+      "remove": "Remove step"
+    },
+    "appearance": {
+      "label": "Appearance",
+      "icon": "Icon",
+      "color": "Color"
+    },
+    "actions": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "runNow": "Run now"
+    },
+    "errors": {
+      "nameRequired": "Name is required",
+      "noSteps": "Add at least one step",
+      "noPhrases": "Add at least one phrase",
+      "stepIncomplete": "Complete all fields for step {{index}}"
+    }
+  },
+  "actionLabels": {
+    "light.set": "Light: on/off",
+    "light.toggle": "Light: toggle",
+    "lights.room": "Lights in a room",
+    "lights.all": "All lights",
+    "ac.power": "AC: on/off",
+    "ac.set_mode": "AC: mode",
+    "ac.set_temp": "AC: temperature",
+    "ac.set_fan": "AC: fan speed",
+    "blink.arm": "Camera: arm",
+    "blink.disarm": "Camera: disarm",
+    "blink.arm_all": "Arm all cameras",
+    "blink.disarm_all": "Disarm all cameras",
+    "spotify.play": "Spotify: play",
+    "spotify.pause": "Spotify: pause",
+    "spotify.next": "Spotify: next track",
+    "spotify.previous": "Spotify: previous track",
+    "spotify.volume": "Spotify: volume",
+    "spotify.play_uri": "Spotify: play playlist/album",
+    "tv.power": "TV: on/off",
+    "tv.volume": "TV: volume",
+    "tv.mute": "TV: mute/unmute",
+    "tv.launch_app": "TV: launch app",
+    "shopping.add": "Shopping: add item",
+    "timer.start": "Start a timer",
+    "timer.stop_all": "Stop all timers",
+    "delay": "Wait a few ms",
+    "voice.speak": "Speak"
+  },
+  "groupLabels": {
+    "lights": "Lights",
+    "ac": "Air conditioner",
+    "cameras": "Cameras",
+    "spotify": "Spotify",
+    "tv": "TV",
+    "shopping": "Shopping",
+    "timer": "Timer",
+    "meta": "Other"
+  },
+  "params": {
+    "lightId": "Light",
+    "roomId": "Room",
+    "deviceId": "Device",
+    "cameraId": "Camera",
+    "state": "State",
+    "stateOn": "On",
+    "stateOff": "Off",
+    "power": "Power",
+    "powerOn": "On",
+    "powerOff": "Off",
+    "mode": "Mode",
+    "targetTemp": "Temperature (°C)",
+    "fanSpeed": "Fan speed",
+    "fanAuto": "Auto",
+    "fanLow": "Low",
+    "fanMid": "Mid",
+    "fanHigh": "High",
+    "modeCool": "Cool",
+    "modeHeat": "Heat",
+    "modeDry": "Dry",
+    "modeFan": "Fan",
+    "modeAuto": "Auto",
+    "volumePercent": "Volume (0-100)",
+    "contextUri": "Spotify URI",
+    "contextUriPlaceholder": "spotify:playlist:...",
+    "level": "Volume (0-100)",
+    "muted": "Muted",
+    "appId": "App ID",
+    "appIdPlaceholder": "youtube.leanback",
+    "on": "Power",
+    "name": "Item name",
+    "durationSeconds": "Duration (seconds)",
+    "label": "Label (optional)",
+    "ms": "Milliseconds",
+    "text": "Text to speak"
+  },
+  "create": {
+    "success": "Routine created",
+    "error": "Couldn't create routine"
+  },
+  "update": {
+    "success": "Routine updated",
+    "error": "Couldn't update routine"
+  },
+  "delete": {
+    "success": "Routine deleted",
+    "confirmTitle": "Delete routine?",
+    "confirmBody": "Routine \"{{name}}\" will be removed and can't be restored."
+  },
+  "run": {
+    "success": "Routine executed",
+    "error": "Run failed",
+    "partialError": "Some steps failed: {{error}}"
+  },
+  "weekdays": {
+    "short": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+  }
+}

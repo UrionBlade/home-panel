@@ -2,6 +2,7 @@ import type { ParsedCommand, VoiceIntent } from "@home-panel/shared";
 import { matchAcIntent } from "./acIntents";
 import { matchLaundryIntent } from "./laundryIntents";
 import { matchLightIntent } from "./lightIntents";
+import { matchRoutineTrigger } from "./routineTriggerRegistry";
 import { matchTvIntent } from "./tvIntents";
 
 /**
@@ -665,6 +666,18 @@ function hasAny(text: string, words: string[]): boolean {
 export function parseVoiceCommand(text: string): ParsedCommand | null {
   const normalized = normalizeText(text);
   if (!normalized || normalized.length < 2) return null;
+
+  /* User-defined routines win over any built-in intent: they're the user's
+   * own vocabulary and should never be pre-empted by the hardcoded parser. */
+  const routineMatch = matchRoutineTrigger(text);
+  if (routineMatch) {
+    return {
+      intent: "run_routine",
+      entities: { routineId: routineMatch.routineId },
+      confidence: 1,
+      raw: text.trim(),
+    };
+  }
 
   // Exact phrases with priority — evaluated BEFORE generic rules
   if (/\bbuongiorno\b/.test(normalized)) {

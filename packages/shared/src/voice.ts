@@ -34,6 +34,7 @@ export type VoiceIntent =
   | "add_postit"
   | "routine_morning"
   | "routine_night"
+  | "run_routine"
   | "cancel"
   | "what_time"
   | "what_date"

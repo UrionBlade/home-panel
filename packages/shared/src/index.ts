@@ -20,6 +20,7 @@ export * from "./lights.js";
 export * from "./postits.js";
 export * from "./recipes.js";
 export * from "./rooms.js";
+export * from "./routines.js";
 export * from "./shopping.js";
 export * from "./spotify.js";
 export * from "./timers.js";

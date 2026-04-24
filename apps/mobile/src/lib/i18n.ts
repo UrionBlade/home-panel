@@ -14,6 +14,7 @@ import lightsEn from "../locales/en/lights.json";
 import musicEn from "../locales/en/music.json";
 import recipesEn from "../locales/en/recipes.json";
 import roomsEn from "../locales/en/rooms.json";
+import routinesEn from "../locales/en/routines.json";
 import settingsEn from "../locales/en/settings.json";
 import shoppingEn from "../locales/en/shopping.json";
 import timersEn from "../locales/en/timers.json";
@@ -34,6 +35,7 @@ import lightsIt from "../locales/it/lights.json";
 import musicIt from "../locales/it/music.json";
 import recipesIt from "../locales/it/recipes.json";
 import roomsIt from "../locales/it/rooms.json";
+import routinesIt from "../locales/it/routines.json";
 import settingsIt from "../locales/it/settings.json";
 import shoppingIt from "../locales/it/shopping.json";
 import timersIt from "../locales/it/timers.json";
@@ -66,6 +68,7 @@ void i18next
       "cameras",
       "recipes",
       "rooms",
+      "routines",
       "waste",
       "tv",
       "ac",
@@ -83,6 +86,7 @@ void i18next
         music: musicIt,
         recipes: recipesIt,
         rooms: roomsIt,
+        routines: routinesIt,
         settings: settingsIt,
         errors: errorsIt,
         shopping: shoppingIt,
@@ -105,6 +109,7 @@ void i18next
         music: musicEn,
         recipes: recipesEn,
         rooms: roomsEn,
+        routines: routinesEn,
         settings: settingsEn,
         errors: errorsEn,
         shopping: shoppingEn,
