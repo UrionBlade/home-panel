@@ -26,9 +26,12 @@ COPY apps/api apps/api
 
 RUN pnpm --filter @home-panel/api build
 
-# ---------- 2. Runtime: minimal image with only better-sqlite3 ----------
+# ---------- 2. Runtime: minimal image with better-sqlite3 + ffmpeg ----------
+# ffmpeg is needed by the IP cameras provider to pull JPEG snapshots from
+# arbitrary RTSP streams (CamHiPro / Anpviz / Reolink / …). Alpine's
+# package is ~30 MB including shared codec libs.
 FROM node:${NODE_VERSION} AS runtime
-RUN apk add --no-cache libstdc++ tini
+RUN apk add --no-cache libstdc++ tini ffmpeg
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
