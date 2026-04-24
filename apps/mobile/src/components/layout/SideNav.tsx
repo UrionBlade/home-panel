@@ -1,18 +1,16 @@
 import {
+  ArmchairIcon,
   CalendarBlankIcon,
+  ChatsTeardropIcon,
   CookingPotIcon,
-  DoorIcon,
   GearSixIcon,
   HouseLineIcon,
   type Icon,
-  LightbulbFilamentIcon,
   LightningIcon,
   MusicNoteIcon,
   NoteIcon,
   ShoppingCartIcon,
   TimerIcon,
-  VideoCameraIcon,
-  WashingMachineIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import clsx from "clsx";
@@ -27,18 +25,21 @@ interface NavEntry {
   Icon: Icon;
 }
 
+/* Navigation is place-first: Casa (the map of the house) sits right
+ * after Home and is where every device lives. Device-type pages
+ * (/lights, /cameras, /laundry) remain reachable as deep links and
+ * through Settings, but are removed from the main sidebar — their
+ * controls are now available inline from each device tile's sheet. */
 const ENTRIES: NavEntry[] = [
   { to: "/", labelKey: "tabs.home", Icon: HouseLineIcon },
+  { to: "/casa", labelKey: "tabs.casa", Icon: ArmchairIcon },
+  { to: "/ask", labelKey: "tabs.ask", Icon: ChatsTeardropIcon },
   { to: "/calendar", labelKey: "tabs.calendar", Icon: CalendarBlankIcon },
   { to: "/shopping", labelKey: "tabs.shopping", Icon: ShoppingCartIcon },
   { to: "/recipes", labelKey: "tabs.recipes", Icon: CookingPotIcon },
   { to: "/music", labelKey: "tabs.music", Icon: MusicNoteIcon },
   { to: "/board", labelKey: "tabs.board", Icon: NoteIcon },
   { to: "/timers", labelKey: "tabs.timers", Icon: TimerIcon },
-  { to: "/laundry", labelKey: "tabs.laundry", Icon: WashingMachineIcon },
-  { to: "/cameras", labelKey: "tabs.cameras", Icon: VideoCameraIcon },
-  { to: "/lights", labelKey: "tabs.lights", Icon: LightbulbFilamentIcon },
-  { to: "/rooms", labelKey: "tabs.rooms", Icon: DoorIcon },
   { to: "/routines", labelKey: "tabs.routines", Icon: LightningIcon },
   { to: "/settings", labelKey: "tabs.settings", Icon: GearSixIcon },
 ];

@@ -1,7 +1,9 @@
 import type acIt from "../locales/it/ac.json";
+import type askIt from "../locales/it/ask.json";
 import type boardIt from "../locales/it/board.json";
 import type calendarIt from "../locales/it/calendar.json";
 import type camerasIt from "../locales/it/cameras.json";
+import type casaIt from "../locales/it/casa.json";
 import type commonIt from "../locales/it/common.json";
 import type errorsIt from "../locales/it/errors.json";
 import type familyIt from "../locales/it/family.json";
@@ -25,8 +27,10 @@ declare module "i18next" {
     defaultNS: "common";
     resources: {
       ac: typeof acIt;
+      ask: typeof askIt;
       board: typeof boardIt;
       cameras: typeof camerasIt;
+      casa: typeof casaIt;
       common: typeof commonIt;
       family: typeof familyIt;
       kiosk: typeof kioskIt;

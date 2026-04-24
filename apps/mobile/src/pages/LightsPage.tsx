@@ -205,7 +205,7 @@ export function LightsPage() {
         <div className="flex flex-col gap-8">
           {lightsByRoom.map(([roomKey, roomLights]) => (
             <section key={roomKey} className="flex flex-col gap-3">
-              <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-text-muted">
+              <h2 className="label-italic text-lg text-text-muted">
                 {roomKey === "__unassigned__" ? t("rooms.unassigned") : roomKey}
               </h2>
               <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">

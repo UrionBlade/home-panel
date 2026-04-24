@@ -1,0 +1,26 @@
+{
+  "title": "Ask",
+  "subtitle": "A conversation with Claude, right here at home",
+  "hero": {
+    "headline": "Think out loud — let Claude think with you.",
+    "body": "Recipes, gift ideas, admin doubts, plain explanations. Your trusted assistant lives here."
+  },
+  "actions": {
+    "open": "Open Claude",
+    "openNewTab": "Open in a new tab"
+  },
+  "fallback": {
+    "title": "Open Claude in a dedicated window",
+    "body": "Claude.ai can't be embedded directly for security. Opening it in a new tab keeps the conversation alive until you close it.",
+    "note": "The session lives on claude.ai: you stay signed in to your own account."
+  },
+  "suggestions": {
+    "title": "Try asking",
+    "items": [
+      "What can I cook with what's in the fridge?",
+      "Summarize this news for me: …",
+      "Explain simply how … works",
+      "Help me write a kind message for…"
+    ]
+  }
+}

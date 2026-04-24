@@ -17,6 +17,8 @@
   },
   "tabs": {
     "home": "Home",
+    "casa": "Rooms",
+    "ask": "Ask",
     "calendar": "Calendar",
     "shopping": "Shopping",
     "board": "Board",

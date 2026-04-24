@@ -1,0 +1,106 @@
+{
+  "title": "Home",
+  "subtitle": "Every room, with its devices",
+  "noDevices": "No devices connected yet. As soon as you add lights, AC units or cameras from Settings, they'll show up here — one room at a time.",
+  "actions": {
+    "addRoom": "New room"
+  },
+  "firstRun": {
+    "title": "Let's start with the map of your home",
+    "body": "Create a room — the kitchen, the living room, the bedroom — and every device will find its place.",
+    "cta": "Create the first room"
+  },
+  "section": {
+    "unknown": "Room",
+    "edit": "Edit {{name}}",
+    "edit.short": "Edit",
+    "unassigned": {
+      "title": "Unassigned",
+      "empty": "Every device has found its place. Nice."
+    },
+    "room": {
+      "empty": "No devices here yet. Tap the dots on any device to move it in."
+    },
+    "summary": {
+      "empty": "No devices yet"
+    }
+  },
+  "kinds": {
+    "light_one": "{{count}} light",
+    "light_other": "{{count}} lights",
+    "ac_one": "{{count}} AC",
+    "ac_other": "{{count}} ACs",
+    "camera_one": "{{count}} camera",
+    "camera_other": "{{count}} cameras",
+    "tv_one": "{{count}} TV",
+    "tv_other": "{{count}} TVs",
+    "washer_one": "{{count}} washer",
+    "washer_other": "{{count}} washers",
+    "dryer_one": "{{count}} dryer",
+    "dryer_other": "{{count}} dryers",
+    "sensor_door_one": "{{count}} door sensor",
+    "sensor_door_other": "{{count}} door sensors",
+    "sensor_window_one": "{{count}} window sensor",
+    "sensor_window_other": "{{count}} window sensors",
+    "siren_one": "{{count}} siren",
+    "siren_other": "{{count}} sirens",
+    "plug_one": "{{count}} plug",
+    "plug_other": "{{count}} plugs",
+    "light": "Light",
+    "ac": "Air conditioner",
+    "camera": "Camera",
+    "tv": "TV",
+    "washer": "Washer",
+    "dryer": "Dryer",
+    "sensor_door": "Door sensor",
+    "sensor_window": "Window sensor",
+    "siren": "Siren",
+    "plug": "Plug"
+  },
+  "status": {
+    "on": "On",
+    "off": "Off",
+    "running": "Running",
+    "paused": "Paused",
+    "armed": "Armed",
+    "disarmed": "Disarmed",
+    "offline": "Offline",
+    "unknown": "Unknown"
+  },
+  "tile": {
+    "menu": "Options for {{name}}"
+  },
+  "roomIcons": {
+    "bed": "Bedroom",
+    "couch": "Living",
+    "tv": "TV room",
+    "kitchen": "Kitchen",
+    "bath": "Bath",
+    "shower": "Shower",
+    "toilet": "Toilet",
+    "laundry": "Laundry",
+    "office": "Office",
+    "garden": "Garden",
+    "entry": "Entry",
+    "generic": "Room"
+  },
+  "editor": {
+    "room": {
+      "createTitle": "New room",
+      "editTitle": "Edit room",
+      "subtitle": "Name and icon — you can change them anytime",
+      "nameLabel": "What's its name?",
+      "namePlaceholder": "Living, bedroom, laundry…",
+      "iconLabel": "Pick an icon",
+      "confirmDelete": "Delete the room «{{name}}»? Its devices will stay, just without a room."
+    },
+    "device": {
+      "nameLabel": "Name",
+      "namePlaceholder": "Give this device a name",
+      "nameLocked": "This name comes from the manufacturer. Change it in the device app.",
+      "roomLabel": "Which room?",
+      "unassigned": "Unassigned",
+      "saveError": "Couldn't save. Please try again."
+    }
+  }
+}

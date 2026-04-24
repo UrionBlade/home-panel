@@ -17,6 +17,8 @@
   },
   "tabs": {
     "home": "Home",
+    "casa": "Casa",
+    "ask": "Chiedi",
     "calendar": "Calendario",
     "shopping": "Spesa",
     "board": "Bacheca",

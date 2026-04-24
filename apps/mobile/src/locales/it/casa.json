@@ -1,0 +1,106 @@
+{
+  "title": "Casa",
+  "subtitle": "Ogni stanza, con i suoi dispositivi",
+  "noDevices": "Nessun dispositivo ancora collegato. Appena aggiungi luci, condizionatori o telecamere dalle Impostazioni, li troverai qui, stanza per stanza.",
+  "actions": {
+    "addRoom": "Nuova stanza"
+  },
+  "firstRun": {
+    "title": "Iniziamo dalla mappa della casa",
+    "body": "Crea una stanza — la cucina, il soggiorno, la camera — e ogni dispositivo troverà il suo posto.",
+    "cta": "Crea la prima stanza"
+  },
+  "section": {
+    "unknown": "Stanza",
+    "edit": "Modifica {{name}}",
+    "edit.short": "Modifica",
+    "unassigned": {
+      "title": "Senza stanza",
+      "empty": "Tutti i dispositivi hanno trovato il loro posto. Bello."
+    },
+    "room": {
+      "empty": "Ancora nessun dispositivo qui. Tocca i puntini su un dispositivo di un'altra stanza per spostarlo."
+    },
+    "summary": {
+      "empty": "Ancora nessun dispositivo"
+    }
+  },
+  "kinds": {
+    "light_one": "{{count}} luce",
+    "light_other": "{{count}} luci",
+    "ac_one": "{{count}} clima",
+    "ac_other": "{{count}} climatizzatori",
+    "camera_one": "{{count}} telecamera",
+    "camera_other": "{{count}} telecamere",
+    "tv_one": "{{count}} TV",
+    "tv_other": "{{count}} TV",
+    "washer_one": "{{count}} lavatrice",
+    "washer_other": "{{count}} lavatrici",
+    "dryer_one": "{{count}} asciugatrice",
+    "dryer_other": "{{count}} asciugatrici",
+    "sensor_door_one": "{{count}} sensore porta",
+    "sensor_door_other": "{{count}} sensori porta",
+    "sensor_window_one": "{{count}} sensore finestra",
+    "sensor_window_other": "{{count}} sensori finestra",
+    "siren_one": "{{count}} sirena",
+    "siren_other": "{{count}} sirene",
+    "plug_one": "{{count}} presa",
+    "plug_other": "{{count}} prese",
+    "light": "Luce",
+    "ac": "Condizionatore",
+    "camera": "Telecamera",
+    "tv": "TV",
+    "washer": "Lavatrice",
+    "dryer": "Asciugatrice",
+    "sensor_door": "Sensore porta",
+    "sensor_window": "Sensore finestra",
+    "siren": "Sirena",
+    "plug": "Presa"
+  },
+  "status": {
+    "on": "Acceso",
+    "off": "Spento",
+    "running": "In corso",
+    "paused": "In pausa",
+    "armed": "Attiva",
+    "disarmed": "Disattivata",
+    "offline": "Non raggiungibile",
+    "unknown": "Stato sconosciuto"
+  },
+  "tile": {
+    "menu": "Opzioni per {{name}}"
+  },
+  "roomIcons": {
+    "bed": "Camera",
+    "couch": "Soggiorno",
+    "tv": "Sala TV",
+    "kitchen": "Cucina",
+    "bath": "Bagno",
+    "shower": "Doccia",
+    "toilet": "Toilette",
+    "laundry": "Lavanderia",
+    "office": "Studio",
+    "garden": "Giardino",
+    "entry": "Ingresso",
+    "generic": "Stanza"
+  },
+  "editor": {
+    "room": {
+      "createTitle": "Nuova stanza",
+      "editTitle": "Modifica stanza",
+      "subtitle": "Nome e icona — potrai cambiarle in qualsiasi momento",
+      "nameLabel": "Come si chiama?",
+      "namePlaceholder": "Salotto, Camera, Lavanderia…",
+      "iconLabel": "Scegli un'icona",
+      "confirmDelete": "Eliminare la stanza «{{name}}»? I dispositivi associati resteranno, senza stanza."
+    },
+    "device": {
+      "nameLabel": "Nome",
+      "namePlaceholder": "Dai un nome a questo dispositivo",
+      "nameLocked": "Questo nome arriva dal produttore. Modificalo dall'app del dispositivo.",
+      "roomLabel": "In quale stanza?",
+      "unassigned": "Senza stanza",
+      "saveError": "Non sono riuscito a salvare. Riprova."
+    }
+  }
+}

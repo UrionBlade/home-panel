@@ -1,0 +1,26 @@
+{
+  "title": "Chiedi",
+  "subtitle": "Una conversazione con Claude, direttamente in casa",
+  "hero": {
+    "headline": "Pensa ad alta voce, lascia che Claude pensi con te.",
+    "body": "Ricette, idee regalo, dubbi amministrativi, spiegazioni a spasso. Qui vive il tuo assistente di fiducia."
+  },
+  "actions": {
+    "open": "Apri Claude",
+    "openNewTab": "Apri in una nuova scheda"
+  },
+  "fallback": {
+    "title": "Apri Claude in una finestra dedicata",
+    "body": "Claude.ai non può essere incorporato direttamente per sicurezza. Aprendolo in una nuova scheda la conversazione resta attiva finché non la chiudi.",
+    "note": "La sessione vive su claude.ai: sei al sicuro nel tuo account."
+  },
+  "suggestions": {
+    "title": "Prova a chiedere",
+    "items": [
+      "Cosa posso cucinare con quello che ho in frigo?",
+      "Riassumi questa notizia: …",
+      "Spiegami semplicemente come funziona…",
+      "Aiutami a scrivere un messaggio gentile per…"
+    ]
+  }
+}

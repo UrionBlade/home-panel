@@ -1,14 +1,15 @@
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
+import { AskPage } from "./pages/AskPage";
 import { BoardPage } from "./pages/BoardPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { CamerasPage } from "./pages/CamerasPage";
+import { CasaPage } from "./pages/CasaPage";
 import { HomePage } from "./pages/HomePage";
 import { LaundryPage } from "./pages/LaundryPage";
 import { LightsPage } from "./pages/LightsPage";
 import { MusicPage } from "./pages/MusicPage";
 import { RecipesPage } from "./pages/RecipesPage";
-import { RoomsPage } from "./pages/RoomsPage";
 import { RoutineEditorPage } from "./pages/RoutineEditorPage";
 import { RoutinesPage } from "./pages/RoutinesPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -111,10 +112,22 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/rooms",
+    path: "/casa",
     element: (
       <AppShell>
-        <RoomsPage />
+        <CasaPage />
+      </AppShell>
+    ),
+  },
+  {
+    path: "/rooms",
+    element: <Navigate to="/casa" replace />,
+  },
+  {
+    path: "/ask",
+    element: (
+      <AppShell>
+        <AskPage />
       </AppShell>
     ),
   },

@@ -2,9 +2,11 @@ import i18next from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import { initReactI18next } from "react-i18next";
 import acEn from "../locales/en/ac.json";
+import askEn from "../locales/en/ask.json";
 import boardEn from "../locales/en/board.json";
 import calendarEn from "../locales/en/calendar.json";
 import camerasEn from "../locales/en/cameras.json";
+import casaEn from "../locales/en/casa.json";
 import commonEn from "../locales/en/common.json";
 import errorsEn from "../locales/en/errors.json";
 import familyEn from "../locales/en/family.json";
@@ -23,9 +25,11 @@ import voiceEn from "../locales/en/voice.json";
 import wasteEn from "../locales/en/waste.json";
 import weatherEn from "../locales/en/weather.json";
 import acIt from "../locales/it/ac.json";
+import askIt from "../locales/it/ask.json";
 import boardIt from "../locales/it/board.json";
 import calendarIt from "../locales/it/calendar.json";
 import camerasIt from "../locales/it/cameras.json";
+import casaIt from "../locales/it/casa.json";
 import commonIt from "../locales/it/common.json";
 import errorsIt from "../locales/it/errors.json";
 import familyIt from "../locales/it/family.json";
@@ -72,12 +76,16 @@ void i18next
       "waste",
       "tv",
       "ac",
+      "casa",
+      "ask",
     ],
     resources: {
       it: {
         ac: acIt,
+        ask: askIt,
         board: boardIt,
         cameras: camerasIt,
+        casa: casaIt,
         common: commonIt,
         family: familyIt,
         kiosk: kioskIt,
@@ -99,8 +107,10 @@ void i18next
       },
       en: {
         ac: acEn,
+        ask: askEn,
         board: boardEn,
         cameras: camerasEn,
+        casa: casaEn,
         common: commonEn,
         family: familyEn,
         kiosk: kioskEn,
