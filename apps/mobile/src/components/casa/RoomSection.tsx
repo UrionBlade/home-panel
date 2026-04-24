@@ -121,8 +121,14 @@ function EmptyRoom({ isUnassigned, children }: { isUnassigned?: boolean; childre
 
 function buildSummary(devices: DeviceEntity[], t: ReturnType<typeof useT>["t"]): string {
   if (devices.length === 0) return t("section.summary.empty");
+  /* Le camere IP sono una variante tecnica di "camera" dal punto di
+   * vista dell'utente: nel conteggio le fondiamo insieme così il
+   * sommario stanza non mostra "1 camera · 1 ip_camera" ma "2 telecamere". */
   const counts = new Map<string, number>();
-  for (const d of devices) counts.set(d.kind, (counts.get(d.kind) ?? 0) + 1);
+  for (const d of devices) {
+    const key = d.kind === "ip_camera" ? "camera" : d.kind;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
   const parts: string[] = [];
   for (const [kind, n] of counts) {
     parts.push(t(`kinds.${kind}`, { count: n, defaultValue: `${n} ${kind}` }));
