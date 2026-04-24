@@ -3,17 +3,32 @@
   "subtitle": "Lista condivisa di casa",
   "addPlaceholder": "Aggiungi un prodotto…",
   "fields": {
-    "quantity": "Quantità",
+    "quantity": "Qtà",
     "unit": "Unità",
     "category": "Categoria"
   },
   "actions": {
     "add": "Aggiungi",
-    "delete": "Elimina"
+    "delete": "Elimina",
+    "edit": "Modifica"
+  },
+  "item": {
+    "actions": {
+      "edit": "Modifica",
+      "delete": "Elimina"
+    },
+    "confirmDelete": {
+      "title": "Elimina prodotto",
+      "body": "Eliminare {{name}}? Questa azione non può essere annullata.",
+      "confirm": "Elimina"
+    }
   },
   "sections": {
     "active": "Da comprare",
     "completed": "Completati"
+  },
+  "purchased": {
+    "section": "Già comprato"
   },
   "empty": {
     "title": "La tua spesa è vuota",

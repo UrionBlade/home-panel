@@ -1,7 +1,7 @@
 {
   "title": "Timer & Sveglie",
   "tileLabel": "Timer",
-  "subtitle": "Countdown e sveglie",
+  "subtitle": "Veloci da impostare, pronti quando servono",
   "alarm": {
     "noDayHint": "Nessun giorno = sveglia singola"
   },
@@ -17,6 +17,7 @@
     "resume": "Riprendi",
     "dismiss": "Ferma",
     "custom": "Personalizzato",
+    "customLink": "o imposta personalizzato →",
     "setTimer": "Imposta timer",
     "hours": "Ore",
     "minutes": "Minuti",

@@ -53,7 +53,10 @@
   },
   "today": {
     "noEvents": "No events scheduled for today",
-    "header": "Today's events"
+    "header": "Today's events",
+    "next": "Next: {{day}} — {{title}}, {{time}}",
+    "noUpcoming": "Nothing on the horizon",
+    "cta": "Create event"
   },
   "tile": {
     "title": "Today",

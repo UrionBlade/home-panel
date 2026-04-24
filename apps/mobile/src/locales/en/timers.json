@@ -1,7 +1,7 @@
 {
   "title": "Timers & Alarms",
   "tileLabel": "Timers",
-  "subtitle": "Countdowns and alarms",
+  "subtitle": "Quick to set, ready when you need them",
   "alarm": {
     "noDayHint": "No day = one-off alarm"
   },
@@ -17,6 +17,7 @@
     "resume": "Resume",
     "dismiss": "Dismiss",
     "custom": "Custom",
+    "customLink": "or set custom →",
     "setTimer": "Set timer",
     "hours": "Hours",
     "minutes": "Minutes",

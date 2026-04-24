@@ -103,12 +103,13 @@ export function RecipesPage() {
         actions={
           <>
             <Button
-              variant="ghost"
+              variant="icon"
               size="sm"
-              iconLeft={<LinkIcon size={18} weight="duotone" />}
+              aria-label={t("actions.importUrl")}
+              title={t("actions.importUrl")}
               onClick={() => setShowImportUrl(true)}
             >
-              {t("actions.importUrl")}
+              <LinkIcon size={20} weight="duotone" />
             </Button>
             <Button size="sm" iconLeft={<PlusIcon size={18} weight="bold" />} onClick={handleAdd}>
               {t("actions.add")}

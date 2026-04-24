@@ -60,7 +60,8 @@ export function AppHeader({ hideClock, title, onOpenNav }: AppHeaderProps) {
           </div>
         )}
       </div>
-      <div className="flex items-center gap-2 md:gap-4 shrink-0">
+      <div className="flex items-center gap-2 md:gap-3 shrink-0">
+        {/* Ambient group: weather + clock. */}
         <HeaderWeather />
         {/* Clock hidden on phones: iPhone status bar already shows the time. */}
         {!hideClock && (
@@ -68,18 +69,27 @@ export function AppHeader({ hideClock, title, onOpenNav }: AppHeaderProps) {
             <Clock variant="compact" />
           </div>
         )}
+
+        {/* Divider between ambient and system groups. */}
         {voice.supported && (
-          <>
-            <VoiceWaveIndicator status={voice.status} />
-            <VoicePrivacyIndicator status={voice.status} onToggle={voice.toggle} />
-          </>
+          <span className="hidden md:inline-block w-px h-5 bg-border/60 mx-1" aria-hidden />
         )}
-        <span
-          role="img"
-          className={`inline-flex w-2 h-2 rounded-full ${dotClass}`}
-          aria-label={dotLabel}
-          title={dotLabel}
-        />
+
+        {/* System group: voice indicators + connection dot. */}
+        <div className="flex items-center gap-3 md:gap-4">
+          {voice.supported && (
+            <>
+              <VoiceWaveIndicator status={voice.status} />
+              <VoicePrivacyIndicator status={voice.status} onToggle={voice.toggle} />
+            </>
+          )}
+          <span
+            role="img"
+            className={`inline-flex w-2 h-2 rounded-full ${dotClass}`}
+            aria-label={dotLabel}
+            title={dotLabel}
+          />
+        </div>
       </div>
     </header>
   );

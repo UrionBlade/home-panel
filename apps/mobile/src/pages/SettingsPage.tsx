@@ -39,15 +39,14 @@ function checkColor(hex: string): string {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.18 ? "#1a1a1a" : "#ffffff";
 }
 
-const PRESET_COLORS = [
-  { hex: "#c25838", label: "Terracotta" },
-  { hex: "#3b82f6", label: "Blue" },
-  { hex: "#8b5cf6", label: "Purple" },
-  { hex: "#ec4899", label: "Pink" },
-  { hex: "#10b981", label: "Green" },
-  { hex: "#f59e0b", label: "Amber" },
-  { hex: "#ef4444", label: "Red" },
-  { hex: "#06b6d4", label: "Cyan" },
+// Palette is intentionally constrained to warm tones to preserve the system's
+// identity ("stanza calda italiana"). See tokens.css header.
+const PRESET_COLORS: { hex: string; key: "terracotta" | "ochre" | "rust" | "sage" | "amber" }[] = [
+  { hex: "#c25838", key: "terracotta" },
+  { hex: "#c89b3c", key: "ochre" },
+  { hex: "#9c4221", key: "rust" },
+  { hex: "#7a8c5a", key: "sage" },
+  { hex: "#b45309", key: "amber" },
 ];
 
 export function SettingsPage() {
@@ -206,78 +205,35 @@ export function SettingsPage() {
           <section>
             <h2 className="font-display text-3xl mb-5">{t("appearance.accentColor")}</h2>
             <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => setAccentColor(null)}
-                className={clsx(
-                  "w-11 h-11 rounded-full border-2 transition-all flex items-center justify-center",
-                  accentColor === null
-                    ? "border-text scale-110"
-                    : "border-border hover:border-text-muted",
-                )}
-                style={{ backgroundColor: "#c25838" }}
-                title={t("appearance.defaultColor")}
-              >
-                {accentColor === null && (
-                  <span style={{ color: checkColor("#c25838") }} className="text-xs font-bold">
-                    ✓
-                  </span>
-                )}
-              </button>
-
-              {PRESET_COLORS.slice(1).map((c) => (
-                <button
-                  type="button"
-                  key={c.hex}
-                  onClick={() => setAccentColor(c.hex)}
-                  className={clsx(
-                    "w-11 h-11 rounded-full border-2 transition-all",
-                    accentColor === c.hex
-                      ? "border-text scale-110"
-                      : "border-border hover:border-text-muted",
-                  )}
-                  style={{ backgroundColor: c.hex }}
-                  title={c.label}
-                >
-                  {accentColor === c.hex && (
-                    <span style={{ color: checkColor(c.hex) }} className="text-xs font-bold">
-                      ✓
-                    </span>
-                  )}
-                </button>
-              ))}
-
-              <label
-                className={clsx(
-                  "w-11 h-11 rounded-full border-2 cursor-pointer transition-all overflow-hidden relative",
-                  accentColor && !PRESET_COLORS.some((p) => p.hex === accentColor)
-                    ? "border-text scale-110"
-                    : "border-border hover:border-text-muted",
-                )}
-                title={t("appearance.customColor")}
-              >
-                <input
-                  type="color"
-                  value={accentColor ?? "#c25838"}
-                  onChange={(e) => setAccentColor(e.target.value)}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                />
-                <span
-                  className="w-full h-full flex items-center justify-center text-xs font-bold"
-                  style={{
-                    background:
-                      accentColor && !PRESET_COLORS.some((p) => p.hex === accentColor)
-                        ? accentColor
-                        : "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)",
-                    color:
-                      accentColor && !PRESET_COLORS.some((p) => p.hex === accentColor)
-                        ? checkColor(accentColor)
-                        : "white",
-                  }}
-                >
-                  {accentColor && !PRESET_COLORS.some((p) => p.hex === accentColor) ? "✓" : ""}
-                </span>
-              </label>
+              {/* Custom hex picker removed — palette is intentionally constrained to warm
+                  tones to preserve the system's identity. See tokens.css header. */}
+              {PRESET_COLORS.map((c) => {
+                const isActive =
+                  c.key === "terracotta"
+                    ? accentColor === null || accentColor === c.hex
+                    : accentColor === c.hex;
+                const handleClick = () =>
+                  c.key === "terracotta" ? setAccentColor(null) : setAccentColor(c.hex);
+                return (
+                  <button
+                    type="button"
+                    key={c.hex}
+                    onClick={handleClick}
+                    className={clsx(
+                      "w-11 h-11 rounded-full border-2 transition-all flex items-center justify-center",
+                      isActive ? "border-text scale-110" : "border-border hover:border-text-muted",
+                    )}
+                    style={{ backgroundColor: c.hex }}
+                    title={t(`appearance.presets.${c.key}`)}
+                  >
+                    {isActive && (
+                      <span style={{ color: checkColor(c.hex) }} className="text-xs font-bold">
+                        ✓
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </section>
 

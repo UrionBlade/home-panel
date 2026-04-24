@@ -125,7 +125,9 @@ export function CalendarPage() {
             </button>
           </div>
           <section className="min-h-[25rem]">
-            {view === "today" && <TodayView onEventClick={handleEventClick} />}
+            {view === "today" && (
+              <TodayView onEventClick={handleEventClick} onCreateEvent={() => setCreating(true)} />
+            )}
             {view === "month" && <MonthView onEventClick={handleEventClick} />}
           </section>
         </>

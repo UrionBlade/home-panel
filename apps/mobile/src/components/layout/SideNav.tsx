@@ -22,22 +22,30 @@ interface NavEntry {
   to: string;
   labelKey: `tabs.${string}`;
   Icon: Icon;
+  /** True when this entry opens a new visual group (adds top gap). */
+  groupStart?: boolean;
 }
 
 /* Navigation is place-first: Casa (the map of the house) sits right
  * after Home and is where every device lives. Device-type pages
  * (/lights, /cameras, /laundry) remain reachable as deep links and
  * through Settings, but are removed from the main sidebar — their
- * controls are now available inline from each device tile's sheet. */
+ * controls are now available inline from each device tile's sheet.
+ *
+ * Groups (gap-only, no labels):
+ *   Casa      — Dashboard, Casa, Calendario
+ *   Lifestyle — Spesa, Ricette, Musica, Bacheca
+ *   Sistema   — Timer, Routine, Impostazioni
+ */
 const ENTRIES: NavEntry[] = [
   { to: "/", labelKey: "tabs.home", Icon: HouseLineIcon },
   { to: "/casa", labelKey: "tabs.casa", Icon: ArmchairIcon },
   { to: "/calendar", labelKey: "tabs.calendar", Icon: CalendarBlankIcon },
-  { to: "/shopping", labelKey: "tabs.shopping", Icon: ShoppingCartIcon },
+  { to: "/shopping", labelKey: "tabs.shopping", Icon: ShoppingCartIcon, groupStart: true },
   { to: "/recipes", labelKey: "tabs.recipes", Icon: CookingPotIcon },
   { to: "/music", labelKey: "tabs.music", Icon: MusicNoteIcon },
   { to: "/board", labelKey: "tabs.board", Icon: NoteIcon },
-  { to: "/timers", labelKey: "tabs.timers", Icon: TimerIcon },
+  { to: "/timers", labelKey: "tabs.timers", Icon: TimerIcon, groupStart: true },
   { to: "/routines", labelKey: "tabs.routines", Icon: LightningIcon },
   { to: "/settings", labelKey: "tabs.settings", Icon: GearSixIcon },
 ];
@@ -77,29 +85,31 @@ export function SideNav({ isMobileOpen, onMobileClose }: SideNavProps) {
         aria-label={t("aria.mainNav")}
         className="hidden md:flex flex-col gap-1.5 py-6 border-r border-border/60 bg-surface w-[5.5rem] lg:w-[14rem] px-2 lg:px-3 shrink-0"
       >
-        {ENTRIES.map(({ to, labelKey, Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === "/"}
-            title={t(labelKey as never)}
-            className={({ isActive }) =>
-              clsx(
-                "flex items-center justify-center lg:justify-start gap-3 px-3 py-3 lg:px-4 rounded-md min-h-[3.25rem] font-medium transition-[background-color,color] duration-200",
-                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-                isActive
-                  ? "bg-surface-warm text-accent"
-                  : "text-text-muted hover:bg-surface-warm hover:text-text",
-              )
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <Icon size={24} weight={isActive ? "fill" : "duotone"} className="shrink-0" />
-                <span className="hidden lg:inline truncate">{t(labelKey as never)}</span>
-              </>
-            )}
-          </NavLink>
+        {ENTRIES.map(({ to, labelKey, Icon, groupStart }) => (
+          <div key={to} className={groupStart ? "mt-6" : undefined}>
+            {groupStart && <hr className="border-border/30 mx-3 my-2" aria-hidden />}
+            <NavLink
+              to={to}
+              end={to === "/"}
+              title={t(labelKey as never)}
+              className={({ isActive }) =>
+                clsx(
+                  "flex items-center justify-center lg:justify-start gap-3 px-3 py-3 lg:px-4 rounded-md min-h-[3.25rem] font-medium transition-[background-color,color] duration-200",
+                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                  isActive
+                    ? "bg-accent/15 text-accent"
+                    : "text-text-muted hover:bg-surface-warm hover:text-text",
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <Icon size={24} weight={isActive ? "fill" : "duotone"} className="shrink-0" />
+                  <span className="hidden lg:inline truncate">{t(labelKey as never)}</span>
+                </>
+              )}
+            </NavLink>
+          </div>
         ))}
       </nav>
 
@@ -135,7 +145,7 @@ export function SideNav({ isMobileOpen, onMobileClose }: SideNavProps) {
                   <XIcon size={22} weight="bold" />
                 </button>
               </div>
-              {ENTRIES.map(({ to, labelKey, Icon }) => (
+              {ENTRIES.map(({ to, labelKey, Icon, groupStart }) => (
                 <NavLink
                   key={to}
                   to={to}
@@ -145,8 +155,9 @@ export function SideNav({ isMobileOpen, onMobileClose }: SideNavProps) {
                     clsx(
                       "flex items-center gap-3 px-4 py-3 rounded-md min-h-[3.25rem] font-medium transition-[background-color,color] duration-200",
                       "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+                      groupStart && "mt-6",
                       isActive
-                        ? "bg-surface-warm text-accent"
+                        ? "bg-accent/15 text-accent"
                         : "text-text-muted hover:bg-surface-warm hover:text-text",
                     )
                   }

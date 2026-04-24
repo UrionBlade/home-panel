@@ -1,5 +1,11 @@
 import type { GialloZafferanoSearchResult } from "@home-panel/shared";
-import { ClockIcon, CookingPotIcon, GaugeIcon, StarIcon } from "@phosphor-icons/react";
+import {
+  BookOpenIcon,
+  ClockIcon,
+  CookingPotIcon,
+  GaugeIcon,
+  StarIcon,
+} from "@phosphor-icons/react";
 
 interface RemoteRecipeCardProps {
   card: GialloZafferanoSearchResult;
@@ -19,7 +25,7 @@ export function RemoteRecipeCard({ card, onClick }: RemoteRecipeCardProps) {
       className="group relative w-full text-left rounded-xl overflow-hidden border border-border bg-surface-elevated shadow-md transition-[box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:shadow-lg active:scale-[0.995] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
       {/* Image or placeholder */}
-      <div className="relative aspect-[16/10] bg-surface overflow-hidden">
+      <div className="relative aspect-[4/3] bg-surface overflow-hidden">
         {card.imageUrl ? (
           <img
             src={card.imageUrl}
@@ -32,11 +38,6 @@ export function RemoteRecipeCard({ card, onClick }: RemoteRecipeCardProps) {
             <CookingPotIcon size={48} weight="duotone" className="text-text-subtle opacity-30" />
           </div>
         )}
-
-        {/* Origin badge */}
-        <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wider font-semibold bg-accent text-accent-foreground shadow-sm">
-          GialloZafferano
-        </span>
 
         {/* Rating badge */}
         {card.rating !== null && (
@@ -76,6 +77,12 @@ export function RemoteRecipeCard({ card, onClick }: RemoteRecipeCardProps) {
           {card.comments !== null && (
             <span className="text-text-subtle">{card.comments} commenti</span>
           )}
+        </div>
+
+        {/* Discrete source attribution */}
+        <div className="flex items-center gap-1 text-xs text-text-subtle mt-0.5">
+          <BookOpenIcon size={12} weight="duotone" />
+          <span>GialloZafferano</span>
         </div>
       </div>
     </button>

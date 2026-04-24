@@ -1,4 +1,3 @@
-import { SlidersHorizontalIcon } from "@phosphor-icons/react";
 import { useCreateTimer } from "../../lib/hooks/useTimers";
 import { primeAudio } from "../../lib/timers/alertSound";
 import { useT } from "../../lib/useT";
@@ -15,7 +14,7 @@ export function QuickTimerButtons({ onCustom }: QuickTimerButtonsProps) {
   const createTimer = useCreateTimer();
 
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex flex-wrap items-center gap-3">
       {QUICK_OPTIONS.map((mins) => (
         <Button
           key={mins}
@@ -29,14 +28,13 @@ export function QuickTimerButtons({ onCustom }: QuickTimerButtonsProps) {
           {t(`quick.${mins}` as never)}
         </Button>
       ))}
-      <Button
-        variant="ghost"
-        size="sm"
+      <button
+        type="button"
         onClick={onCustom}
-        iconLeft={<SlidersHorizontalIcon size={18} weight="duotone" />}
+        className="text-sm text-accent hover:underline min-h-[2.5rem] px-1"
       >
-        {t("timers.custom")}
-      </Button>
+        {t("timers.customLink")}
+      </button>
     </div>
   );
 }

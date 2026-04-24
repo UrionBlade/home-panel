@@ -16,15 +16,21 @@
   },
   "player": {
     "nowPlaying": "Now playing",
-    "noTrack": "No track playing",
+    "noTrack": "Nothing playing",
+    "noTrackHint": "Start Spotify on a device, then press ▶",
     "progress": "Track progress",
     "controls": "Playback controls",
     "shuffle": "Shuffle",
+    "shuffleOn": "Shuffle on",
+    "shuffleOff": "Shuffle off",
     "previous": "Previous track",
     "next": "Next track",
     "play": "Play",
     "pause": "Pause",
     "repeat": "Repeat",
+    "repeatOff": "Repeat off",
+    "repeatContext": "Repeat playlist",
+    "repeatTrack": "Repeat track",
     "volume": "Volume",
     "albumCover": "Cover of {{album}}",
     "playTrack": "Play {{name}} by {{artists}}"
@@ -33,8 +39,10 @@
     "title": "Devices",
     "refresh": "Refresh",
     "refreshLabel": "Refresh devices",
-    "empty": "No devices available. Open Spotify on a device (Google Home, phone, PC) to make it show up here.",
-    "select": "Select playback device"
+    "empty": "No devices available",
+    "select": "Select playback device",
+    "howTo": "How to?",
+    "howToBody": "Open Spotify on a device (Google Home, phone, PC) and start playing any track. The device will appear here automatically within a few seconds. Tap it to transfer playback to that device."
   },
   "playlists": {
     "title": "Playlists",
@@ -48,6 +56,16 @@
     "placeholder": "Search artists, tracks, albums…",
     "ariaLabel": "Search in Spotify",
     "noResults": "No results found"
+  },
+  "searchHero": {
+    "placeholder": "What do you want to listen to?",
+    "suggestionsLabel": "Suggestions",
+    "suggestions": {
+      "relax": "Evening relax",
+      "cooking": "Quick cooking",
+      "family": "All together",
+      "energy": "High energy"
+    }
   },
   "callback": {
     "aria": "Connecting to Spotify",

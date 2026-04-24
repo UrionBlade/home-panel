@@ -3,17 +3,32 @@
   "subtitle": "Shared household list",
   "addPlaceholder": "Add a product...",
   "fields": {
-    "quantity": "Quantity",
+    "quantity": "Qty",
     "unit": "Unit",
     "category": "Category"
   },
   "actions": {
     "add": "Add",
-    "delete": "Delete"
+    "delete": "Delete",
+    "edit": "Edit"
+  },
+  "item": {
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "confirmDelete": {
+      "title": "Delete item",
+      "body": "Delete {{name}}? This action cannot be undone.",
+      "confirm": "Delete"
+    }
   },
   "sections": {
     "active": "To buy",
     "completed": "Completed"
+  },
+  "purchased": {
+    "section": "Already purchased"
   },
   "empty": {
     "title": "Your shopping list is empty",

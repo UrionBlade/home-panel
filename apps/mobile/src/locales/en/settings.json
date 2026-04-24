@@ -1,6 +1,6 @@
 {
   "title": "Settings",
-  "subtitle": "Panel configuration",
+  "subtitle": "Family, devices, appearance",
   "sections": {
     "family": "Family",
     "cameras": "Cameras",
@@ -21,11 +21,17 @@
     "language": "Language",
     "theme": "Theme",
     "accentColor": "Accent color",
-    "customColor": "Custom color",
     "themeAuto": "Auto",
     "themeLight": "Light",
     "themeDark": "Dark",
-    "defaultColor": "Default (Terracotta)"
+    "defaultColor": "Default (Terracotta)",
+    "presets": {
+      "terracotta": "Terracotta",
+      "ochre": "Ochre",
+      "rust": "Rust",
+      "sage": "Sage",
+      "amber": "Amber"
+    }
   },
   "info": {
     "version": "Version",

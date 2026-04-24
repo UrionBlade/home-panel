@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import type { CSSProperties, ReactNode } from "react";
+import { useHasHover } from "../../lib/motion/useHasHover";
 import { useReducedMotion } from "../../lib/motion/useReducedMotion";
 
 export type TileSize = "sm" | "md" | "lg" | "xl";
@@ -40,6 +41,10 @@ export function Tile({
   style,
 }: TileProps) {
   const reduced = useReducedMotion();
+  // whileHover is meaningful only on devices with real pointer hover (mouse/trackpad).
+  // On touch-only screens (iPad) the hover state is never triggered — guard it away
+  // so it does not accidentally fire on long-press.
+  const hasHover = useHasHover();
   const isInteractive = !!onClick;
 
   const inlineStyle: CSSProperties = {
@@ -51,11 +56,15 @@ export function Tile({
   const motionProps =
     isInteractive && !reduced
       ? {
-          whileHover: {
-            y: -4,
-            scale: 1.015,
-            transition: { type: "spring" as const, stiffness: 260, damping: 18 },
-          },
+          ...(hasHover
+            ? {
+                whileHover: {
+                  y: -4,
+                  scale: 1.015,
+                  transition: { type: "spring" as const, stiffness: 260, damping: 18 },
+                },
+              }
+            : {}),
           whileTap: { scale: 0.99, y: 0 },
         }
       : {};

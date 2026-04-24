@@ -16,15 +16,21 @@
   },
   "player": {
     "nowPlaying": "In riproduzione",
-    "noTrack": "Nessun brano in riproduzione",
+    "noTrack": "Niente in riproduzione",
+    "noTrackHint": "Avvia Spotify su un dispositivo, poi premi ▶",
     "progress": "Avanzamento brano",
     "controls": "Controlli riproduzione",
     "shuffle": "Shuffle",
+    "shuffleOn": "Shuffle attivo",
+    "shuffleOff": "Shuffle disattivo",
     "previous": "Brano precedente",
     "next": "Brano successivo",
     "play": "Riproduci",
     "pause": "Pausa",
     "repeat": "Ripeti",
+    "repeatOff": "Ripetizione disattiva",
+    "repeatContext": "Ripeti playlist",
+    "repeatTrack": "Ripeti brano",
     "volume": "Volume",
     "albumCover": "Copertina di {{album}}",
     "playTrack": "Riproduci {{name}} di {{artists}}"
@@ -33,8 +39,10 @@
     "title": "Dispositivi",
     "refresh": "Aggiorna",
     "refreshLabel": "Aggiorna dispositivi",
-    "empty": "Nessun dispositivo disponibile. Apri Spotify su un dispositivo (Google Home, telefono, PC) per farlo apparire qui.",
-    "select": "Seleziona dispositivo di riproduzione"
+    "empty": "Nessun dispositivo disponibile",
+    "select": "Seleziona dispositivo di riproduzione",
+    "howTo": "Come fare?",
+    "howToBody": "Apri Spotify su un dispositivo (Google Home, telefono, PC) e avvia la riproduzione di qualsiasi brano. Il dispositivo apparirà automaticamente qui entro qualche secondo. Toccalo per trasferire la riproduzione su quel dispositivo."
   },
   "playlists": {
     "title": "Playlist",
@@ -48,6 +56,16 @@
     "placeholder": "Cerca artisti, brani, album…",
     "ariaLabel": "Cerca in Spotify",
     "noResults": "Nessun risultato trovato"
+  },
+  "searchHero": {
+    "placeholder": "Cosa vuoi ascoltare?",
+    "suggestionsLabel": "Suggerimenti",
+    "suggestions": {
+      "relax": "Stasera relax",
+      "cooking": "Cucina veloce",
+      "family": "Tutti insieme",
+      "energy": "Su di giri"
+    }
   },
   "callback": {
     "aria": "Collegamento Spotify in corso",

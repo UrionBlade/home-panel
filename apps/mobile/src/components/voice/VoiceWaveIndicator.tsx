@@ -50,14 +50,22 @@ export function VoiceWaveIndicator({ status }: VoiceWaveIndicatorProps) {
 
   if (status === "disabled") return null;
 
-  // Reduced motion: static dot
-  if (reduced) {
+  // Idle or reduced-motion: static thin EQ bars, no animation.
+  if (status === "idle" || reduced) {
     return (
-      <span
+      <div
+        className="inline-flex items-center gap-[2px] h-5"
         role="img"
-        className={`inline-flex w-2 h-2 rounded-full ${config.color}`}
         aria-label={t("aria.active")}
-      />
+      >
+        {Array.from({ length: BAR_COUNT }, (_, i) => (
+          <span
+            key={i}
+            className={`w-[3px] rounded-sm ${config.color}`}
+            style={{ height: config.minH }}
+          />
+        ))}
+      </div>
     );
   }
 
@@ -70,7 +78,7 @@ export function VoiceWaveIndicator({ status }: VoiceWaveIndicatorProps) {
       {Array.from({ length: BAR_COUNT }, (_, i) => (
         <motion.span
           key={i}
-          className={`w-[3px] rounded-full ${config.color}`}
+          className={`w-[3px] rounded-sm ${config.color}`}
           animate={{
             height: [config.minH, config.maxH, config.minH],
           }}

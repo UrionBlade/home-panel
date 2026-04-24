@@ -31,7 +31,7 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
       className="group relative w-full text-left rounded-xl overflow-hidden border border-border bg-surface-elevated shadow-md transition-[box-shadow,transform] duration-200 ease-[cubic-bezier(0.2,0,0,1)] hover:shadow-lg active:scale-[0.995] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
       {/* Image or placeholder */}
-      <div className="relative aspect-[16/10] bg-surface overflow-hidden">
+      <div className="relative aspect-[4/3] bg-surface overflow-hidden">
         {recipe.imageUrl ? (
           <img
             src={recipe.imageUrl}
@@ -49,12 +49,12 @@ export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
           type="button"
           onClick={handleFavoriteClick}
           aria-label={recipe.favorite ? t("actions.unfavorite") : t("actions.favorite")}
-          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-surface-elevated/80 backdrop-blur-sm flex items-center justify-center transition-colors hover:bg-surface-elevated"
+          className="absolute top-3 right-3 rounded-full bg-black/40 backdrop-blur-sm p-1.5 flex items-center justify-center transition-colors hover:bg-black/60"
         >
           <HeartIcon
             size={20}
             weight={recipe.favorite ? "fill" : "regular"}
-            className={recipe.favorite ? "text-danger" : "text-text-muted"}
+            className={recipe.favorite ? "text-accent" : "text-white"}
           />
         </button>
       </div>

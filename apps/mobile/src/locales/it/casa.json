@@ -64,7 +64,7 @@
     "paused": "In pausa",
     "armed": "Attiva",
     "disarmed": "Disattivata",
-    "offline": "Non raggiungibile",
+    "offline": "Non disponibile",
     "unknown": "Stato sconosciuto"
   },
   "tile": {

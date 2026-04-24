@@ -128,7 +128,8 @@ export function VoiceInvitePill() {
 
         {/* Rotating caption. */}
         <span className="flex items-center gap-1.5 min-w-0 leading-none">
-          <span className="label-mono text-text-muted shrink-0 translate-y-[0.05em]">
+          {/* Prefix: no uppercase, normal weight, muted — less intrusive than label-mono. */}
+          <span className="font-mono text-[0.6875rem] font-normal text-text-muted tracking-wide shrink-0 translate-y-[0.05em]">
             {isListening ? t("pill.listening") : t("pill.prefix")}
           </span>
           {!isListening && (

@@ -65,9 +65,7 @@ export function TvControlSheet({ open, device, onClose }: TvControlSheetProps) {
           }`}
         >
           <PowerIcon size={20} weight="fill" />
-          {isOn
-            ? t("status.on", { defaultValue: "Acceso" })
-            : t("status.off", { defaultValue: "Spento" })}
+          {isOn ? t("status.on", { defaultValue: "On" }) : t("status.off", { defaultValue: "Off" })}
         </button>
 
         {/* Volume */}

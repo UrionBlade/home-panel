@@ -1,6 +1,6 @@
 {
   "title": "Impostazioni",
-  "subtitle": "Configurazione del pannello",
+  "subtitle": "Famiglia, dispositivi, aspetto",
   "sections": {
     "family": "Famiglia",
     "cameras": "Telecamere",
@@ -21,11 +21,17 @@
     "language": "Lingua",
     "theme": "Tema",
     "accentColor": "Colore primario",
-    "customColor": "Colore personalizzato",
     "themeAuto": "Automatico",
     "themeLight": "Chiaro",
     "themeDark": "Scuro",
-    "defaultColor": "Default (Terracotta)"
+    "defaultColor": "Default (Terracotta)",
+    "presets": {
+      "terracotta": "Terracotta",
+      "ochre": "Ocra",
+      "rust": "Ruggine",
+      "sage": "Salvia",
+      "amber": "Ambra"
+    }
   },
   "info": {
     "version": "Versione",

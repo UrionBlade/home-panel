@@ -15,15 +15,19 @@ interface RoomSectionProps {
   onPrimary: (device: DeviceEntity) => void;
   onMenu: (device: DeviceEntity) => void;
   onEditRoom?: (room: Room) => void;
-  /** Tap on an empty room → quick access to the device move sheet
-   * (the Unassigned bucket doubles as device picker). */
+  /** Tap on an empty room → quick access to the device move sheet. */
   emptyAction?: ReactNode;
 }
 
 /**
  * One editorial block per room: big warm header with the room name and
- * its summary, followed by a device grid. When the room is empty we
- * render a warm invitation instead of an empty grid.
+ * its summary, followed by a uniform device grid.
+ *
+ * Every device tile has the same dimensions regardless of how many devices
+ * a room holds — a room with one device leaves the rest of the row empty.
+ * This preserves visual rhythm across rooms (a 1-device room and a 4-device
+ * room read as members of the same family) and avoids tiles ballooning into
+ * misshapen "stripes" that fight the grid.
  */
 export function RoomSection({
   room,
@@ -41,6 +45,10 @@ export function RoomSection({
     : (room?.name ?? t("section.unknown"));
 
   const countSummary = buildSummary(devices, t);
+
+  /* Uniform grid: every tile has the same dimensions regardless of count.
+   * A 1-device room simply leaves the trailing columns empty. */
+  const gridClass = "grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
 
   return (
     <motion.section
@@ -71,15 +79,15 @@ export function RoomSection({
           </div>
         </div>
 
+        {/* Edit room: icon-only, subtle — no text label to reduce visual noise */}
         {!isUnassigned && room && onEditRoom && (
           <button
             type="button"
             onClick={() => onEditRoom(room)}
-            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-text-muted hover:text-text hover:bg-surface-warm transition-colors min-h-[2.75rem] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="flex items-center justify-center w-10 h-10 rounded-md text-text-muted opacity-60 hover:opacity-100 hover:bg-surface-warm transition-[opacity,background-color] duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             aria-label={t("section.edit", { name: room.name })}
           >
-            <PencilSimpleIcon size={16} weight="duotone" />
-            <span className="hidden sm:inline">{t("section.edit.short")}</span>
+            <PencilSimpleIcon size={18} weight="duotone" />
           </button>
         )}
       </header>
@@ -87,11 +95,12 @@ export function RoomSection({
       {devices.length === 0 ? (
         <EmptyRoom isUnassigned={isUnassigned}>{emptyAction}</EmptyRoom>
       ) : (
-        <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div className={gridClass}>
           {devices.map((d) => (
             <DeviceTile
               key={`${d.kind}-${d.id}`}
               device={d}
+              variant="grid"
               onPrimary={() => onPrimary(d)}
               onMenu={() => onMenu(d)}
             />
@@ -121,9 +130,9 @@ function EmptyRoom({ isUnassigned, children }: { isUnassigned?: boolean; childre
 
 function buildSummary(devices: DeviceEntity[], t: ReturnType<typeof useT>["t"]): string {
   if (devices.length === 0) return t("section.summary.empty");
-  /* Le camere IP sono una variante tecnica di "camera" dal punto di
-   * vista dell'utente: nel conteggio le fondiamo insieme così il
-   * sommario stanza non mostra "1 camera · 1 ip_camera" ma "2 telecamere". */
+  /* IP cameras and Blink cameras are both "cameras" from the user's
+   * perspective — merge them in the count so the summary reads
+   * "2 telecamere" rather than "1 telecamera · 1 ip_camera". */
   const counts = new Map<string, number>();
   for (const d of devices) {
     const key = d.kind === "ip_camera" ? "camera" : d.kind;

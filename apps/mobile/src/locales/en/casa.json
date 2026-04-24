@@ -64,7 +64,7 @@
     "paused": "Paused",
     "armed": "Armed",
     "disarmed": "Disarmed",
-    "offline": "Offline",
+    "offline": "Unavailable",
     "unknown": "Unknown"
   },
   "tile": {

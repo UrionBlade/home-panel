@@ -40,9 +40,26 @@ export function Clock({ variant = "compact" }: ClockProps) {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
-    const interval = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(interval);
-  }, []);
+    if (variant === "hero") {
+      // Hero shows animated digits — update every second.
+      const id = setInterval(() => setNow(new Date()), 1000);
+      return () => clearInterval(id);
+    }
+
+    // Compact only shows HH:MM — align first tick to the next full minute,
+    // then switch to a steady 60-second interval to avoid drift.
+    let intervalId: ReturnType<typeof setInterval> | undefined;
+    const msUntilNextMinute = 60_000 - (Date.now() % 60_000);
+    const timeoutId = setTimeout(() => {
+      setNow(new Date());
+      intervalId = setInterval(() => setNow(new Date()), 60_000);
+    }, msUntilNextMinute);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (intervalId !== undefined) clearInterval(intervalId);
+    };
+  }, [variant]);
 
   const locale = i18n.language.startsWith("it") ? "it-IT" : "en-US";
   const dateLine = now.toLocaleDateString(locale, {
@@ -82,10 +99,11 @@ export function Clock({ variant = "compact" }: ClockProps) {
         >
           <FlipDigit value={hh.charAt(0)} />
           <FlipDigit value={hh.charAt(1)} />
+          {/* Two-tone colon: bottom dot in muted grey, top dot painted accent.
+           * Same glyph drawn twice; the second copy is clipped to its upper
+           * half so the dots split neatly between accent and muted. */}
           <span className="relative inline-block mx-[0.04em]" aria-hidden>
-            {/* Base: colon in muted text color (bottom dot = visible grey). */}
             <span className="opacity-60">:</span>
-            {/* Overlay: same glyph clipped to its top half, painted accent. */}
             <span className="absolute inset-0 text-accent" style={{ clipPath: "inset(0 0 38% 0)" }}>
               :
             </span>
@@ -108,7 +126,6 @@ export function Clock({ variant = "compact" }: ClockProps) {
       <span className="text-text-muted text-sm capitalize">{dateLine}</span>
       <span className="font-display text-xl tabular-nums tracking-tight text-text font-bold">
         {hh}:{mm}
-        <span className="text-text-subtle font-normal">:{pad(now.getSeconds())}</span>
       </span>
     </div>
   );
