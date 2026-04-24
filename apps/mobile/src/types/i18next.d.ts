@@ -1,5 +1,4 @@
 import type acIt from "../locales/it/ac.json";
-import type askIt from "../locales/it/ask.json";
 import type boardIt from "../locales/it/board.json";
 import type calendarIt from "../locales/it/calendar.json";
 import type camerasIt from "../locales/it/cameras.json";
@@ -27,7 +26,6 @@ declare module "i18next" {
     defaultNS: "common";
     resources: {
       ac: typeof acIt;
-      ask: typeof askIt;
       board: typeof boardIt;
       cameras: typeof camerasIt;
       casa: typeof casaIt;

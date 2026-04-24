@@ -1,7 +1,6 @@
 import {
   ArmchairIcon,
   CalendarBlankIcon,
-  ChatsTeardropIcon,
   CookingPotIcon,
   GearSixIcon,
   HouseLineIcon,
@@ -33,7 +32,6 @@ interface NavEntry {
 const ENTRIES: NavEntry[] = [
   { to: "/", labelKey: "tabs.home", Icon: HouseLineIcon },
   { to: "/casa", labelKey: "tabs.casa", Icon: ArmchairIcon },
-  { to: "/ask", labelKey: "tabs.ask", Icon: ChatsTeardropIcon },
   { to: "/calendar", labelKey: "tabs.calendar", Icon: CalendarBlankIcon },
   { to: "/shopping", labelKey: "tabs.shopping", Icon: ShoppingCartIcon },
   { to: "/recipes", labelKey: "tabs.recipes", Icon: CookingPotIcon },

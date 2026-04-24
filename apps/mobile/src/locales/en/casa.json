@@ -84,6 +84,35 @@
     "entry": "Entry",
     "generic": "Room"
   },
+  "sheet": {
+    "camera": {
+      "startLive": "Start live",
+      "stopLive": "Stop live",
+      "fullscreen": "Fullscreen",
+      "offline": "Offline",
+      "record": "Record",
+      "recording": "Recording · tap to stop",
+      "recordingsTitle": "Recordings",
+      "address": "Address",
+      "openRecording": "Open",
+      "openRecordingAria": "Open the recording from {{when}}",
+      "deleteRecording": "Delete",
+      "deleteRecordingAria": "Delete the recording from {{when}}",
+      "confirmDeleteTitle": "Delete this recording?",
+      "confirmDeleteBody": "The clip from {{when}} will be removed for good. There is no trash.",
+      "confirmDeleteAction": "Delete",
+      "startFailed": "Couldn't start recording",
+      "stopFailed": "Couldn't stop recording",
+      "deleteFailed": "Couldn't delete the clip",
+      "connecting": "Connecting…",
+      "notReachable": "Camera not reachable",
+      "checkHost": "Make sure {{host}} is responding.",
+      "liveThumbnail": "Live · reduced quality",
+      "thumbnail": "Thumbnail",
+      "fullscreenSubtitleRtsp": "RTSP stream · {{host}}",
+      "fullscreenSubtitleBlink": "Refreshes every 3-5s"
+    }
+  },
   "editor": {
     "room": {
       "createTitle": "New room",

@@ -1,6 +1,5 @@
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import { AppShell } from "./components/layout/AppShell";
-import { AskPage } from "./pages/AskPage";
 import { BoardPage } from "./pages/BoardPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { CamerasPage } from "./pages/CamerasPage";
@@ -125,11 +124,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/ask",
-    element: (
-      <AppShell>
-        <AskPage />
-      </AppShell>
-    ),
+    element: <Navigate to="/casa" replace />,
   },
   {
     path: "/routines",

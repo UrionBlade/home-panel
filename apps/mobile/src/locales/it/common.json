@@ -16,9 +16,8 @@
     "error": "Si è verificato un errore"
   },
   "tabs": {
-    "home": "Home",
+    "home": "Dashboard",
     "casa": "Casa",
-    "ask": "Chiedi",
     "calendar": "Calendario",
     "shopping": "Spesa",
     "board": "Bacheca",

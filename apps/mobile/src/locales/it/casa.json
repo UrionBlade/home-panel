@@ -84,6 +84,35 @@
     "entry": "Ingresso",
     "generic": "Stanza"
   },
+  "sheet": {
+    "camera": {
+      "startLive": "Avvia live",
+      "stopLive": "Ferma live",
+      "fullscreen": "Ingrandisci",
+      "offline": "Offline",
+      "record": "Registra",
+      "recording": "Registrazione in corso · tocca per fermare",
+      "recordingsTitle": "Registrazioni",
+      "address": "Indirizzo",
+      "openRecording": "Apri",
+      "openRecordingAria": "Apri la registrazione del {{when}}",
+      "deleteRecording": "Elimina",
+      "deleteRecordingAria": "Elimina la registrazione del {{when}}",
+      "confirmDeleteTitle": "Eliminare la registrazione?",
+      "confirmDeleteBody": "La clip del {{when}} verrà rimossa per sempre. Non c'è un cestino.",
+      "confirmDeleteAction": "Elimina",
+      "startFailed": "Non sono riuscito ad avviare la registrazione",
+      "stopFailed": "Non sono riuscito a fermare la registrazione",
+      "deleteFailed": "Non sono riuscito a eliminare la clip",
+      "connecting": "Connessione in corso…",
+      "notReachable": "Camera non raggiungibile",
+      "checkHost": "Controlla che {{host}} risponda.",
+      "liveThumbnail": "Live · qualità ridotta",
+      "thumbnail": "Miniatura",
+      "fullscreenSubtitleRtsp": "Flusso RTSP · {{host}}",
+      "fullscreenSubtitleBlink": "Aggiornamento 3-5s per frame"
+    }
+  },
   "editor": {
     "room": {
       "createTitle": "Nuova stanza",

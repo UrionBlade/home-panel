@@ -16,9 +16,8 @@
     "error": "Something went wrong"
   },
   "tabs": {
-    "home": "Home",
+    "home": "Dashboard",
     "casa": "Rooms",
-    "ask": "Ask",
     "calendar": "Calendar",
     "shopping": "Shopping",
     "board": "Board",
