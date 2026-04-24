@@ -17,6 +17,7 @@ import {
   useLights,
   useSyncLights,
 } from "../lib/hooks/useLights";
+import { useRooms } from "../lib/hooks/useRooms";
 import { useT } from "../lib/useT";
 
 /* ------------------------------------------------------------------------ */
@@ -91,12 +92,19 @@ export function LightsPage() {
   const navigate = useNavigate();
   const { data: lights = [], isLoading } = useLights();
   const { data: credentials } = useEwelinkCredentials();
+  const { data: rooms = [] } = useRooms();
   const sync = useSyncLights();
 
   const lightsByRoom = useMemo(() => {
+    /* Resolve each light's display room by preferring the FK `roomId`
+     * (set via Settings → Rooms) and falling back to the legacy free-text
+     * `light.room` for pre-migration rows. Lights whose roomId no longer
+     * exists (orphans) also land in "__unassigned__". */
+    const roomNameById = new Map(rooms.map((r) => [r.id, r.name]));
     const groups = new Map<string, LightSummary[]>();
     for (const l of lights) {
-      const key = l.room ?? "__unassigned__";
+      const resolved = (l.roomId ? roomNameById.get(l.roomId) : null) ?? l.room ?? null;
+      const key = resolved ?? "__unassigned__";
       const arr = groups.get(key) ?? [];
       arr.push(l);
       groups.set(key, arr);
@@ -107,7 +115,7 @@ export function LightsPage() {
       if (b === "__unassigned__") return -1;
       return a.localeCompare(b);
     });
-  }, [lights]);
+  }, [lights, rooms]);
 
   if (isLoading) {
     return (

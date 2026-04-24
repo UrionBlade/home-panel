@@ -1,6 +1,8 @@
 import type { VoiceStatus } from "@home-panel/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { createContext, type ReactNode, useContext, useEffect } from "react";
+import { useLights } from "../hooks/useLights";
+import { useRooms } from "../hooks/useRooms";
 import { useRoutineVoiceTriggers } from "../hooks/useRoutines";
 import { useVoice } from "../hooks/useVoice";
 import { useVoiceSettings } from "../hooks/useVoiceSettings";
@@ -34,6 +36,15 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
   /* Keep the parser's routine-phrase registry in sync with the backend so
    * freshly-edited voice triggers start matching without a page reload. */
   const { data: triggers } = useRoutineVoiceTriggers();
+
+  /* Warm up the rooms + lights caches so the voice matcher can resolve
+   * `roomId` → room name on the very first command, even if the user
+   * hasn't visited Settings/Lights/Rooms yet this session. Without this
+   * the fuzzy scorer in lightIntents runs with an empty rooms cache and
+   * "accendi luci giardino" scores zero against a light whose only link
+   * to the room is the FK. */
+  useLights();
+  useRooms();
 
   useEffect(() => {
     setVoiceQueryClient(qc);
