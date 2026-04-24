@@ -95,12 +95,22 @@ export function getEwelinkCredentials(): EwelinkCredentials | null {
   if (!row) return null;
   try {
     const parsed = JSON.parse(row.configJson) as Partial<EwelinkCredentials>;
-    if (!parsed.email || !parsed.password || !parsed.countryCode) return null;
-    const region: EwelinkRegion = parsed.region ?? regionFromCountryCode(parsed.countryCode);
+    /* Two valid authentication paths reach this row:
+     *   - ROPC: email + password + countryCode filled, tokens optional
+     *   - OAuth2: accessToken + refreshToken present, password empty (OAuth
+     *     doesn't give the panel the user's password), email/country may
+     *     be empty if the token response didn't echo them back.
+     * A row is "configured" as long as at least one of the two auth
+     * materials is usable. */
+    const hasRopc = Boolean(parsed.email && parsed.password && parsed.countryCode);
+    const hasOauth = Boolean(parsed.accessToken && parsed.refreshToken);
+    if (!hasRopc && !hasOauth) return null;
+    const countryCode = parsed.countryCode ?? "+39";
+    const region: EwelinkRegion = parsed.region ?? regionFromCountryCode(countryCode);
     return {
-      email: parsed.email,
-      password: parsed.password,
-      countryCode: parsed.countryCode,
+      email: parsed.email ?? "",
+      password: parsed.password ?? "",
+      countryCode,
       region,
       accessToken: parsed.accessToken,
       refreshToken: parsed.refreshToken,
@@ -336,6 +346,17 @@ export async function ensureEwelinkAccessToken(): Promise<{
     } catch (err) {
       console.warn("[ewelink] refresh failed, falling back to full login:", err);
     }
+  }
+
+  /* Fallback to a full ROPC login only makes sense when we actually have a
+   * password stored. For OAuth-sourced credentials we just don't have one —
+   * the user will have to re-authorize via the consent flow, surfaced as
+   * error code -4 so the UI can prompt for re-connection. */
+  if (!creds.password) {
+    throw new EwelinkError(
+      -4,
+      "eWeLink OAuth token expired and refresh failed. Please re-connect via OAuth.",
+    );
   }
 
   const logged = await ewelinkLogin(
