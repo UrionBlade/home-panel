@@ -57,16 +57,12 @@ services:
     volumes:
       - ./mediamtx/mediamtx.yml:/mediamtx.yml:ro
     ports:
-      # WebRTC signaling (WHEP) — il frontend ci parla attraverso
-      # un proxy dell'API; esposto all'host principalmente per debug
-      # via Tailscale.
+      # WebRTC signaling (WHEP) — il frontend lo raggiunge via il proxy
+      # dell'API; esposto all'host per poter debuggare dalla LAN.
       - "8889:8889"
-      # UDP ICE per WebRTC peer-to-peer. Senza questo le candidate
-      # non raggiungono il browser.
+      # UDP ICE per WebRTC peer-to-peer. Senza questa porta le candidate
+      # non raggiungono il browser sulla LAN.
       - "8189:8189/udp"
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:9997/v3/config/global/get"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 5s
+    # L'image di MediaMTX è distroless: niente healthcheck perché
+    # manca sia wget che curl e tenere un binary aggiuntivo è overkill.
+    # Il monitoring effettivo lo facciamo dal backend via il control plane.
