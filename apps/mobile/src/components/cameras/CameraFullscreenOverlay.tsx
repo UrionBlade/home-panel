@@ -2,6 +2,7 @@ import type { BlinkCamera } from "@home-panel/shared";
 import { XIcon } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { useEffect } from "react";
+import { DURATION_DEFAULT, EASE_OUT_EXPO } from "../../lib/motion/tokens";
 import { useT } from "../../lib/useT";
 import { CameraLiveFrame } from "./CameraLiveFrame";
 
@@ -31,7 +32,7 @@ export function CameraFullscreenOverlay({ camera, onClose }: CameraFullscreenOve
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.18 }}
+      transition={{ duration: DURATION_DEFAULT, ease: [...EASE_OUT_EXPO] }}
       className="fixed inset-0 z-[9999] bg-black flex items-center justify-center"
     >
       <CameraLiveFrame

@@ -3,19 +3,18 @@ import { PlayCircleIcon, SpinnerIcon, VideoCameraIcon } from "@phosphor-icons/re
 import { useEffect, useRef, useState } from "react";
 import { ipCameraSnapshotUrl } from "../../lib/ipCameras/snapshotUrl";
 import { startWhepSession, type WhepSession } from "../../lib/ipCameras/webrtc";
+import { useReducedMotion } from "../../lib/motion/useReducedMotion";
+import { useT } from "../../lib/useT";
 
 /**
  * Live view per IP camera — WebRTC con fallback snapshot.
  *
- * Attivo (active=true):
- *   1. Apre una sessione WHEP contro MediaMTX via il proxy dell'API.
- *   2. Se WebRTC fallisce (ICE timeout, codec non supportato, ecc.)
- *      cadiamo sul polling snapshot JPEG come la v1.
- * Non attivo:
- *   Mostriamo un singolo snapshot come miniatura + overlay "Miniatura".
- *
- * Lo snapshot URL include `?token=` come query (l'<img> non può
- * mandare header Authorization).
+ * State machine:
+ *   idle        — live off, show single thumbnail overlay
+ *   connecting  — WHEP negotiation in flight
+ *   webrtc      — streaming via WebRTC (primary path)
+ *   snapshot    — WHEP failed, polling JPEG snapshots as fallback
+ *   error       — both WebRTC and 3 consecutive snapshots failed
  */
 interface IpCameraLiveFrameProps {
   camera: IpCamera;
@@ -25,6 +24,8 @@ interface IpCameraLiveFrameProps {
   objectFit?: "cover" | "contain";
 }
 
+type Mode = "idle" | "connecting" | "webrtc" | "snapshot" | "error";
+
 export function IpCameraLiveFrame({
   camera,
   active,
@@ -32,9 +33,10 @@ export function IpCameraLiveFrame({
   showLiveBadge = true,
   objectFit = "cover",
 }: IpCameraLiveFrameProps) {
+  const { t } = useT("casa");
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [mode, setMode] = useState<"idle" | "connecting" | "webrtc" | "snapshot" | "error">("idle");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const reducedMotion = useReducedMotion();
+  const [mode, setMode] = useState<Mode>("idle");
 
   useEffect(() => {
     if (!active) {
@@ -42,7 +44,6 @@ export function IpCameraLiveFrame({
       return;
     }
     setMode("connecting");
-    setErrorMessage(null);
 
     let session: WhepSession | null = null;
     let cancelled = false;
@@ -59,7 +60,7 @@ export function IpCameraLiveFrame({
         setMode("webrtc");
       } catch (err) {
         if (cancelled) return;
-        console.warn("[ipcam] WebRTC non riuscito, fallback snapshot:", err);
+        console.warn("[ipcam] WebRTC failed, falling back to snapshot polling:", err);
         setMode("snapshot");
       }
     })();
@@ -76,8 +77,6 @@ export function IpCameraLiveFrame({
     <div
       className={`relative aspect-video rounded-lg overflow-hidden bg-black border border-border ${className ?? ""}`}
     >
-      {/* VIDEO element per WebRTC. Resta sempre nel DOM così il srcObject
-       * può essere appeso quando la sessione si apre. */}
       <video
         ref={videoRef}
         autoPlay
@@ -88,36 +87,42 @@ export function IpCameraLiveFrame({
         }`}
       />
 
-      {/* Fallback snapshot quando WebRTC ha fallito o la live è off. */}
-      {mode !== "webrtc" && (
-        <SnapshotLayer camera={camera} active={active} mode={mode} objectFit={objectFit} />
+      {mode !== "webrtc" && mode !== "error" && (
+        <SnapshotLayer
+          camera={camera}
+          pollActive={mode === "snapshot"}
+          objectFit={objectFit}
+          onUnreachable={() => setMode("error")}
+        />
       )}
 
       {active && showLiveBadge && mode === "webrtc" && (
         <div className="absolute top-3 left-3 flex items-center gap-2 px-2.5 py-1 rounded-full bg-danger/90 text-white text-xs font-bold">
-          <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+          <span
+            className={`w-2 h-2 rounded-full bg-white ${reducedMotion ? "" : "animate-pulse"}`}
+          />
           LIVE
         </div>
       )}
       {active && showLiveBadge && mode === "snapshot" && (
-        <div className="absolute top-3 left-3 flex items-center gap-2 px-2.5 py-1 rounded-full bg-warning/90 text-white text-xs font-bold">
-          LIVE (miniature)
+        <div className="absolute top-3 left-3 flex items-center gap-2 px-2.5 py-1 rounded-full bg-warning/90 text-black text-xs font-bold">
+          {t("sheet.camera.liveThumbnail")}
         </div>
       )}
 
       {mode === "connecting" && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/40 text-white">
-          <SpinnerIcon size={36} className="animate-spin" />
-          <span className="text-sm">Connessione in corso…</span>
+          <SpinnerIcon size={36} className={reducedMotion ? "" : "animate-spin"} />
+          <span className="text-sm">{t("sheet.camera.connecting")}</span>
         </div>
       )}
 
       {mode === "error" && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/75 text-white p-6 text-center">
           <VideoCameraIcon size={40} weight="duotone" className="opacity-60" />
-          <p className="text-sm font-medium">Camera non raggiungibile</p>
+          <p className="text-sm font-medium">{t("sheet.camera.notReachable")}</p>
           <p className="text-xs text-white/70 max-w-sm">
-            {errorMessage ?? `Controlla che ${camera.host} risponda.`}
+            {t("sheet.camera.checkHost", { host: camera.host })}
           </p>
         </div>
       )}
@@ -127,7 +132,7 @@ export function IpCameraLiveFrame({
           <div className="flex flex-col items-center gap-2 text-white/90">
             <PlayCircleIcon size={48} weight="duotone" className="opacity-85" />
             <span className="text-xs font-medium uppercase tracking-wide opacity-80">
-              Miniatura
+              {t("sheet.camera.thumbnail")}
             </span>
           </div>
         </div>
@@ -141,30 +146,33 @@ export function IpCameraLiveFrame({
 /* ------------------------------------------------------------------ */
 
 const POLL_DELAY_MS = 150;
+const ERROR_THRESHOLD = 3;
 
 function SnapshotLayer({
   camera,
-  active,
-  mode,
+  pollActive,
   objectFit,
+  onUnreachable,
 }: {
   camera: IpCamera;
-  active: boolean;
-  mode: "idle" | "connecting" | "webrtc" | "snapshot" | "error";
+  pollActive: boolean;
   objectFit: "cover" | "contain";
+  onUnreachable: () => void;
 }) {
   const [tick, setTick] = useState(0);
   const [errorCount, setErrorCount] = useState(0);
   const lastSrcRef = useRef<string | null>(null);
   const baseUrl = ipCameraSnapshotUrl(camera.id);
 
-  /* Polling attivo solo in modalità `snapshot` (fallback) — non quando
-   * stiamo connettendo (altrimenti bruciamo due strade in parallelo). */
-  const pollActive = mode === "snapshot";
-
   useEffect(() => {
     if (!pollActive) setErrorCount(0);
   }, [pollActive]);
+
+  useEffect(() => {
+    if (pollActive && errorCount >= ERROR_THRESHOLD) {
+      onUnreachable();
+    }
+  }, [pollActive, errorCount, onUnreachable]);
 
   const src = pollActive ? `${baseUrl}&_t=${tick}` : (lastSrcRef.current ?? `${baseUrl}&_t=0`);
   if (pollActive) lastSrcRef.current = src;
@@ -181,16 +189,6 @@ function SnapshotLayer({
     window.setTimeout(() => setTick((n) => n + 1), 1000);
   };
 
-  if (errorCount >= 3 && pollActive) {
-    return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/75 text-white p-6 text-center">
-        <VideoCameraIcon size={40} weight="duotone" className="opacity-60" />
-        <p className="text-sm font-medium">Camera non raggiungibile</p>
-        <p className="text-xs text-white/70 max-w-sm">Controlla che {camera.host} risponda.</p>
-      </div>
-    );
-  }
-
   return (
     <img
       src={src}
@@ -199,7 +197,7 @@ function SnapshotLayer({
       onError={handleError}
       className={`absolute inset-0 w-full h-full ${
         objectFit === "contain" ? "object-contain" : "object-cover"
-      } ${active || !lastSrcRef.current ? "opacity-100" : "opacity-80"}`}
+      }`}
     />
   );
 }
