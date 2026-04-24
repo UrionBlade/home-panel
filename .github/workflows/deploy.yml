@@ -8,6 +8,7 @@ on:
       - "packages/shared/**"
       - "pnpm-lock.yaml"
       - "docker-compose.yml"
+      - "mediamtx/**"
       - ".github/workflows/volume1/docker/home-panel.yml"
   workflow_dispatch:
 
@@ -70,9 +71,11 @@ jobs:
       - name: Checkout (for compose file)
         uses: actions/checkout@v4
 
-      - name: Sync compose to deploy directory
+      - name: Sync compose + mediamtx config to deploy directory
         run: |
           install -m 644 docker-compose.yml /volume1/docker/home-panel/docker-compose.yml
+          mkdir -p /volume1/docker/home-panel/mediamtx
+          install -m 644 mediamtx/mediamtx.yml /volume1/docker/home-panel/mediamtx/mediamtx.yml
 
       - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u "${{ github.actor }}" --password-stdin
@@ -81,9 +84,9 @@ jobs:
         working-directory: /volume1/docker/home-panel
         run: docker compose pull api
 
-      - name: Restart service
+      - name: Restart services (api + mediamtx sidecar)
         working-directory: /volume1/docker/home-panel
-        run: docker compose up -d api
+        run: docker compose up -d
 
       - name: Prune old images
         run: docker image prune -f

@@ -83,4 +83,23 @@ export const apiClient = {
     request<T>("PUT", path, body, options),
   delete: <T>(path: string, options?: RequestOptions) =>
     request<T>("DELETE", path, undefined, options),
+  /**
+   * POST "grezzo" che spedisce il body come string con un Content-Type
+   * arbitrario. Pensato per WebRTC WHEP (SDP application/sdp) — non fa
+   * il JSON.stringify e NON parsa la risposta: ritorna Response nuda
+   * così il chiamante può leggere `.text()` + headers (es. Location).
+   */
+  postRaw(path: string, body: string, contentType: string, options?: RequestOptions) {
+    if (!token) return Promise.reject(new ApiError(0, null, "VITE_API_TOKEN mancante"));
+    return fetch(`${baseUrl}${path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": contentType,
+        Authorization: `Bearer ${token}`,
+        ...options?.headers,
+      },
+      body,
+      signal: options?.signal,
+    });
+  },
 };

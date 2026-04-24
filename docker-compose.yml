@@ -28,14 +28,45 @@ services:
       DATABASE_URL: /data/home-panel.sqlite
       BLINK_CLIPS_DIR: /clips/blink
       BLINK_CLIPS_RETENTION_DAYS: "30"
+      # Talks to the MediaMTX sidecar for WebRTC control plane + RTSP
+      # internal pull-target. Stays on the internal docker network;
+      # nobody outside needs to reach :9997.
+      MEDIAMTX_API_URL: http://mediamtx:9997
+      MEDIAMTX_WEBRTC_URL: http://mediamtx:8889
     ports:
       - "3000:3000"
     volumes:
       - ./data:/data
       - ./blink-clips:/clips/blink
+    depends_on:
+      - mediamtx
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  # MediaMTX sidecar — relay RTSP→WebRTC per le IP camera di casa.
+  # Path aggiunti / rimossi runtime dal backend via API HTTP :9997.
+  # WebRTC ICE esposto su UDP :8189 (vedi docs per NAT traversal).
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: home-panel-mediamtx
+    restart: unless-stopped
+    volumes:
+      - ./mediamtx/mediamtx.yml:/mediamtx.yml:ro
+    ports:
+      # WebRTC signaling (WHEP) — il frontend ci parla attraverso
+      # un proxy dell'API; esposto all'host principalmente per debug
+      # via Tailscale.
+      - "8889:8889"
+      # UDP ICE per WebRTC peer-to-peer. Senza questo le candidate
+      # non raggiungono il browser.
+      - "8189:8189/udp"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9997/v3/config/global/get"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s

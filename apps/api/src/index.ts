@@ -5,6 +5,7 @@ import "dotenv/config";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { db } from "./db/client.js";
+import { ipCameras } from "./db/schema.js";
 import { seedBesozzo2026 } from "./db/seed-besozzo-2026.js";
 import { seedBesozzoLocation } from "./db/seed-besozzo-location.js";
 import { seedEventCategories } from "./db/seed-event-categories.js";
@@ -18,6 +19,7 @@ import { startAcScheduler } from "./lib/ge/scheduler.js";
 import { geTokenStore } from "./lib/ge/store.js";
 import { startAcWsSubscriber } from "./lib/ge/ws-subscriber.js";
 import { registerAppFetch } from "./lib/internal-fetch.js";
+import { reconcileAll as reconcileIpCameras } from "./lib/ipCameras/mediamtx.js";
 import { startRoutinesScheduler } from "./lib/routines/scheduler.js";
 import { apiAuth } from "./middleware/auth.js";
 import { acRouter } from "./routes/ac.js";
@@ -212,6 +214,10 @@ serve({ fetch: app.fetch, port, hostname }, (info) => {
   startAcScheduler();
   startAcWsSubscriber(geTokenStore);
   startRoutinesScheduler();
+  /* Upsert su MediaMTX di tutti i path IP camera: così dopo un riavvio
+   * del sidecar (o del backend) ogni camera ha il suo endpoint WebRTC
+   * pronto senza dipendere da un'azione utente. */
+  void reconcileIpCameras(db.select().from(ipCameras).all());
 });
 
 /* Tear down ffmpeg children + notify Blink on graceful shutdown so the

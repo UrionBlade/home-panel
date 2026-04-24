@@ -1,0 +1,55 @@
+# MediaMTX config per il sidecar delle IP camera.
+#
+# Ruolo: ricevere RTSP dalle telecamere IP della casa, ripubblicare come
+# WebRTC per il browser (bassa latenza, <1s) e come HLS per fallback.
+# I path vengono aggiunti / rimossi a runtime dall'API Hono via il
+# control plane HTTP (porta 9997) ogni volta che l'utente crea o cambia
+# una IP camera nel DB.
+#
+# Nessun path è hardcoded qui: le camere arrivano dinamicamente dal DB.
+
+logLevel: warn
+logDestinations: [stdout]
+
+# Porte esposte SOLO dentro la Docker network. Il gateway pubblico è
+# sempre l'API Hono, che proxa WHEP dietro il suo Bearer auth.
+rtspAddress: 127.0.0.1:8554
+rtmpDisable: yes
+srtDisable: yes
+
+# WebRTC server (WHEP). HTTP perché sta dietro un'altra rete Docker:
+# il client non parla mai con MediaMTX direttamente, passa dall'API.
+webrtcAddress: :8889
+webrtcEncryption: no
+# ICE su localhost è ok perché mediamtx e api sono nella stessa rete
+# Docker; il browser apre le candidate tramite il proxy API.
+webrtcLocalUDPAddress: :8189
+webrtcAdditionalHosts: []
+
+# HLS come fallback — utile se il browser blocca WebRTC per qualche
+# motivo (iOS Safari private browsing, ecc.). Stessa rete interna.
+hlsAddress: :8888
+hlsAllowOrigin: '*'
+hlsAlwaysRemux: no
+hlsSegmentCount: 4
+hlsSegmentDuration: 1s
+hlsPartDuration: 200ms
+
+# Control plane API — usato dal backend Node per aggiungere / rimuovere
+# path dinamicamente. Non esposto fuori dalla rete Docker.
+api: yes
+apiAddress: :9997
+
+# Metrics Prometheus su porta separata, comodo per grafici futuri.
+metrics: yes
+metricsAddress: :9998
+
+# Paths di default per chi viene aggiunto dinamicamente: tutti on-demand
+# così non si apre un RTSP verso la cam finché il primo viewer non si
+# connette. Blink-style: risparmio banda e batteria camera quando nessuno
+# sta guardando.
+pathDefaults:
+  source: publisher
+  sourceOnDemand: yes
+  sourceOnDemandStartTimeout: 8s
+  sourceOnDemandCloseAfter: 15s

@@ -4,6 +4,7 @@ import { asc, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db/client.js";
 import { type IpCameraRow, ipCameras } from "../db/schema.js";
+import { deletePath, upsertPath, whepOffer } from "../lib/ipCameras/mediamtx.js";
 import { captureSnapshot } from "../lib/ipCameras/snapshot.js";
 
 /**
@@ -83,6 +84,9 @@ ipCamerasRouter
       updatedAt: now,
     };
     db.insert(ipCameras).values(row).run();
+    /* Registra il path su MediaMTX così la live WebRTC è pronta
+     * al primo connect. Errori non bloccano la risposta API. */
+    void upsertPath(row);
     return c.json(rowToIpCamera(row), 201);
   })
 
@@ -120,6 +124,10 @@ ipCamerasRouter
     db.update(ipCameras).set(updates).where(eq(ipCameras.id, id)).run();
     const updated = db.select().from(ipCameras).where(eq(ipCameras.id, id)).get();
     if (!updated) return c.json({ error: "not_found" }, 404);
+    /* Re-sincronizza il path MediaMTX se host/cred/stream sono cambiati.
+     * Se il campo non è rilevante (es. solo roomId o name) l'upsert è
+     * comunque idempotente e costa poco. */
+    void upsertPath(updated);
     return c.json(rowToIpCamera(updated));
   })
 
@@ -127,7 +135,33 @@ ipCamerasRouter
     const id = c.req.param("id");
     const result = db.delete(ipCameras).where(eq(ipCameras.id, id)).run();
     if (result.changes === 0) return c.json({ error: "not_found" }, 404);
+    void deletePath(id);
     return c.body(null, 204);
+  })
+
+  /* WHEP proxy WebRTC — il client manda un SDP offer, MediaMTX risponde
+   * con SDP answer. Noi facciamo pass-through per tenere MediaMTX
+   * dentro la rete Docker e validare Bearer auth sull'API. */
+  .post("/:id/whep", async (c) => {
+    const id = c.req.param("id");
+    const row = db.select().from(ipCameras).where(eq(ipCameras.id, id)).get();
+    if (!row) return c.json({ error: "not_found" }, 404);
+    if (!row.enabled) return c.json({ error: "disabled" }, 400);
+
+    const sdpOffer = await c.req.text();
+    if (!sdpOffer) return c.json({ error: "SDP offer mancante" }, 400);
+
+    try {
+      const result = await whepOffer(id, sdpOffer);
+      const headers: Record<string, string> = {
+        "Content-Type": "application/sdp",
+      };
+      if (result.location) headers["Location"] = result.location;
+      return new Response(result.body, { status: result.status, headers });
+    } catch (err) {
+      console.error("[ipCameras] whep error:", err);
+      return c.json({ error: "webrtc_unavailable" }, 502);
+    }
   })
 
   /* Snapshot JPEG generato on-demand — consumato da un <img>. Auth via
