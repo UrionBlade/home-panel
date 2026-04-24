@@ -24,6 +24,7 @@ import { acRouter } from "./routes/ac.js";
 import { blinkRouter } from "./routes/blink.js";
 import { calendarRouter } from "./routes/calendar.js";
 import { calendarSourcesRouter } from "./routes/calendar-sources.js";
+import { ewelinkOauthCallbackHandler } from "./routes/ewelink-oauth.js";
 import { familyRouter } from "./routes/family.js";
 import { kioskRouter } from "./routes/kiosk.js";
 import {
@@ -145,6 +146,12 @@ app.use("/api/*", async (c, next) => {
   if (normalized === `/api/${API_VERSION}/smartthings/webhook`) {
     return next();
   }
+  // eWeLink OAuth2 callback — the eWeLink auth server redirects a raw
+  // browser here with the code + state. Security comes from the
+  // one-shot state nonce validated in the handler itself.
+  if (normalized === `/api/${API_VERSION}/lights/providers/ewelink/oauth/callback`) {
+    return next();
+  }
   return apiAuth(c, next);
 });
 
@@ -166,6 +173,13 @@ app.get(`/api/${API_VERSION}/laundry/oauth/callback`, laundryOauthCallbackHandle
 app.get(`/api/${API_VERSION}/laundry/oauth/callback/`, laundryOauthCallbackHandler);
 app.post(`/api/${API_VERSION}/smartthings/webhook`, smartthingsWebhookHandler);
 app.post(`/api/${API_VERSION}/smartthings/webhook/`, smartthingsWebhookHandler);
+/* eWeLink OAuth2 callback — registered in both with- and without-slash
+ * forms, same reason as the SmartThings callback above. */
+app.get(`/api/${API_VERSION}/lights/providers/ewelink/oauth/callback`, ewelinkOauthCallbackHandler);
+app.get(
+  `/api/${API_VERSION}/lights/providers/ewelink/oauth/callback/`,
+  ewelinkOauthCallbackHandler,
+);
 app.route(`/api/${API_VERSION}/lights`, lightsRouter);
 app.route(`/api/${API_VERSION}/tv`, tvRouter);
 app.route(`/api/${API_VERSION}/recipes`, recipesRouter);
