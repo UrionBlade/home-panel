@@ -40,6 +40,7 @@
   "settings": {
     "title": "Luci (eWeLink)",
     "subtitle": "Collega il tuo account per controllare le luci dal pannello",
+    "subtitleOauth": "Autorizza il pannello ad accedere al tuo account eWeLink. Si aprirà la pagina ufficiale di eWeLink per il consenso; una volta confermato il pannello riceve i token.",
     "appMissing": {
       "title": "App ID / App Secret mancanti",
       "body": "Chiedi al server di impostare EWELINK_APP_ID e EWELINK_APP_SECRET in .env. Li ottieni registrando una app gratuita su dev.ewelink.cc."
@@ -52,6 +53,10 @@
       "countryCode": "Prefisso paese",
       "countryCodePlaceholder": "+39",
       "connect": "Collega",
+      "connectOauth": "Connetti con eWeLink",
+      "opening": "Apertura consenso…",
+      "waiting": "In attesa di autorizzazione…",
+      "waitingHint": "Completa l'autorizzazione nella finestra eWeLink. Tornerà qui automaticamente quando avrai confermato.",
       "reconnect": "Riconnetti",
       "disconnect": "Scollega",
       "testing": "Verifico le credenziali…"

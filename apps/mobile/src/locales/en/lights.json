@@ -40,6 +40,7 @@
   "settings": {
     "title": "Lights (eWeLink)",
     "subtitle": "Connect your account to control lights from the panel",
+    "subtitleOauth": "Authorize the panel to access your eWeLink account. The official eWeLink consent page will open; once confirmed, the panel receives the tokens.",
     "appMissing": {
       "title": "App ID / App Secret missing",
       "body": "Ask the server to set EWELINK_APP_ID and EWELINK_APP_SECRET in .env. Register a free app at dev.ewelink.cc to obtain them."
@@ -52,6 +53,10 @@
       "countryCode": "Country code",
       "countryCodePlaceholder": "+39",
       "connect": "Connect",
+      "connectOauth": "Connect with eWeLink",
+      "opening": "Opening consent…",
+      "waiting": "Waiting for authorization…",
+      "waitingHint": "Complete the authorization in the eWeLink window. It'll return here automatically once confirmed.",
       "reconnect": "Reconnect",
       "disconnect": "Disconnect",
       "testing": "Verifying credentials…"

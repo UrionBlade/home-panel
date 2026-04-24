@@ -35,6 +35,11 @@ import {
   getEwelinkCredentials,
   saveEwelinkCredentials,
 } from "../lib/lights/providers/ewelink.js";
+import {
+  getEwelinkRedirectUri,
+  makeAuthorizeUrl,
+  setEwelinkPending,
+} from "../lib/lights/providers/ewelink-oauth.js";
 
 const EWELINK = "ewelink" as const;
 
@@ -213,6 +218,42 @@ export const lightsRouter = new Hono()
       const mapped = mapProviderError(err);
       return c.json(mapped.body, mapped.status);
     }
+  })
+
+  /* ---- eWeLink OAuth2 authorization (code flow) ---------------------- */
+
+  /* Starts an OAuth2 authorization code flow: generates a CSRF state,
+   * stores it in memory, and returns the hosted consent URL the client
+   * should open in a new window. The companion callback
+   * (/api/v1/lights/providers/ewelink/oauth/callback, Bearer-exempt)
+   * completes the exchange. */
+  .post("/providers/ewelink/oauth/start", async (c) => {
+    const app = getEwelinkAppKeys();
+    if (!app) {
+      return c.json({ error: "EWELINK_APP_ID / EWELINK_APP_SECRET missing from server env" }, 400);
+    }
+    const redirectUri = getEwelinkRedirectUri();
+    if (!redirectUri) {
+      return c.json({ error: "EWELINK_OAUTH_REDIRECT_URI missing from server env" }, 400);
+    }
+    const body = (await c.req.json().catch(() => ({}))) as { region?: string } | null;
+    const region =
+      body?.region === "eu" ||
+      body?.region === "us" ||
+      body?.region === "as" ||
+      body?.region === "cn"
+        ? body.region
+        : "eu";
+    const state = randomUUID();
+    setEwelinkPending(state, region);
+    const authorizationUrl = makeAuthorizeUrl({
+      clientId: app.appId,
+      clientSecret: app.appSecret,
+      redirectUri,
+      state,
+      region,
+    });
+    return c.json({ authorizationUrl, state });
   })
 
   /* ---- eWeLink credentials management -------------------------------- */

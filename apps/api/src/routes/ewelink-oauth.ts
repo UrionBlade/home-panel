@@ -4,52 +4,24 @@
  * Registered at `/api/v1/lights/providers/ewelink/oauth/callback` and
  * exempt from Bearer auth (the eWeLink auth server redirects a raw
  * browser here, which cannot attach Authorization headers). CSRF
- * protection comes from the one-shot `state` nonce created by the
- * companion `/oauth/start` endpoint.
+ * protection comes from the one-shot `state` nonce issued by
+ * `/oauth/start` on the same backend.
  *
- * The current revision is deliberately minimal: it validates the
- * `state` nonce and persists the received `code` so the user can
- * complete the code → access_token exchange once the application's
- * `EWELINK_OAUTH_CLIENT_ID` / `EWELINK_OAUTH_CLIENT_SECRET` are
- * configured in the backend env. The HMAC-signed token request eWeLink
- * requires is an isolated follow-up — this handler exists right now so
- * the redirect URI can be validated by the eWeLink Dev Console.
+ * On receipt of a valid `code + state`, the handler exchanges the code
+ * for access + refresh tokens and stores them under the existing
+ * `ewelink` provider_credentials row so the rest of the lights code
+ * picks them up transparently.
  */
 
-import { eq } from "drizzle-orm";
 import type { Context } from "hono";
-import { db } from "../db/client.js";
-import { providerCredentials } from "../db/schema.js";
-
-const EWELINK = "ewelink" as const;
-
-/* ---- In-memory OAuth state store (CSRF nonce, TTL 10 min) --------- */
-
-interface PendingOauth {
-  redirectUri: string;
-  expiresAt: number;
-}
-
-const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
-const pendingOauthStates = new Map<string, PendingOauth>();
-
-export function setEwelinkPendingOauth(state: string, redirectUri: string): void {
-  const now = Date.now();
-  for (const [k, v] of pendingOauthStates) {
-    if (v.expiresAt < now) pendingOauthStates.delete(k);
-  }
-  pendingOauthStates.set(state, { redirectUri, expiresAt: now + OAUTH_STATE_TTL_MS });
-}
-
-function takeEwelinkPendingOauth(state: string): PendingOauth | null {
-  const entry = pendingOauthStates.get(state);
-  if (!entry) return null;
-  pendingOauthStates.delete(state);
-  if (entry.expiresAt < Date.now()) return null;
-  return entry;
-}
-
-/* ---- HTML responses ------------------------------------------------ */
+import { getEwelinkAppKeys } from "../lib/lights/providers/ewelink.js";
+import {
+  EwelinkOauthError,
+  exchangeCodeForTokens,
+  getEwelinkRedirectUri,
+  takeEwelinkPending,
+  wipePendingAuthFields,
+} from "../lib/lights/providers/ewelink-oauth.js";
 
 const CALLBACK_SUCCESS_HTML = `<!doctype html>
 <html lang="it"><head><meta charset="utf-8"><title>eWeLink collegato</title>
@@ -69,17 +41,13 @@ h1{font-size:1.5rem;margin:0 0 .5rem;color:#f87171}
 p{color:#a8a29e;margin:0;font-size:.875rem}</style></head>
 <body><div class="card"><h1>Collegamento non riuscito</h1><p>${msg}</p></div></body></html>`;
 
-/* ---- Handler ------------------------------------------------------- */
-
 /** Receives `?code=...&state=...&region=...` from eWeLink's authorization
- * server. Persists the code + region into the provider_credentials row
- * under a staging key (`pendingAuthCode`) so a follow-up service can
- * exchange it for access + refresh tokens as soon as the client_id /
- * client_secret pair is available server-side. */
+ * server, validates the state nonce, exchanges the code for tokens and
+ * persists them. Returns HTML (this is a browser redirect target). */
 export async function ewelinkOauthCallbackHandler(c: Context): Promise<Response> {
   const code = c.req.query("code");
   const state = c.req.query("state");
-  const region = c.req.query("region") ?? null;
+  const regionQuery = c.req.query("region");
   const errorQuery = c.req.query("error");
 
   if (errorQuery) {
@@ -89,52 +57,52 @@ export async function ewelinkOauthCallbackHandler(c: Context): Promise<Response>
     return c.html(CALLBACK_ERROR_HTML("Risposta senza code o state."), 400);
   }
 
-  /* When the Dev Console "tests" the redirect URI it may call this
-   * endpoint without a matching pending state. Accept any code in that
-   * case — the UX is still safe because the code alone isn't usable
-   * without the client_secret, and rejecting here would block the
-   * console validation. We only enforce state when one was actually
-   * issued by /oauth/start. */
-  const pending = state ? takeEwelinkPendingOauth(state) : null;
-  if (state && !pending && pendingOauthStates.size > 0) {
+  const pending = takeEwelinkPending(state);
+  if (!pending) {
     return c.html(
       CALLBACK_ERROR_HTML("Richiesta scaduta o non valida. Riapri il collegamento dal pannello."),
       400,
     );
   }
 
+  const app = getEwelinkAppKeys();
+  if (!app) {
+    return c.html(
+      CALLBACK_ERROR_HTML("EWELINK_APP_ID / EWELINK_APP_SECRET mancanti lato server."),
+      500,
+    );
+  }
+  const redirectUri = getEwelinkRedirectUri();
+  if (!redirectUri) {
+    return c.html(CALLBACK_ERROR_HTML("EWELINK_OAUTH_REDIRECT_URI mancante lato server."), 500);
+  }
+
+  /* Region priority: the query param echoed back by eWeLink wins, because
+   * the hosted page may have redirected the user to a different region
+   * than the one we suggested on /oauth/start. Fall back to the pending
+   * entry otherwise. */
+  const region = regionIsValid(regionQuery) ? regionQuery : pending.region;
+
   try {
-    const existing = db
-      .select()
-      .from(providerCredentials)
-      .where(eq(providerCredentials.provider, EWELINK))
-      .get();
-    const previousConfig = existing
-      ? (JSON.parse(existing.configJson) as Record<string, unknown>)
-      : {};
-    const nextConfig = {
-      ...previousConfig,
-      pendingAuthCode: code,
-      pendingAuthRegion: region,
-      pendingAuthRedirectUri: pending?.redirectUri ?? null,
-      pendingAuthAt: new Date().toISOString(),
-    };
-    const row = {
-      provider: EWELINK,
-      configJson: JSON.stringify(nextConfig),
-      updatedAt: new Date().toISOString(),
-    };
-    if (existing) {
-      db.update(providerCredentials)
-        .set({ configJson: row.configJson, updatedAt: row.updatedAt })
-        .where(eq(providerCredentials.provider, EWELINK))
-        .run();
-    } else {
-      db.insert(providerCredentials).values(row).run();
-    }
+    await exchangeCodeForTokens({
+      code,
+      region,
+      redirectUri,
+      clientId: app.appId,
+      clientSecret: app.appSecret,
+    });
+    wipePendingAuthFields();
     return c.html(CALLBACK_SUCCESS_HTML);
   } catch (err) {
-    console.error("[ewelink] oauth callback persistence failed:", err);
-    return c.html(CALLBACK_ERROR_HTML("Errore interno durante il salvataggio del codice."), 500);
+    console.error("[ewelink] oauth token exchange failed:", err);
+    const detail =
+      err instanceof EwelinkOauthError
+        ? `${err.message} (error ${err.code})`
+        : "errore interno durante lo scambio del token";
+    return c.html(CALLBACK_ERROR_HTML(detail), 500);
   }
+}
+
+function regionIsValid(v: string | undefined): v is "eu" | "us" | "as" | "cn" {
+  return v === "eu" || v === "us" || v === "as" || v === "cn";
 }

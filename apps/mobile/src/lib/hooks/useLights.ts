@@ -129,6 +129,34 @@ export function useSaveEwelinkCredentials() {
   });
 }
 
+/** Poll credentials while the user completes the OAuth consent flow in
+ * a popup. A short interval (1.5s) keeps the "waiting" state snappy; the
+ * consumer enables/disables polling via the `enabled` flag. */
+export function useEwelinkCredentialsPolled(enabled: boolean) {
+  return useQuery({
+    queryKey: EWELINK_CREDS_KEY,
+    queryFn: () =>
+      apiClient.get<EwelinkCredentialsStatus>("/api/v1/lights/providers/ewelink/credentials"),
+    refetchInterval: enabled ? 1500 : false,
+  });
+}
+
+export function useStartEwelinkOAuth() {
+  const pushToast = useUiStore((s) => s.pushToast);
+  return useMutation({
+    mutationFn: (region?: "eu" | "us" | "as" | "cn") =>
+      apiClient.post<{ authorizationUrl: string; state: string }>(
+        "/api/v1/lights/providers/ewelink/oauth/start",
+        region ? { region } : {},
+      ),
+    onError: (err) => {
+      const msg =
+        err instanceof Error ? err.message : i18next.t("lights:settings.errors.saveFailed");
+      pushToast({ tone: "danger", text: msg });
+    },
+  });
+}
+
 export function useDisconnectEwelink() {
   const qc = useQueryClient();
   const pushToast = useUiStore((s) => s.pushToast);

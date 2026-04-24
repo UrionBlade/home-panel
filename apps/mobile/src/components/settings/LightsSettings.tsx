@@ -1,15 +1,17 @@
 import {
+  ArrowSquareOutIcon,
   CheckCircleIcon,
   LightbulbFilamentIcon,
   SignOutIcon,
   SpinnerIcon,
   WarningIcon,
 } from "@phosphor-icons/react";
-import { type FormEvent, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   useDisconnectEwelink,
   useEwelinkCredentials,
-  useSaveEwelinkCredentials,
+  useEwelinkCredentialsPolled,
+  useStartEwelinkOAuth,
 } from "../../lib/hooks/useLights";
 import { i18next } from "../../lib/i18n";
 import { useT } from "../../lib/useT";
@@ -132,77 +134,46 @@ function ConnectedView({
 
 function SetupForm() {
   const { t } = useT("lights");
-  const save = useSaveEwelinkCredentials();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [countryCode, setCountryCode] = useState("+39");
+  const start = useStartEwelinkOAuth();
+  const [waiting, setWaiting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const popupRef = useRef<Window | null>(null);
 
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  /* While waiting, poll credentials every 1.5s so the UI flips to
+   * "Connected" automatically as soon as the callback completes. */
+  const polled = useEwelinkCredentialsPolled(waiting);
+
+  useEffect(() => {
+    if (waiting && polled.data?.configured) {
+      setWaiting(false);
+      try {
+        popupRef.current?.close();
+      } catch {
+        /* cross-origin restrictions on popup.close are expected — the
+         * user will just close the window themselves. */
+      }
+    }
+  }, [waiting, polled.data?.configured]);
+
+  const handleConnect = () => {
     setErrorMessage(null);
-    save.mutate(
-      { email: email.trim(), password, countryCode: countryCode.trim() },
-      {
-        onError: (err) => {
-          const msg =
-            err instanceof Error && err.message ? err.message : t("settings.errors.saveFailed");
-          setErrorMessage(t("settings.errors.loginFailed", { message: msg }));
-        },
-        onSuccess: () => {
-          setPassword("");
-        },
+    start.mutate(undefined, {
+      onSuccess: (res) => {
+        const win = window.open(res.authorizationUrl, "_blank", "noopener,noreferrer");
+        popupRef.current = win;
+        setWaiting(true);
       },
-    );
-  }
-
-  const canSubmit =
-    email.trim().length > 3 &&
-    password.length > 0 &&
-    countryCode.trim().startsWith("+") &&
-    !save.isPending;
+      onError: (err) => {
+        const msg =
+          err instanceof Error && err.message ? err.message : t("settings.errors.saveFailed");
+        setErrorMessage(t("settings.errors.loginFailed", { message: msg }));
+      },
+    });
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <p className="text-sm text-text-muted">{t("settings.subtitle")}</p>
-
-      <label className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium">{t("settings.form.email")}</span>
-        <input
-          type="email"
-          required
-          autoComplete="username"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder={t("settings.form.emailPlaceholder")}
-          className="px-4 py-3 rounded-md bg-surface-elevated border border-border text-text focus:border-accent focus:outline-none transition-colors"
-        />
-      </label>
-
-      <label className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium">{t("settings.form.password")}</span>
-        <input
-          type="password"
-          required
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder={t("settings.form.passwordPlaceholder")}
-          className="px-4 py-3 rounded-md bg-surface-elevated border border-border text-text focus:border-accent focus:outline-none transition-colors"
-        />
-      </label>
-
-      <label className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium">{t("settings.form.countryCode")}</span>
-        <input
-          type="text"
-          required
-          value={countryCode}
-          onChange={(e) => setCountryCode(e.target.value)}
-          placeholder={t("settings.form.countryCodePlaceholder")}
-          className="px-4 py-3 rounded-md bg-surface-elevated border border-border text-text focus:border-accent focus:outline-none transition-colors max-w-[8rem] tabular-nums"
-        />
-      </label>
+    <div className="flex flex-col gap-4">
+      <p className="text-sm text-text-muted">{t("settings.subtitleOauth")}</p>
 
       {errorMessage && (
         <div className="flex gap-2 rounded-md bg-danger/10 border border-danger/40 p-3 text-sm text-danger">
@@ -212,19 +183,27 @@ function SetupForm() {
       )}
 
       <button
-        type="submit"
-        disabled={!canSubmit}
+        type="button"
+        onClick={handleConnect}
+        disabled={start.isPending || waiting}
         className="flex items-center justify-center gap-2 rounded-md bg-accent text-accent-foreground px-5 py-3 font-medium transition-opacity hover:opacity-90 disabled:opacity-50 min-h-[2.75rem]"
       >
-        {save.isPending ? (
+        {start.isPending || waiting ? (
           <>
             <SpinnerIcon size={16} className="animate-spin" />
-            {t("settings.form.testing")}
+            {waiting ? t("settings.form.waiting") : t("settings.form.opening")}
           </>
         ) : (
-          t("settings.form.connect")
+          <>
+            <ArrowSquareOutIcon size={16} weight="bold" />
+            {t("settings.form.connectOauth")}
+          </>
         )}
       </button>
-    </form>
+
+      {waiting && (
+        <p className="text-xs text-text-subtle text-center">{t("settings.form.waitingHint")}</p>
+      )}
+    </div>
   );
 }
