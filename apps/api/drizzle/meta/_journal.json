@@ -183,6 +183,13 @@
       "when": 1776987620326,
       "tag": "0025_white_ezekiel",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1777030977712,
+      "tag": "0026_quick_ares",
+      "breakpoints": true
     }
   ]
 }

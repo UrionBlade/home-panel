@@ -26,6 +26,7 @@ import { calendarRouter } from "./routes/calendar.js";
 import { calendarSourcesRouter } from "./routes/calendar-sources.js";
 import { ewelinkOauthCallbackHandler } from "./routes/ewelink-oauth.js";
 import { familyRouter } from "./routes/family.js";
+import { ipCamerasRouter } from "./routes/ipCameras.js";
 import { kioskRouter } from "./routes/kiosk.js";
 import {
   laundryOauthCallbackHandler,
@@ -122,6 +123,11 @@ app.use("/api/*", async (c, next) => {
   if (normalized === `/api/${API_VERSION}/blink/proxy`) {
     return next();
   }
+  // IP camera snapshots: consumed by <img>. Auth is done in-route via
+  // ?token= query param against API_TOKEN.
+  if (/^\/api\/v1\/ip-cameras\/[^/]+\/snapshot\.jpg$/.test(normalized)) {
+    return next();
+  }
   // HLS playlist + segments consumed by <video> / hls.js
   if (normalized.startsWith(`/api/${API_VERSION}/blink/live/`)) {
     return next();
@@ -188,6 +194,7 @@ app.route(`/api/${API_VERSION}/timers`, timersRouter);
 app.route(`/api/${API_VERSION}/sse`, sseRouter);
 app.route(`/api/${API_VERSION}/spotify`, spotifyRouter);
 app.route(`/api/${API_VERSION}/ac`, acRouter);
+app.route(`/api/${API_VERSION}/ip-cameras`, ipCamerasRouter);
 app.route(`/api/${API_VERSION}/routines`, routinesRouter);
 
 /* Register the Hono app with the internal-fetch dispatcher so routines can

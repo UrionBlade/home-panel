@@ -464,6 +464,37 @@ export const providerCredentials = sqliteTable("provider_credentials", {
 export type ProviderCredentialsRow = typeof providerCredentials.$inferSelect;
 
 /*
+ * Generic IP cameras — any RTSP-capable device (CamHiPro / Anpviz /
+ * Reolink / Dahua / ONVIF compatibile). Credenziali RTSP restano sul
+ * backend: il client non vede mai user/password. Gli snapshot vengono
+ * generati on-demand via ffmpeg e serviti come JPEG, lo streaming live
+ * è un loop di snapshot (semplice, funziona in ogni browser, niente
+ * hls.js).
+ *
+ * `streamPath` è il path del main stream (1080p di solito, es "/11"),
+ * `substreamPath` quello del sub (640x352 tipico, es "/12"). Se entrambi
+ * sono popolati il client può scegliere quale richiedere; per default
+ * usiamo il substream per risparmiare banda sul pannello iPad.
+ */
+export const ipCameras = sqliteTable("ip_cameras", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  host: text("host").notNull(),
+  port: integer("port").notNull().default(554),
+  username: text("username"),
+  password: text("password"),
+  streamPath: text("stream_path").notNull().default("/11"),
+  substreamPath: text("substream_path").default("/12"),
+  /** Nullable room assignment — stesse semantiche degli altri device. */
+  roomId: text("room_id"),
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+});
+export type IpCameraRow = typeof ipCameras.$inferSelect;
+export type NewIpCameraRow = typeof ipCameras.$inferInsert;
+
+/*
  * GE Appliances (Comfort / SmartHQ) — OAuth2 ROPC credentials.
  * Singleton: single row with id = 1.
  *
