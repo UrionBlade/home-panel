@@ -51,4 +51,8 @@ pnpm-debug.log*
 *.sqlite-shm
 *.db
 data/
+# Allow CoreML .mlpackage internals (the binary `Data/` subdir matches the
+# generic `data/` rule above on case-insensitive filesystems).
+!apps/mobile/src-tauri/ios/Models/**/Data/
+!apps/mobile/src-tauri/ios/Models/**/Data/**
 .playwright-mcp/
