@@ -51,6 +51,12 @@
   --tile-mauve-b: oklch(88% 0.055 320);
   --tile-sky-a: oklch(93% 0.04 220);
   --tile-sky-b: oklch(87% 0.06 225);
+  /* Sensors family — door / window / siren / plug share a "blush" warm
+   * rose tint so they read as a coherent group, distinct from
+   * appliances (terracotta=tv, sage=laundry, ochre=light, sky=ac,
+   * mauve=cameras). */
+  --tile-blush-a: oklch(94% 0.04 10);
+  --tile-blush-b: oklch(88% 0.07 12);
 
   /* === Status colors — warm-adjusted === */
   --color-success: oklch(65% 0.14 150);
@@ -134,6 +140,8 @@
     --tile-mauve-b: oklch(22% 0.07 320);
     --tile-sky-a: oklch(26% 0.06 220);
     --tile-sky-b: oklch(20% 0.08 225);
+    --tile-blush-a: oklch(28% 0.06 10);
+    --tile-blush-b: oklch(22% 0.08 12);
 
     --color-success: oklch(72% 0.14 150);
     --color-warning: oklch(80% 0.16 80);

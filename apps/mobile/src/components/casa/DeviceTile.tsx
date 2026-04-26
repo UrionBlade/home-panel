@@ -319,8 +319,9 @@ function StatusBadge({ status }: { status: DeviceStatus }) {
 /* ------------------------------------------------------------------ */
 
 interface KindTint {
-  /** CSS token name fragment: "terracotta" | "sage" | "ochre" | "mauve" | "sky" */
-  name: "terracotta" | "sage" | "ochre" | "mauve" | "sky";
+  /** CSS token name fragment. Add new ones in tokens.css under the
+   * `--tile-<name>-{a,b}` namespace before listing them here. */
+  name: "terracotta" | "sage" | "ochre" | "mauve" | "sky" | "blush";
   neutral: false;
 }
 
@@ -348,6 +349,14 @@ function tintForKind(kind: DeviceKind): TintResult {
       return { name: "sage", neutral: false };
     case "tv":
       return { name: "terracotta", neutral: false };
+    /* Zigbee sensors / actuators share a dedicated "blush" tint so
+     * they form a recognisable family on the Casa wall, separate from
+     * the appliance palette (no clash with TV terracotta). */
+    case "sensor_door":
+    case "sensor_window":
+    case "siren":
+    case "plug":
+      return { name: "blush", neutral: false };
     default:
       return { neutral: true };
   }
