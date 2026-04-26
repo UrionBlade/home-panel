@@ -24,27 +24,20 @@ const PUSH_DEVICES_KEY = ["push", "devices"] as const;
 const LS_TOKEN = "home-panel:push:token";
 const LS_REGISTERED_AT = "home-panel:push:registered-at";
 
-interface TauriInvoke {
-  invoke: <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>;
-}
-
-/** Best-effort access to the Tauri invoke API. Returns null on browsers /
- *  desktop dev, so callers can fall back to a no-op. */
-function getInvoker(): TauriInvoke | null {
-  if (typeof window === "undefined") return null;
-  const t = (window as unknown as { __TAURI__?: { core?: TauriInvoke } }).__TAURI__;
-  if (!t?.core) return null;
-  return t.core;
-}
-
+/** Best-effort detection of the Tauri runtime. Tauri 2 exposes
+ *  `__TAURI_INTERNALS__.invoke` directly on `window`; the older
+ *  `__TAURI__` namespace was retired in v2. We import `core` lazily so
+ *  bundlers don't crash on browsers that lack the global. */
 export function isTauriPlatform(): boolean {
-  return getInvoker() !== null;
+  if (typeof window === "undefined") return false;
+  const internals = (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__;
+  return internals != null;
 }
 
 async function tauriInvoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T | null> {
-  const tauri = getInvoker();
-  if (!tauri) return null;
-  return tauri.invoke<T>(cmd, args);
+  if (!isTauriPlatform()) return null;
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<T>(cmd, args);
 }
 
 export function usePushDevices() {
