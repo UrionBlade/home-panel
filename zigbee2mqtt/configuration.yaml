@@ -1,4 +1,5 @@
-homeassistant: false
+version: 5
+
 permit_join: false
 
 mqtt:
@@ -7,7 +8,9 @@ mqtt:
 
 serial:
   port: /dev/ttyUSB0
-  adapter: zstack
+  # SONOFF ZBDongle-P (CC2652P) → adapter: zstack
+  # SONOFF ZBDongle-E / Plus V2 (EFR32MG21) → adapter: ember
+  adapter: ember
 
 frontend:
   port: 8080
@@ -19,8 +22,6 @@ advanced:
   network_key: GENERATE
   pan_id: GENERATE
   ext_pan_id: GENERATE
-  legacy_api: false
-  legacy_availability_payload: false
 
 availability:
   active:
@@ -30,5 +31,3 @@ availability:
 
 device_options:
   retain: true
-
-version: 4
