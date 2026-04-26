@@ -13,7 +13,16 @@
     "idleMinutes": "Minuti di inattivit\u00e0",
     "refreshPhotos": "Aggiorna foto",
     "photosRefreshed": "Foto aggiornate",
-    "noPhotos": "Nessuna foto trovata"
+    "noPhotos": "Nessuna foto. Carica le tue per attivare il salvaschermo.",
+    "photoCount": "{{count}} foto",
+    "uploadCta": "Carica foto",
+    "uploadSuccess": "{{count}} foto caricate",
+    "uploadError": "Caricamento fallito",
+    "dropHint": "Trascina qui le foto, oppure tocca per selezionarle",
+    "dropFormats": "JPG o PNG, max 15 MB ciascuna",
+    "deletePhoto": "Elimina foto",
+    "deleted": "Foto eliminata",
+    "deleteError": "Non sono riuscito a eliminare la foto"
   },
   "actions": {
     "testScreensaver": "Test salvaschermo",

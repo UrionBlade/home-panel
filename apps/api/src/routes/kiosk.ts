@@ -1,4 +1,11 @@
-import { createReadStream, readdirSync, statSync } from "node:fs";
+import {
+  createReadStream,
+  mkdirSync,
+  readdirSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { basename, extname, join, resolve } from "node:path";
 import type { KioskPhoto, KioskSettings, UpdateKioskSettingsInput } from "@home-panel/shared";
 import { eq } from "drizzle-orm";
@@ -194,4 +201,90 @@ export const kioskRouter = new Hono()
     refreshPhotosCache();
     const files = listPhotos();
     return c.json({ refreshed: true, count: files.length });
+  })
+
+  /* ----- POST /photos (multipart upload) -----
+   * Accepts one image per request under the `file` field. Filename is taken
+   * from the upload but normalised through `basename` + extension allowlist
+   * so a malicious client can't traverse out of the photos directory. */
+  .post("/photos", async (c) => {
+    const body = await c.req.parseBody().catch(() => null);
+    if (!body) return c.json({ error: "multipart richiesto" }, 400);
+    const file = body.file;
+    if (!(file instanceof File)) {
+      return c.json({ error: "campo 'file' mancante" }, 400);
+    }
+    const MAX_BYTES = 15 * 1024 * 1024; // 15 MB per photo, plenty for a JPG
+    if (file.size <= 0) return c.json({ error: "file vuoto" }, 400);
+    if (file.size > MAX_BYTES) return c.json({ error: "file troppo grande (max 15MB)" }, 413);
+
+    const safe = basename(file.name);
+    const ext = extname(safe).toLowerCase();
+    if (!PHOTO_EXTENSIONS.has(ext)) {
+      return c.json({ error: "formato non supportato (jpg, jpeg, png)" }, 400);
+    }
+    if (safe !== file.name || safe.startsWith(".") || safe.length > 200) {
+      return c.json({ error: "filename non valido" }, 400);
+    }
+
+    const dir = getPhotosDir();
+    try {
+      mkdirSync(dir, { recursive: true });
+    } catch (err) {
+      console.error("[kiosk] mkdir photosDir:", err);
+      return c.json({ error: "directory foto non scrivibile" }, 500);
+    }
+
+    const filePath = resolve(join(dir, safe));
+    if (!filePath.startsWith(resolve(dir))) {
+      return c.json({ error: "path non valido" }, 400);
+    }
+
+    try {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      writeFileSync(filePath, buffer);
+    } catch (err) {
+      console.error("[kiosk] write photo:", err);
+      return c.json({ error: "scrittura fallita" }, 500);
+    }
+
+    refreshPhotosCache();
+    return c.json(
+      {
+        filename: safe,
+        url: `/api/v1/kiosk/photos/${encodeURIComponent(safe)}`,
+      } satisfies KioskPhoto,
+      201,
+    );
+  })
+
+  /* ----- DELETE /photos/:filename ----- */
+  .delete("/photos/:filename", (c) => {
+    const filename = c.req.param("filename");
+    const safe = basename(filename);
+    if (safe !== filename || safe.startsWith(".")) {
+      return c.json({ error: "filename non valido" }, 400);
+    }
+    const ext = extname(safe).toLowerCase();
+    if (!PHOTO_EXTENSIONS.has(ext)) {
+      return c.json({ error: "formato non supportato" }, 400);
+    }
+
+    const dir = getPhotosDir();
+    const filePath = resolve(join(dir, safe));
+    if (!filePath.startsWith(resolve(dir))) {
+      return c.json({ error: "path non valido" }, 400);
+    }
+
+    try {
+      unlinkSync(filePath);
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === "ENOENT") return c.json({ error: "foto non trovata" }, 404);
+      console.error("[kiosk] unlink photo:", err);
+      return c.json({ error: "cancellazione fallita" }, 500);
+    }
+
+    refreshPhotosCache();
+    return c.body(null, 204);
   });

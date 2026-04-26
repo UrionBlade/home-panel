@@ -13,7 +13,18 @@
     "idleMinutes": "Idle minutes",
     "refreshPhotos": "Refresh photos",
     "photosRefreshed": "Photos refreshed",
-    "noPhotos": "No photos found"
+    "noPhotos": "No photos yet. Upload some to enable the screensaver.",
+    "photoCount": "{{count}} photo",
+    "photoCount_plural": "{{count}} photos",
+    "uploadCta": "Upload photos",
+    "uploadSuccess": "Uploaded {{count}} photo",
+    "uploadSuccess_plural": "Uploaded {{count}} photos",
+    "uploadError": "Upload failed",
+    "dropHint": "Drop photos here, or tap to pick them",
+    "dropFormats": "JPG or PNG, 15 MB max each",
+    "deletePhoto": "Delete photo",
+    "deleted": "Photo deleted",
+    "deleteError": "Couldn't delete the photo"
   },
   "actions": {
     "testScreensaver": "Test screensaver",

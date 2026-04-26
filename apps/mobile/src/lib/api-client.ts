@@ -102,4 +102,34 @@ export const apiClient = {
       signal: options?.signal,
     });
   },
+  /**
+   * Multipart upload. The browser sets the Content-Type header (with the
+   * generated boundary) automatically when we hand it a `FormData`, so we
+   * deliberately do NOT inject one here.
+   */
+  async postFormData<T>(path: string, formData: FormData, options?: RequestOptions): Promise<T> {
+    if (!token) throw new ApiError(0, null, "VITE_API_TOKEN mancante");
+    const response = await fetch(`${baseUrl}${path}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...options?.headers,
+      },
+      body: formData,
+      signal: options?.signal,
+    });
+    if (response.status === 204) return undefined as T;
+    const contentType = response.headers.get("content-type") ?? "";
+    const payload = contentType.includes("application/json")
+      ? await response.json().catch(() => null)
+      : await response.text().catch(() => null);
+    if (!response.ok) {
+      const message =
+        typeof payload === "object" && payload && "error" in payload
+          ? String((payload as { error: string }).error)
+          : `HTTP ${response.status}`;
+      throw new ApiError(response.status, payload, message);
+    }
+    return payload as T;
+  },
 };

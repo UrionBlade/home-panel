@@ -139,6 +139,16 @@ app.use("/api/*", async (c, next) => {
   if (/^\/api\/v1\/ip-cameras\/recordings\/[^/]+\/stream$/.test(normalized)) {
     return next();
   }
+  // Kiosk photos: served to <img> in the screensaver and the settings
+  // gallery. Same ?token= query-param pattern as camera snapshots — the
+  // browser cannot attach Authorization to an <img src>.
+  if (/^\/api\/v1\/kiosk\/photos\/[^/]+$/.test(normalized)) {
+    const token = c.req.query("token");
+    if (!token || token !== process.env.API_TOKEN) {
+      return c.json({ error: "invalid_token" }, 401);
+    }
+    return next();
+  }
   // HLS playlist + segments consumed by <video> / hls.js
   if (normalized.startsWith(`/api/${API_VERSION}/blink/live/`)) {
     return next();

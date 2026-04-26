@@ -1,10 +1,13 @@
+import { TrashIcon, UploadSimpleIcon } from "@phosphor-icons/react";
 import { AnimatePresence } from "framer-motion";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
+  useDeleteKioskPhoto,
   useKioskPhotos,
   useKioskSettings,
   useRefreshKioskPhotos,
   useUpdateKioskSettings,
+  useUploadKioskPhoto,
 } from "../../lib/hooks/useKioskSettings";
 import { useNightMode } from "../../lib/kiosk/NightModeProvider";
 import { useT } from "../../lib/useT";
@@ -24,11 +27,55 @@ export function KioskSettings() {
   const { data: photos } = useKioskPhotos();
   const update = useUpdateKioskSettings();
   const refreshPhotos = useRefreshKioskPhotos();
+  const uploadPhoto = useUploadKioskPhoto();
+  const deletePhoto = useDeleteKioskPhoto();
   const pushToast = useUiStore((s) => s.pushToast);
   const { setForceNight } = useNightMode();
   const [showTestScreensaver, setShowTestScreensaver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const photoUrls = useMemo(() => (photos ?? []).map((p) => p.url), [photos]);
+
+  const uploadFiles = useCallback(
+    async (files: FileList | File[]) => {
+      const list = Array.from(files);
+      let okCount = 0;
+      for (const file of list) {
+        try {
+          await uploadPhoto.mutateAsync(file);
+          okCount += 1;
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : t("screensaver.uploadError");
+          pushToast({ tone: "danger", text: `${file.name}: ${msg}` });
+        }
+      }
+      if (okCount > 0) {
+        pushToast({
+          tone: "success",
+          text: t("screensaver.uploadSuccess", { count: okCount }),
+        });
+      }
+    },
+    [uploadPhoto, pushToast, t],
+  );
+
+  const handlePickFiles = useCallback(() => fileInputRef.current?.click(), []);
+
+  const handleDelete = useCallback(
+    (filename: string) => {
+      deletePhoto.mutate(filename, {
+        onSuccess: () => {
+          pushToast({ tone: "success", text: t("screensaver.deleted") });
+        },
+        onError: (err) => {
+          const msg = err instanceof Error ? err.message : t("screensaver.deleteError");
+          pushToast({ tone: "danger", text: msg });
+        },
+      });
+    },
+    [deletePhoto, pushToast, t],
+  );
 
   const handleRefreshPhotos = useCallback(() => {
     refreshPhotos.mutate(undefined, {
@@ -131,18 +178,103 @@ export function KioskSettings() {
               />
             </div>
 
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRefreshPhotos}
-                isLoading={refreshPhotos.isPending}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <span className="text-sm text-text-muted">
+                  {photos && photos.length > 0
+                    ? t("screensaver.photoCount", { count: photos.length })
+                    : t("screensaver.noPhotos")}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRefreshPhotos}
+                    isLoading={refreshPhotos.isPending}
+                  >
+                    {t("screensaver.refreshPhotos")}
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handlePickFiles}
+                    isLoading={uploadPhoto.isPending}
+                  >
+                    <UploadSimpleIcon size={16} weight="bold" />
+                    {t("screensaver.uploadCta")}
+                  </Button>
+                </div>
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png"
+                multiple
+                hidden
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    void uploadFiles(e.target.files);
+                  }
+                  e.target.value = "";
+                }}
+              />
+
+              {/* Drag-drop zone — clicking it opens the file picker too. */}
+              <button
+                type="button"
+                onClick={handlePickFiles}
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  setIsDragOver(true);
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                }}
+                onDragLeave={() => setIsDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragOver(false);
+                  if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    void uploadFiles(e.dataTransfer.files);
+                  }
+                }}
+                className={`flex flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed p-6 text-sm transition-colors ${
+                  isDragOver
+                    ? "border-accent bg-accent/10 text-text"
+                    : "border-border bg-surface-muted/50 text-text-muted hover:border-accent/60 hover:text-text"
+                }`}
               >
-                {t("screensaver.refreshPhotos")}
-              </Button>
-              <span className="text-sm text-text-muted">
-                {photos ? `${photos.length} foto` : t("screensaver.noPhotos")}
-              </span>
+                <UploadSimpleIcon size={22} weight="duotone" />
+                <span className="font-medium">{t("screensaver.dropHint")}</span>
+                <span className="text-xs">{t("screensaver.dropFormats")}</span>
+              </button>
+
+              {photos && photos.length > 0 && (
+                <ul className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                  {photos.map((p) => (
+                    <li
+                      key={p.filename}
+                      className="relative aspect-square overflow-hidden rounded-sm border border-border bg-surface-muted"
+                    >
+                      <img
+                        src={p.url}
+                        alt={p.filename}
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        aria-label={t("screensaver.deletePhoto")}
+                        onClick={() => handleDelete(p.filename)}
+                        className="absolute top-1 right-1 p-1.5 rounded-full bg-black/60 text-white hover:bg-danger/80 transition-colors"
+                      >
+                        <TrashIcon size={14} weight="bold" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         )}
