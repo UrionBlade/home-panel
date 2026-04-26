@@ -22,6 +22,13 @@ export const familyMembers = sqliteTable("family_members", {
   weightKg: real("weight_kg"),
   veterinaryNotes: text("veterinary_notes"),
 
+  /** Speaker recognition profile. Serialised JSON of
+   * `{ samples: number[][]; centroid: number[] }` — empty / null when the
+   * member has not enrolled their voice yet. The centroid is recomputed
+   * on every enrol/delete so cosine matches at identify time are O(1)
+   * per member. */
+  voiceEmbedding: text("voice_embedding"),
+
   createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
   updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
 });

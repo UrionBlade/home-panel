@@ -12,6 +12,10 @@ interface FamilyMemberBase {
   avatarUrl: string | null;
   accentColor: string | null;
   birthDate: string | null;
+  /** Number of voice samples that contributed to the speaker centroid.
+   * `0` means the member has not enrolled yet. The actual embeddings are
+   * never returned to the client. */
+  voiceSampleCount: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -76,4 +80,34 @@ export interface UpdateFamilyMemberInput {
   breed?: string | null;
   weightKg?: number | null;
   veterinaryNotes?: string | null;
+}
+
+// ---------- Speaker recognition ----------
+
+/** Body of `POST /api/v1/family/:id/voice/enroll`. */
+export interface VoiceEnrollInput {
+  /** A 192-d ECAPA-TDNN embedding, raw float32 values. */
+  embedding: number[];
+}
+
+/** Returned by both enrol and delete so the client can refresh its
+ * "voice registered" badge without re-fetching the whole member list. */
+export interface VoiceEnrollResponse {
+  familyMemberId: string;
+  voiceSampleCount: number;
+}
+
+/** Body of `POST /api/v1/family/voice/identify`. */
+export interface VoiceIdentifyInput {
+  embedding: number[];
+}
+
+export interface VoiceIdentifyResponse {
+  /** Best-matching family member id, or `null` when no centroid passes
+   * the decision threshold (treat as "unknown speaker / probably TV"). */
+  familyMemberId: string | null;
+  /** Cosine similarity against the winning centroid. Useful for UI
+   * debugging and for the caller to decide whether the match is
+   * "confident enough" beyond what the server already filters. */
+  score: number;
 }

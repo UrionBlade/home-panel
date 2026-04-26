@@ -5,23 +5,103 @@ import type {
   Person,
   Pet,
   UpdateFamilyMemberInput,
+  VoiceEnrollInput,
+  VoiceEnrollResponse,
+  VoiceIdentifyInput,
+  VoiceIdentifyResponse,
 } from "@home-panel/shared";
-import { eq } from "drizzle-orm";
+import { eq, isNotNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db/client.js";
 import { type FamilyMemberRow, familyMembers } from "../db/schema.js";
+
+/* Speaker recognition.
+ *
+ * Each enrolled member stores a JSON blob shaped like
+ *   { samples: number[][]; centroid: number[] }
+ * — `samples` is the raw set of 192-d ECAPA-TDNN vectors received from
+ * iOS, `centroid` is their mean (recomputed on every enrol/delete).
+ * Identify cosine-matches the candidate vector against every member
+ * centroid and accepts the best one when it clears `IDENTIFY_THRESHOLD`. */
+const EMBEDDING_DIM = 192;
+const MAX_SAMPLES_PER_MEMBER = 32;
+const IDENTIFY_THRESHOLD = 0.55;
+
+interface VoiceProfile {
+  samples: number[][];
+  centroid: number[];
+}
+
+function parseVoiceProfile(json: string | null): VoiceProfile | null {
+  if (!json) return null;
+  try {
+    const parsed = JSON.parse(json) as Partial<VoiceProfile>;
+    if (
+      !parsed ||
+      !Array.isArray(parsed.samples) ||
+      !Array.isArray(parsed.centroid) ||
+      parsed.centroid.length !== EMBEDDING_DIM
+    ) {
+      return null;
+    }
+    return { samples: parsed.samples, centroid: parsed.centroid };
+  } catch {
+    return null;
+  }
+}
+
+function computeCentroid(samples: number[][]): number[] {
+  if (samples.length === 0) return new Array(EMBEDDING_DIM).fill(0);
+  const out = new Array<number>(EMBEDDING_DIM).fill(0);
+  for (const s of samples) {
+    for (let i = 0; i < EMBEDDING_DIM; i += 1) {
+      out[i] = (out[i] ?? 0) + (s[i] ?? 0);
+    }
+  }
+  const n = samples.length;
+  for (let i = 0; i < EMBEDDING_DIM; i += 1) {
+    out[i] = (out[i] ?? 0) / n;
+  }
+  return out;
+}
+
+function cosineSimilarity(a: number[], b: number[]): number {
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < EMBEDDING_DIM; i += 1) {
+    const av = a[i] ?? 0;
+    const bv = b[i] ?? 0;
+    dot += av * bv;
+    normA += av * av;
+    normB += bv * bv;
+  }
+  const denom = Math.sqrt(normA) * Math.sqrt(normB);
+  if (denom < 1e-12) return 0;
+  return dot / denom;
+}
+
+function isValidEmbedding(input: unknown): input is number[] {
+  return (
+    Array.isArray(input) &&
+    input.length === EMBEDDING_DIM &&
+    input.every((v) => typeof v === "number" && Number.isFinite(v))
+  );
+}
 
 /**
  * Mappatura DB row → DTO discriminato.
  * Le colonne specifiche di una variante sono `null` per l'altra.
  */
 function rowToMember(row: FamilyMemberRow): FamilyMember {
+  const profile = parseVoiceProfile(row.voiceEmbedding);
   const base = {
     id: row.id,
     displayName: row.displayName,
     avatarUrl: row.avatarUrl,
     accentColor: row.accentColor,
     birthDate: row.birthDate,
+    voiceSampleCount: profile?.samples.length ?? 0,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -100,6 +180,7 @@ export const familyRouter = new Hono()
       breed: input.kind === "pet" ? (input.breed ?? null) : null,
       weightKg: input.kind === "pet" ? (input.weightKg ?? null) : null,
       veterinaryNotes: input.kind === "pet" ? (input.veterinaryNotes ?? null) : null,
+      voiceEmbedding: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -151,4 +232,105 @@ export const familyRouter = new Hono()
       return c.json({ error: "not_found" }, 404);
     }
     return c.body(null, 204);
+  })
+
+  /* ----- Voice enrolment ----- */
+  .post("/:id/voice/enroll", async (c) => {
+    const id = c.req.param("id");
+    const row = db.select().from(familyMembers).where(eq(familyMembers.id, id)).get();
+    if (!row) return c.json({ error: "not_found" }, 404);
+
+    const body = (await c.req.json().catch(() => null)) as VoiceEnrollInput | null;
+    if (!body || !isValidEmbedding(body.embedding)) {
+      return c.json(
+        { error: `embedding deve essere un array di ${EMBEDDING_DIM} numeri finiti` },
+        400,
+      );
+    }
+
+    const existing = parseVoiceProfile(row.voiceEmbedding);
+    const samples = existing ? [...existing.samples, body.embedding] : [body.embedding];
+    /* Cap how many samples we keep — 32 is plenty for a stable centroid
+     * and prevents the JSON blob from drifting unbounded if the user
+     * insists on enrolling for ten minutes straight. */
+    if (samples.length > MAX_SAMPLES_PER_MEMBER) {
+      samples.splice(0, samples.length - MAX_SAMPLES_PER_MEMBER);
+    }
+    const profile: VoiceProfile = {
+      samples,
+      centroid: computeCentroid(samples),
+    };
+
+    db.update(familyMembers)
+      .set({
+        voiceEmbedding: JSON.stringify(profile),
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(familyMembers.id, id))
+      .run();
+
+    const response: VoiceEnrollResponse = {
+      familyMemberId: id,
+      voiceSampleCount: samples.length,
+    };
+    return c.json(response);
+  })
+
+  .delete("/:id/voice/enroll", (c) => {
+    const id = c.req.param("id");
+    const row = db.select().from(familyMembers).where(eq(familyMembers.id, id)).get();
+    if (!row) return c.json({ error: "not_found" }, 404);
+
+    db.update(familyMembers)
+      .set({
+        voiceEmbedding: null,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(familyMembers.id, id))
+      .run();
+
+    const response: VoiceEnrollResponse = {
+      familyMemberId: id,
+      voiceSampleCount: 0,
+    };
+    return c.json(response);
+  })
+
+  /* ----- Voice identification -----
+   * Stateless: client sends an embedding, server returns the best
+   * matching member id (or null). The voice plugin already filters
+   * obviously-bad audio with VAD so we don't second-guess a non-match
+   * here — we just expose the raw cosine for caller-side debugging. */
+  .post("/voice/identify", async (c) => {
+    const body = (await c.req.json().catch(() => null)) as VoiceIdentifyInput | null;
+    if (!body || !isValidEmbedding(body.embedding)) {
+      return c.json(
+        { error: `embedding deve essere un array di ${EMBEDDING_DIM} numeri finiti` },
+        400,
+      );
+    }
+
+    const enrolled = db
+      .select()
+      .from(familyMembers)
+      .where(isNotNull(familyMembers.voiceEmbedding))
+      .all();
+
+    let bestId: string | null = null;
+    let bestScore = -1;
+    for (const row of enrolled) {
+      const profile = parseVoiceProfile(row.voiceEmbedding);
+      if (!profile) continue;
+      const score = cosineSimilarity(body.embedding, profile.centroid);
+      if (score > bestScore) {
+        bestScore = score;
+        bestId = row.id;
+      }
+    }
+
+    const response: VoiceIdentifyResponse = {
+      familyMemberId: bestScore >= IDENTIFY_THRESHOLD ? bestId : null,
+      score: bestScore,
+    };
+    return c.json(response);
   });
