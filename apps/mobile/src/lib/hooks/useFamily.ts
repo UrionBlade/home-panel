@@ -59,3 +59,14 @@ export function useDeleteVoice() {
     onSuccess: () => qc.invalidateQueries({ queryKey: FAMILY_KEY }),
   });
 }
+
+/** Server-side cosine match for a freshly captured speaker embedding.
+ * Returns the best-matching member id (or `null` when the score is below
+ * the configured threshold). The embedding is sent in the body — never
+ * persisted server-side beyond the per-request log. */
+export async function identifyVoice(embedding: number[]): Promise<{
+  familyMemberId: string | null;
+  score: number;
+}> {
+  return apiClient.post("/api/v1/family/voice/identify", { embedding });
+}

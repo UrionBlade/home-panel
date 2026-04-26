@@ -1,10 +1,12 @@
-import type { VoiceStatus } from "@home-panel/shared";
+import type { FamilyMember, VoiceStatus } from "@home-panel/shared";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { handleIntent } from "../voice/intentHandlers";
+import { handleIntent, type IntentContext } from "../voice/intentHandlers";
 import { playJokeSound } from "../voice/jokeSounds";
 import { nativeVoiceClient } from "../voice/nativeVoiceClient";
 import { voiceClient } from "../voice/voiceClient";
 import { parseVoiceCommand } from "../voice/voiceCommandParser";
+import { identifyVoice } from "./useFamily";
 
 interface VoiceState {
   status: VoiceStatus;
@@ -24,54 +26,70 @@ export function useVoice(enabled = false) {
   });
   const processingRef = useRef(false);
   const isNative = nativeVoiceClient.supported;
+  const qc = useQueryClient();
 
-  const processTranscript = useCallback(async (text: string) => {
-    processingRef.current = true;
-    setState((prev) => ({
-      ...prev,
-      status: "processing",
-      transcript: text,
-      response: null,
-    }));
+  /** Resolve a server-returned `familyMemberId` to a display name without
+   * triggering an extra round-trip — the family list is already cached
+   * by `useFamilyMembers` from anywhere in the app. */
+  const resolveSpeakerName = useCallback(
+    (familyMemberId: string | null): string | null => {
+      if (!familyMemberId) return null;
+      const members = qc.getQueryData<FamilyMember[]>(["family"]);
+      return members?.find((m) => m.id === familyMemberId)?.displayName ?? null;
+    },
+    [qc],
+  );
 
-    const native = nativeVoiceClient.supported;
-    const speakFn = native
-      ? (t: string) => nativeVoiceClient.speak(t)
-      : (t: string) => voiceClient.speak(t);
+  const processTranscript = useCallback(
+    async (text: string, context: IntentContext = { speakerId: null, speakerName: null }) => {
+      processingRef.current = true;
+      setState((prev) => ({
+        ...prev,
+        status: "processing",
+        transcript: text,
+        response: null,
+      }));
 
-    const command = parseVoiceCommand(text);
-    if (!command) {
-      const fallback = `Non ho capito "${text}"`;
-      setState((prev) => ({ ...prev, status: "speaking", response: fallback }));
-      await speakFn(fallback);
-      setState((prev) => ({ ...prev, status: "idle" }));
+      const native = nativeVoiceClient.supported;
+      const speakFn = native
+        ? (t: string) => nativeVoiceClient.speak(t)
+        : (t: string) => voiceClient.speak(t);
+
+      const command = parseVoiceCommand(text);
+      if (!command) {
+        const fallback = `Non ho capito "${text}"`;
+        setState((prev) => ({ ...prev, status: "speaking", response: fallback }));
+        await speakFn(fallback);
+        setState((prev) => ({ ...prev, status: "idle" }));
+        processingRef.current = false;
+        return;
+      }
+
+      try {
+        let response = await handleIntent(command, context);
+        const hasJokeSound = response.startsWith("🥁");
+        if (hasJokeSound) response = response.slice(2);
+        setState((prev) => ({ ...prev, status: "speaking", response }));
+        await speakFn(response);
+        if (native) {
+          await new Promise((r) => setTimeout(r, Math.max(response.length * 60, 2000)));
+        }
+        if (hasJokeSound) playJokeSound();
+      } catch (err) {
+        console.error("[useVoice] handleIntent error:", err);
+        const errorMsg = "Si è verificato un errore";
+        setState((prev) => ({ ...prev, status: "error", response: errorMsg }));
+        await speakFn(errorMsg);
+        if (native) {
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+      }
+
+      setState((prev) => ({ ...prev, status: "idle", transcript: null, response: null }));
       processingRef.current = false;
-      return;
-    }
-
-    try {
-      let response = await handleIntent(command);
-      const hasJokeSound = response.startsWith("🥁");
-      if (hasJokeSound) response = response.slice(2);
-      setState((prev) => ({ ...prev, status: "speaking", response }));
-      await speakFn(response);
-      if (native) {
-        await new Promise((r) => setTimeout(r, Math.max(response.length * 60, 2000)));
-      }
-      if (hasJokeSound) playJokeSound();
-    } catch (err) {
-      console.error("[useVoice] handleIntent error:", err);
-      const errorMsg = "Si è verificato un errore";
-      setState((prev) => ({ ...prev, status: "error", response: errorMsg }));
-      await speakFn(errorMsg);
-      if (native) {
-        await new Promise((r) => setTimeout(r, 2000));
-      }
-    }
-
-    setState((prev) => ({ ...prev, status: "idle", transcript: null, response: null }));
-    processingRef.current = false;
-  }, []);
+    },
+    [],
+  );
 
   // Subscribe once for the hook lifecycle (stable callbacks).
   // Avoids re-subscribing Tauri listeners on every `enabled` change.
@@ -81,11 +99,34 @@ export function useVoice(enabled = false) {
       nativeVoiceClient.subscribe(
         (status) => setState((prev) => ({ ...prev, status })),
         (payload) => {
-          /* For now we drop the speaker embedding here — `processTranscript`
-           * is a thin parser/dispatcher that doesn't carry speaker context.
-           * Identification happens server-side in a future commit; the
-           * embedding is already available via `payload.embedding`. */
-          if (!processingRef.current) void processTranscript(payload.command);
+          if (processingRef.current) return;
+          /* If iOS captured a speaker embedding for this utterance, ask
+           * the backend to identify it against the enrolled centroids and
+           * thread the result into the intent dispatch. We deliberately
+           * fire-and-forget the identify call: the user-facing latency
+           * matters more than waiting for a verdict, and `null` is the
+           * sensible default for handlers that don't yet care. */
+          if (!payload.embedding) {
+            void processTranscript(payload.command);
+            return;
+          }
+          identifyVoice(payload.embedding)
+            .then((result) => {
+              const context: IntentContext = {
+                speakerId: result.familyMemberId,
+                speakerName: resolveSpeakerName(result.familyMemberId),
+              };
+              if (result.familyMemberId) {
+                console.log(
+                  `[useVoice] speaker identificato: ${context.speakerName ?? result.familyMemberId} (cosine=${result.score.toFixed(3)})`,
+                );
+              }
+              void processTranscript(payload.command, context);
+            })
+            .catch((err) => {
+              console.warn("[useVoice] identify fallita:", err);
+              void processTranscript(payload.command);
+            });
         },
       );
     } else {
@@ -96,7 +137,7 @@ export function useVoice(enabled = false) {
         },
       );
     }
-  }, [processTranscript]);
+  }, [processTranscript, resolveSpeakerName]);
 
   // Start/stop driven by `enabled`: cleanup calls stop ONLY if started.
   useEffect(() => {

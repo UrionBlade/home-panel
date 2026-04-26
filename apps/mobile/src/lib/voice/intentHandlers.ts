@@ -220,11 +220,28 @@ function stopSpeaking() {
   }
 }
 
+/** Optional metadata accompanying a parsed command. Currently carries the
+ * identified speaker (when the on-device ECAPA model + server centroids
+ * agree above the confidence threshold). Handlers may use this to scope
+ * actions per family member; for now everyone treats it as advisory only. */
+export interface IntentContext {
+  speakerId: string | null;
+  speakerName: string | null;
+}
+
 /**
  * Gestisce un comando vocale parsato chiamando le API appropriate
  * e restituisce una risposta vocale localizzata.
  */
-export async function handleIntent(command: ParsedCommand): Promise<string> {
+export async function handleIntent(
+  command: ParsedCommand,
+  context: IntentContext = { speakerId: null, speakerName: null },
+): Promise<string> {
+  /* `context` is intentionally unused below for the moment — passing it
+   * down keeps the call signature stable so individual handlers can opt
+   * in without another wave of churn. */
+  void context;
+
   /* Device-specific dispatch — runs before the central switch so device
    * integrations can live in their own module without growing this file. */
   if (isTvIntent(command.intent)) {
