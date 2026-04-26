@@ -18,5 +18,5 @@ export default defineConfig({
   },
   // Explicit list of deps to inline. Anything NOT listed (including native
   // modules like better-sqlite3) stays external and must be installed at runtime.
-  noExternal: ["@home-panel/shared", "@hono/node-server", "hono", "dotenv", "drizzle-orm"],
+  noExternal: ["@home-panel/shared", "@hono/node-server", "hono", "dotenv", "drizzle-orm", "mqtt"],
 });

@@ -84,9 +84,28 @@ jobs:
         working-directory: /volume1/docker/home-panel
         run: docker compose pull api
 
-      - name: Restart services (api + mediamtx sidecar)
+      - name: Restart core services (api + mediamtx + mosquitto)
         working-directory: /volume1/docker/home-panel
-        run: docker compose up -d
+        run: docker compose up -d api mediamtx mosquitto
+
+      # Zigbee2MQTT can only start when the SONOFF dongle is enumerated
+      # as /dev/ttyUSB0. When it's missing (NAS reboot before the user
+      # plugs the stick back in, dongle relocated, …) we skip the start
+      # instead of failing the deploy: api + mosquitto are independent
+      # and must keep deploying. The next push (or workflow_dispatch)
+      # picks up Z2M as soon as the device is back.
+      - name: Start Zigbee2MQTT if the dongle is present
+        working-directory: /volume1/docker/home-panel
+        run: |
+          PORT="${ZIGBEE_SERIAL_PORT:-/dev/ttyUSB0}"
+          if [ -e "$PORT" ]; then
+            echo "Found $PORT — bringing up zigbee2mqtt"
+            docker compose up -d zigbee2mqtt
+          else
+            echo "Zigbee dongle not present at $PORT — skipping zigbee2mqtt"
+            docker compose stop zigbee2mqtt 2>/dev/null || true
+            docker compose rm -f zigbee2mqtt 2>/dev/null || true
+          fi
 
       - name: Prune old images
         run: docker image prune -f
