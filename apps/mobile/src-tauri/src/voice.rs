@@ -28,6 +28,7 @@ extern "C" {
     fn ios_voice_speak(text: *const std::os::raw::c_char);
     fn ios_voice_stop_speaking();
     fn ios_voice_poll_log() -> *const std::os::raw::c_char;
+    fn ios_voice_set_sensitivity(level: std::os::raw::c_double);
 }
 
 // --- Tauri Commands ---
@@ -179,6 +180,21 @@ pub fn voice_stop_speaking() -> Result<(), String> {
     #[cfg(target_os = "ios")]
     unsafe {
         ios_voice_stop_speaking();
+    }
+    Ok(())
+}
+
+/// Forwards the user-configured sensitivity slider (0..1) to the Swift VAD
+/// gate. The frontend syncs this on boot and on every slider change.
+#[tauri::command]
+pub fn voice_set_sensitivity(level: f64) -> Result<(), String> {
+    #[cfg(target_os = "ios")]
+    unsafe {
+        ios_voice_set_sensitivity(level);
+    }
+    #[cfg(not(target_os = "ios"))]
+    {
+        let _ = level;
     }
     Ok(())
 }

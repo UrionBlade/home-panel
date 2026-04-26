@@ -23,6 +23,7 @@ pub fn run() {
             voice::voice_stop_continuous,
             voice::voice_speak,
             voice::voice_stop_speaking,
+            voice::voice_set_sensitivity,
             push::push_request_permission,
             push::push_get_token,
             push::push_authorization_status,

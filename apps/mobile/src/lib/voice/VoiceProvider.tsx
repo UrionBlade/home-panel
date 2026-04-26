@@ -5,7 +5,7 @@ import { useLights } from "../hooks/useLights";
 import { useRooms } from "../hooks/useRooms";
 import { useRoutineVoiceTriggers } from "../hooks/useRoutines";
 import { useVoice } from "../hooks/useVoice";
-import { useVoiceSettings } from "../hooks/useVoiceSettings";
+import { useSyncVoiceSensitivity, useVoiceSettings } from "../hooks/useVoiceSettings";
 import { setVoiceQueryClient } from "./intentHandlers";
 import { setRoutineTriggers } from "./routineTriggerRegistry";
 
@@ -32,6 +32,10 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
   const { data: settings } = useVoiceSettings();
   const enabled = settings?.enabled ?? false;
   const voice = useVoice(enabled);
+
+  /* Keep the Swift VAD threshold aligned with the user-configured slider so
+   * the gate updates without a relaunch when they nudge the sensitivity. */
+  useSyncVoiceSensitivity();
 
   /* Keep the parser's routine-phrase registry in sync with the backend so
    * freshly-edited voice triggers start matching without a page reload. */

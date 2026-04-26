@@ -10,7 +10,19 @@ import Foundation
 import AVFoundation
 import Speech
 
-private let kWakeWords = ["ok casa", "okay casa", "oca sa", "oh casa", "o casa"]
+/// Wake words intentionally restricted to high-confidence variants only.
+/// Looser matches like "oh casa" or "o casa" used to fire on Italian TV
+/// dialogue ("Oh, in casa…", "ho casa…") and produced too many false
+/// positives. The remaining set still covers the common ASR mishears of
+/// "ok casa" without exposing the wake to ambient speech.
+private let kWakeWords = ["ok casa", "okay casa", "oca sa"]
+
+// VAD threshold in dBFS. Anything quieter than this is dropped at the
+// microphone tap and never reaches SFSpeechRecognizer — this is what stops
+// background TV chatter from triggering the wake word. The default leaves
+// normal speech at a tablet's built-in mic well above the gate (typically
+// -25 to -35 dBFS) while reliably masking ambient living-room noise.
+private var gVadThresholdDbfs: Double = -45.0
 
 // ---------------------------------------------------------------------------
 // MARK: - Globals
@@ -141,7 +153,14 @@ private func startEngine() {
     // PERMANENT tap
     engine.inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
         // Reads the global each time — when nil the buffers are dropped (OK)
-        gRecognitionRequest?.append(buffer)
+        guard let request = gRecognitionRequest else { return }
+        // VAD gate: drop buffers below the configured dBFS threshold so quiet
+        // background chatter (TV in another room, fridge hum) never reaches
+        // the recognizer. We deliberately silence-skip rather than feed
+        // attenuated audio: SFSpeechRecognizer behaves better when fed only
+        // intervals it can actually transcribe.
+        if bufferDbfs(buffer) < gVadThresholdDbfs { return }
+        request.append(buffer)
     }
 
     engine.prepare()
@@ -404,6 +423,37 @@ public func ios_voice_speak(_ text: UnsafePointer<CChar>) {
 @_cdecl("ios_voice_stop_speaking")
 public func ios_voice_stop_speaking() {
     DispatchQueue.main.async { gSynthesizer?.stopSpeaking(at: .immediate) }
+}
+
+/// Sensitivity slider 0.0..1.0 maps linearly onto a dBFS gate.
+///
+/// `level=0`  → -25 dBFS (only loud, close speech passes — useful when the
+///              TV is on or the room is noisy)
+/// `level=1`  → -55 dBFS (whisper-friendly, accepts almost anything)
+/// `level=0.8` (default) → -49 dBFS — comfortable for normal speech without
+///              picking up living-room TV at typical volumes.
+@_cdecl("ios_voice_set_sensitivity")
+public func ios_voice_set_sensitivity(_ level: Double) {
+    let clamped = max(0.0, min(1.0, level))
+    let threshold = -25.0 - clamped * 30.0
+    gVadThresholdDbfs = threshold
+    voiceLog("VAD threshold set to \(Int(threshold)) dBFS (sensitivity=\(clamped))")
+}
+
+/// Compute RMS of an audio buffer in dBFS. Returns -160 for an empty buffer
+/// or a fully-silent frame so the caller can compare against the threshold
+/// without special-casing zero.
+private func bufferDbfs(_ buffer: AVAudioPCMBuffer) -> Double {
+    let frames = Int(buffer.frameLength)
+    guard frames > 0, let channelData = buffer.floatChannelData?[0] else { return -160.0 }
+    var sumSquares: Double = 0
+    for i in 0..<frames {
+        let sample = Double(channelData[i])
+        sumSquares += sample * sample
+    }
+    let rms = sqrt(sumSquares / Double(frames))
+    if rms < 1e-9 { return -160.0 }
+    return 20 * log10(rms)
 }
 
 @_cdecl("ios_voice_is_speaking")

@@ -190,6 +190,16 @@ class NativeVoiceClient {
     }
   }
 
+  async setSensitivity(level: number): Promise<void> {
+    if (!this.supported) return;
+    try {
+      await this.invoke("voice_set_sensitivity", { level });
+    } catch {
+      // Ignored — sensitivity is best-effort. The user can re-trigger by
+      // moving the slider again, and a stale value is still functional.
+    }
+  }
+
   async pushToTalk(): Promise<void> {
     this.setStatus("listening");
     try {
