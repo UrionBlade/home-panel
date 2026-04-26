@@ -14,8 +14,16 @@ use tauri::{AppHandle, Emitter};
 
 #[cfg(target_os = "ios")]
 use std::ffi::{CStr, CString};
+#[cfg(target_os = "ios")]
+use std::sync::Mutex;
 
 static RUNNING: AtomicBool = AtomicBool::new(false);
+
+/// Most recent speaker embedding produced by the iOS plugin. Drained when
+/// a command is emitted so the same vector isn't re-attached to the next
+/// command if the user asks something during the embedding's grace window.
+#[cfg(target_os = "ios")]
+static LAST_EMBEDDING: Mutex<Option<Vec<f32>>> = Mutex::new(None);
 
 // --- FFI to Swift (iOS only) ---
 #[cfg(target_os = "ios")]
@@ -29,7 +37,16 @@ extern "C" {
     fn ios_voice_stop_speaking();
     fn ios_voice_poll_log() -> *const std::os::raw::c_char;
     fn ios_voice_set_sensitivity(level: std::os::raw::c_double);
+    fn ios_voice_poll_embedding() -> *const std::os::raw::c_float;
+    fn ios_voice_begin_enrollment_capture();
+    fn ios_voice_poll_enrollment_embedding() -> *const std::os::raw::c_float;
 }
+
+/// Length of the speaker embedding emitted by `ios_voice_poll_embedding`.
+/// Must match `kSpeakerEmbeddingDim` in VoicePlugin.swift (192 for the
+/// shipped ECAPA-TDNN model).
+#[cfg(target_os = "ios")]
+const SPEAKER_EMBEDDING_DIM: usize = 192;
 
 // --- Tauri Commands ---
 
@@ -110,13 +127,37 @@ pub fn voice_start_continuous(app: AppHandle) -> Result<(), String> {
                         }
                     }
 
+                    // Poll embeddings: cache the latest into LAST_EMBEDDING
+                    // so the command emit below can attach it. The buffer
+                    // is owned by the Swift side; copy out before returning.
+                    let emb_ptr = ios_voice_poll_embedding();
+                    if !emb_ptr.is_null() {
+                        let slice = std::slice::from_raw_parts(emb_ptr, SPEAKER_EMBEDDING_DIM);
+                        let vec: Vec<f32> = slice.to_vec();
+                        if let Ok(mut guard) = LAST_EMBEDDING.lock() {
+                            *guard = Some(vec);
+                        }
+                    }
+
                     // Poll commands
                     let cmd_ptr = ios_voice_poll_command();
                     if !cmd_ptr.is_null() {
                         if let Ok(cmd) = CStr::from_ptr(cmd_ptr).to_str() {
                             let cmd_string = cmd.to_string();
                             if !cmd_string.is_empty() {
-                                let _ = app_clone.emit("voice:command", &cmd_string);
+                                /* Drain the cached embedding so it's attached
+                                 * to this command and not the next one. May
+                                 * be `None` if the model isn't loaded or the
+                                 * 2.5 s capture window hasn't completed yet. */
+                                let embedding = LAST_EMBEDDING
+                                    .lock()
+                                    .ok()
+                                    .and_then(|mut g| g.take());
+                                let payload = serde_json::json!({
+                                    "command": cmd_string,
+                                    "embedding": embedding,
+                                });
+                                let _ = app_clone.emit("voice:command", payload);
                             }
                         }
                     }
@@ -182,6 +223,41 @@ pub fn voice_stop_speaking() -> Result<(), String> {
         ios_voice_stop_speaking();
     }
     Ok(())
+}
+
+/// Capture a single 2.5 s clip and return the speaker embedding the
+/// CoreML model emits for it. Used by the enrollment UI in family
+/// settings — the user holds a "record" button and we slice that
+/// window. Times out after 4 s if the model never produces a vector
+/// (e.g. the device never gathered enough audio, or the .mlmodelc is
+/// missing from the bundle).
+#[tauri::command]
+pub async fn voice_capture_speaker_embedding() -> Result<Vec<f32>, String> {
+    #[cfg(target_os = "ios")]
+    {
+        use std::time::{Duration, Instant};
+        unsafe { ios_voice_begin_enrollment_capture() };
+        let deadline = Instant::now() + Duration::from_secs(4);
+        loop {
+            unsafe {
+                let p = ios_voice_poll_enrollment_embedding();
+                if !p.is_null() {
+                    let slice = std::slice::from_raw_parts(p, SPEAKER_EMBEDDING_DIM);
+                    return Ok(slice.to_vec());
+                }
+            }
+            if Instant::now() > deadline {
+                return Err(
+                    "timeout: nessun campione audio sufficiente nei 4s".to_string()
+                );
+            }
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+    }
+    #[cfg(not(target_os = "ios"))]
+    {
+        Err("speaker embedding richiede iOS nativo".into())
+    }
 }
 
 /// Forwards the user-configured sensitivity slider (0..1) to the Swift VAD

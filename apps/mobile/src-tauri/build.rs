@@ -1,4 +1,5 @@
 use std::env;
+use std::path::PathBuf;
 use std::process::Command;
 
 fn main() {
@@ -44,10 +45,45 @@ fn main() {
         println!("cargo:rustc-link-lib=static=ios_plugins");
         // Frameworks for the Swift plugins
         println!("cargo:rustc-link-lib=framework=AVFoundation");
+        println!("cargo:rustc-link-lib=framework=CoreML");
         println!("cargo:rustc-link-lib=framework=Speech");
         println!("cargo:rustc-link-lib=framework=UserNotifications");
         println!("cargo:rerun-if-changed=ios/KioskPlugin.swift");
         println!("cargo:rerun-if-changed=ios/VoicePlugin.swift");
         println!("cargo:rerun-if-changed=ios/PushPlugin.swift");
+
+        // Compile the speaker-embedding .mlpackage into the runtime
+        // .mlmodelc bundle. Tauri's iOS template picks up resources from
+        // gen/apple/Resources via Xcode build phases — we drop the
+        // compiled model there so `Bundle.main.url(forResource:)` finds it.
+        compile_speaker_model();
+    }
+}
+
+fn compile_speaker_model() {
+    let pkg = PathBuf::from("ios/Models/SpeakerECAPA.mlpackage");
+    if !pkg.exists() {
+        println!("cargo:warning=SpeakerECAPA.mlpackage missing — skipping speaker model");
+        return;
+    }
+    let dest_root = PathBuf::from("gen/apple/Resources");
+    if let Err(e) = std::fs::create_dir_all(&dest_root) {
+        println!("cargo:warning=failed to create {}: {e}", dest_root.display());
+        return;
+    }
+    let status = Command::new("xcrun")
+        .args([
+            "coremlcompiler",
+            "compile",
+            pkg.to_str().unwrap(),
+            dest_root.to_str().unwrap(),
+        ])
+        .status();
+    match status {
+        Ok(s) if s.success() => {
+            println!("cargo:rerun-if-changed=ios/Models/SpeakerECAPA.mlpackage");
+        }
+        Ok(s) => println!("cargo:warning=coremlcompiler exited with {s}"),
+        Err(e) => println!("cargo:warning=coremlcompiler failed to spawn: {e}"),
     }
 }

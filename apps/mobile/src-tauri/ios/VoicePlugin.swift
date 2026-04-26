@@ -8,6 +8,7 @@
 
 import Foundation
 import AVFoundation
+import CoreML
 import Speech
 
 /// Wake words intentionally restricted to high-confidence variants only.
@@ -48,6 +49,46 @@ private var gIsRunning = false
 /// typical partial-result interval (~200ms) but short enough that the user
 /// only loses a single reply.
 private let kWatchdogStuckSeconds: TimeInterval = 30
+
+// ---------------------------------------------------------------------------
+// MARK: - Speaker embedding (ECAPA-TDNN CoreML)
+// ---------------------------------------------------------------------------
+
+/// Number of audio samples (16 kHz mono) the CoreML model expects. Must
+/// match `N_FIXED` in scripts/speaker-model/convert.py.
+private let kSpeakerSampleRate: Double = 16_000
+private let kSpeakerSamples = 40_000  // 2.5 s
+/// Embedding dimensionality emitted by the model. Must match the trained
+/// ECAPA-TDNN head (192 for spkrec-ecapa-voxceleb).
+private let kSpeakerEmbeddingDim = 192
+
+/// Lazily-loaded CoreML speaker model. `nil` if loading fails — the rest of
+/// the voice pipeline still works, we just stop emitting embeddings.
+private var gSpeakerModel: MLModel?
+/// Resampler from the engine's input format to mono 16 kHz Float32, lazily
+/// instantiated when the engine starts (the input format is only known
+/// then).
+private var gSpeakerResampler: AVAudioConverter?
+private var gSpeakerResampleFormat: AVAudioFormat?
+
+/// Ring buffer of the last few seconds of mono 16 kHz audio. Tap callback
+/// appends; when a wake fires we copy out the next 2.5 s and feed the model.
+private var gSpeakerBuffer: [Float] = []
+/// Once the wake word is detected we mark the buffer offset to start
+/// capturing from. `nil` outside an active capture.
+private var gSpeakerCaptureStartIdx: Int?
+
+/// Last computed embedding, ready to be polled by Rust together with the
+/// command text. Cleared on poll. Layout: 192 contiguous float32.
+private var gPendingEmbedding: [Float]?
+private var gPendingEnrollmentEmbedding: [Float]?
+private var gLastEmbeddingCBuf: UnsafeMutablePointer<Float>?
+private var gLastEnrollmentEmbeddingCBuf: UnsafeMutablePointer<Float>?
+/// When true the next computed embedding is routed to the enrollment slot
+/// rather than the standard command slot. Reset to false as soon as an
+/// embedding lands so subsequent wakes don't accidentally fill the
+/// enrollment buffer.
+private var gIsEnrollmentMode = false
 
 private var gLock = NSLock()
 private var gPendingCommand: String? = nil
@@ -150,8 +191,16 @@ private func startEngine() {
     gAudioEngine = engine
     let format = engine.inputNode.outputFormat(forBus: 0)
 
+    loadSpeakerModelIfNeeded()
+
     // PERMANENT tap
     engine.inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+        // Always feed the speaker buffer — we want the audio surrounding the
+        // wake word, even if the VAD gate is rejecting the SFSpeechRecognizer
+        // path (the model is more tolerant of low-volume input than the
+        // wake-word matcher).
+        feedSpeakerBuffer(buffer)
+
         // Reads the global each time — when nil the buffers are dropped (OK)
         guard let request = gRecognitionRequest else { return }
         // VAD gate: drop buffers below the configured dBFS threshold so quiet
@@ -271,6 +320,9 @@ private func startRecognitionSession() {
                 heardWake = true
                 voiceLog("WAKE!")
                 setStatus("listening")
+                /* Mark the buffer offset so feedSpeakerBuffer can compute the
+                 * embedding once 2.5 s of post-wake audio has accumulated. */
+                beginSpeakerCapture()
 
                 silenceTimer?.invalidate()
                 silenceTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { timer in
@@ -360,6 +412,199 @@ private func startRecognitionSession() {
             startRecognitionSession()
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// MARK: - Speaker model load + capture + inference
+// ---------------------------------------------------------------------------
+
+/// Eager-load the CoreML model. Called from `startEngine` and idempotent.
+/// Bundle convention: the .mlpackage is compiled to `SpeakerECAPA.mlmodelc`
+/// at build time and copied into the app bundle root by the Cargo build
+/// script. If it's missing the rest of the voice pipeline still works.
+private func loadSpeakerModelIfNeeded() {
+    guard gSpeakerModel == nil else { return }
+    guard let url = Bundle.main.url(forResource: "SpeakerECAPA", withExtension: "mlmodelc")
+    else {
+        voiceLog("speaker model: SpeakerECAPA.mlmodelc not found in bundle — skipping")
+        return
+    }
+    do {
+        let cfg = MLModelConfiguration()
+        cfg.computeUnits = .all
+        gSpeakerModel = try MLModel(contentsOf: url, configuration: cfg)
+        voiceLog("speaker model loaded")
+    } catch {
+        voiceLog("speaker model load error: \(error)")
+    }
+}
+
+/// Build (once) a converter from the live engine input format to mono 16 kHz
+/// float32 — what the speaker model wants. Returns false if the resampler
+/// cannot be created (rare, would mean we can't compute embeddings at all).
+private func ensureSpeakerResampler(from sourceFormat: AVAudioFormat) -> Bool {
+    if gSpeakerResampler != nil, gSpeakerResampleFormat?.sampleRate == kSpeakerSampleRate {
+        return true
+    }
+    guard
+        let target = AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: kSpeakerSampleRate,
+            channels: 1,
+            interleaved: false
+        )
+    else {
+        voiceLog("speaker: failed to build target format")
+        return false
+    }
+    gSpeakerResampler = AVAudioConverter(from: sourceFormat, to: target)
+    gSpeakerResampleFormat = target
+    return gSpeakerResampler != nil
+}
+
+/// Append the resampled 16 kHz mono representation of `buffer` to
+/// `gSpeakerBuffer`. Called from the audio tap on every block.
+private func feedSpeakerBuffer(_ buffer: AVAudioPCMBuffer) {
+    guard gSpeakerModel != nil else { return }
+    guard ensureSpeakerResampler(from: buffer.format) else { return }
+    guard let converter = gSpeakerResampler, let target = gSpeakerResampleFormat else { return }
+
+    /* Output capacity scales with the rate ratio + a small safety margin
+     * because AVAudioConverter may emit a few extra frames per call. */
+    let ratio = target.sampleRate / buffer.format.sampleRate
+    let outFrameCapacity = AVAudioFrameCount(Double(buffer.frameLength) * ratio + 256)
+    guard let outBuffer = AVAudioPCMBuffer(pcmFormat: target, frameCapacity: outFrameCapacity)
+    else { return }
+
+    var fed = false
+    var error: NSError?
+    converter.convert(to: outBuffer, error: &error) { _, status in
+        if fed {
+            status.pointee = .noDataNow
+            return nil
+        }
+        fed = true
+        status.pointee = .haveData
+        return buffer
+    }
+    if let error = error {
+        voiceLog("speaker resample error: \(error)")
+        return
+    }
+
+    let n = Int(outBuffer.frameLength)
+    guard n > 0, let chan = outBuffer.floatChannelData?[0] else { return }
+    gSpeakerBuffer.append(contentsOf: UnsafeBufferPointer(start: chan, count: n))
+
+    /* Keep the buffer bounded — we only ever need the last `kSpeakerSamples`
+     * frames plus whatever capture window is currently in flight. Trim the
+     * head when it overflows. */
+    let maxKeep = kSpeakerSamples * 2
+    if gSpeakerBuffer.count > maxKeep {
+        let drop = gSpeakerBuffer.count - maxKeep
+        gSpeakerBuffer.removeFirst(drop)
+        if let start = gSpeakerCaptureStartIdx {
+            gSpeakerCaptureStartIdx = max(0, start - drop)
+        }
+    }
+
+    /* If a capture window is open and we now have enough samples after the
+     * wake, run the model. */
+    if let start = gSpeakerCaptureStartIdx, gSpeakerBuffer.count - start >= kSpeakerSamples {
+        let slice = Array(gSpeakerBuffer[start..<(start + kSpeakerSamples)])
+        gSpeakerCaptureStartIdx = nil
+        runSpeakerModel(samples: slice)
+    }
+}
+
+/// Mark the start of a 2.5 s capture window aligned to "now". Called when
+/// the wake word fires. The capture completes asynchronously in
+/// `feedSpeakerBuffer` once enough samples have been buffered.
+private func beginSpeakerCapture() {
+    guard gSpeakerModel != nil else { return }
+    gSpeakerCaptureStartIdx = gSpeakerBuffer.count
+}
+
+private func runSpeakerModel(samples: [Float]) {
+    guard let model = gSpeakerModel else { return }
+    do {
+        let arr = try MLMultiArray(shape: [1, NSNumber(value: kSpeakerSamples)], dataType: .float32)
+        let ptr = arr.dataPointer.bindMemory(to: Float.self, capacity: kSpeakerSamples)
+        samples.withUnsafeBufferPointer { src in
+            ptr.update(from: src.baseAddress!, count: kSpeakerSamples)
+        }
+        let inputs = try MLDictionaryFeatureProvider(dictionary: [
+            "audio": MLFeatureValue(multiArray: arr)
+        ])
+        let result = try model.prediction(from: inputs)
+        guard let emb = result.featureValue(for: "embedding")?.multiArrayValue else {
+            voiceLog("speaker: model returned no embedding")
+            return
+        }
+        let count = emb.count
+        guard count == kSpeakerEmbeddingDim else {
+            voiceLog("speaker: unexpected embedding dim \(count)")
+            return
+        }
+        var out = [Float](repeating: 0, count: count)
+        let src = emb.dataPointer.bindMemory(to: Float.self, capacity: count)
+        for i in 0..<count { out[i] = src[i] }
+        gLock.lock()
+        if gIsEnrollmentMode {
+            gPendingEnrollmentEmbedding = out
+            gIsEnrollmentMode = false
+        } else {
+            gPendingEmbedding = out
+        }
+        gLock.unlock()
+        voiceLog("speaker: embedding ready")
+    } catch {
+        voiceLog("speaker model predict error: \(error)")
+    }
+}
+
+@_cdecl("ios_voice_poll_embedding")
+public func ios_voice_poll_embedding() -> UnsafePointer<Float>? {
+    gLock.lock(); defer { gLock.unlock() }
+    guard let emb = gPendingEmbedding else { return nil }
+    if gLastEmbeddingCBuf == nil {
+        gLastEmbeddingCBuf = UnsafeMutablePointer<Float>.allocate(capacity: kSpeakerEmbeddingDim)
+    }
+    emb.withUnsafeBufferPointer { src in
+        gLastEmbeddingCBuf!.update(from: src.baseAddress!, count: kSpeakerEmbeddingDim)
+    }
+    gPendingEmbedding = nil
+    return UnsafePointer(gLastEmbeddingCBuf)
+}
+
+/// Mark the next captured 2.5 s window as an enrollment sample so its
+/// embedding lands in the dedicated slot polled separately from the
+/// command flow.
+@_cdecl("ios_voice_begin_enrollment_capture")
+public func ios_voice_begin_enrollment_capture() {
+    DispatchQueue.main.async {
+        gLock.lock()
+        gIsEnrollmentMode = true
+        gPendingEnrollmentEmbedding = nil
+        gLock.unlock()
+        beginSpeakerCapture()
+    }
+}
+
+@_cdecl("ios_voice_poll_enrollment_embedding")
+public func ios_voice_poll_enrollment_embedding() -> UnsafePointer<Float>? {
+    gLock.lock(); defer { gLock.unlock() }
+    guard let emb = gPendingEnrollmentEmbedding else { return nil }
+    if gLastEnrollmentEmbeddingCBuf == nil {
+        gLastEnrollmentEmbeddingCBuf = UnsafeMutablePointer<Float>.allocate(
+            capacity: kSpeakerEmbeddingDim
+        )
+    }
+    emb.withUnsafeBufferPointer { src in
+        gLastEnrollmentEmbeddingCBuf!.update(from: src.baseAddress!, count: kSpeakerEmbeddingDim)
+    }
+    gPendingEnrollmentEmbedding = nil
+    return UnsafePointer(gLastEnrollmentEmbeddingCBuf)
 }
 
 // ---------------------------------------------------------------------------

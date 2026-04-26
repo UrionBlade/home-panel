@@ -16,7 +16,15 @@
 import type { VoiceStatus } from "@home-panel/shared";
 
 type StatusCallback = (status: VoiceStatus) => void;
-type CommandCallback = (command: string) => void;
+/** A spoken command picked up after the wake word, plus an optional speaker
+ * embedding the iOS plugin captured during the same window. The vector is
+ * `null` when the on-device model isn't loaded yet or when 2.5 s of audio
+ * weren't gathered before the command finalised. */
+export interface VoiceCommandPayload {
+  command: string;
+  embedding: number[] | null;
+}
+type CommandCallback = (payload: VoiceCommandPayload) => void;
 
 // Dynamic imports — these modules do not exist in browser dev,
 // so we load them only when needed.
@@ -200,6 +208,13 @@ class NativeVoiceClient {
     }
   }
 
+  /** Block until the iOS plugin produces a 192-d speaker embedding from
+   * the next ~2.5 s of audio. Used by the family-settings enrollment UI. */
+  async captureSpeakerEmbedding(): Promise<number[]> {
+    if (!this.supported) throw new Error("voce nativa non disponibile");
+    return (await this.invoke("voice_capture_speaker_embedding")) as number[];
+  }
+
   async pushToTalk(): Promise<void> {
     this.setStatus("listening");
     try {
@@ -221,9 +236,20 @@ class NativeVoiceClient {
       this.unlisteners.push(u1);
 
       const u2 = await tauriListen("voice:command", (e) => {
-        const cmd = e.payload as string;
-        console.log("[nativeVoice] comando ricevuto:", cmd);
-        this.onCommand?.(cmd);
+        /* Tolerate both shapes:
+         *   - new: { command: string, embedding: number[] | null }
+         *   - old: string  (kept for an older iOS build still in TestFlight) */
+        const raw = e.payload;
+        const payload: VoiceCommandPayload =
+          typeof raw === "string"
+            ? { command: raw, embedding: null }
+            : (raw as VoiceCommandPayload);
+        console.log(
+          "[nativeVoice] comando ricevuto:",
+          payload.command,
+          payload.embedding ? "(con embedding)" : "(senza embedding)",
+        );
+        this.onCommand?.(payload);
       });
       this.unlisteners.push(u2);
 

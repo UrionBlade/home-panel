@@ -28,5 +28,5 @@ libc = "0.2"
 
 [dependencies.tokio]
 version = "1"
-features = ["rt"]
+features = ["rt", "time"]
 

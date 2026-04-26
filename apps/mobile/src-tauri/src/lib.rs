@@ -24,6 +24,7 @@ pub fn run() {
             voice::voice_speak,
             voice::voice_stop_speaking,
             voice::voice_set_sensitivity,
+            voice::voice_capture_speaker_embedding,
             push::push_request_permission,
             push::push_get_token,
             push::push_authorization_status,

@@ -80,8 +80,12 @@ export function useVoice(enabled = false) {
     if (nativeVoiceClient.supported) {
       nativeVoiceClient.subscribe(
         (status) => setState((prev) => ({ ...prev, status })),
-        (command) => {
-          if (!processingRef.current) void processTranscript(command);
+        (payload) => {
+          /* For now we drop the speaker embedding here — `processTranscript`
+           * is a thin parser/dispatcher that doesn't carry speaker context.
+           * Identification happens server-side in a future commit; the
+           * embedding is already available via `payload.embedding`. */
+          if (!processingRef.current) void processTranscript(payload.command);
         },
       );
     } else {
