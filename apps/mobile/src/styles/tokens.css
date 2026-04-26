@@ -40,28 +40,6 @@
   --color-ochre-hover: oklch(70% 0.15 80);
   --color-ochre-fg: oklch(22% 0.04 60);
 
-  /* === Tinted tile backgrounds (per hero tiles) ===
-   * Light-mode pastels — pushed warmer/saturated enough to read as
-   * coloured tiles on bright displays. Previous values (~93% L,
-   * ~0.04 C) collapsed to near-white on most iPad screens; only mauve
-   * survived because of chroma asymmetry on warmer hues. */
-  --tile-terracotta-a: oklch(88% 0.075 40);
-  --tile-terracotta-b: oklch(80% 0.115 35);
-  --tile-sage-a: oklch(89% 0.065 150);
-  --tile-sage-b: oklch(82% 0.10 150);
-  --tile-ochre-a: oklch(91% 0.075 80);
-  --tile-ochre-b: oklch(84% 0.115 80);
-  --tile-mauve-a: oklch(89% 0.065 320);
-  --tile-mauve-b: oklch(82% 0.10 320);
-  --tile-sky-a: oklch(89% 0.07 220);
-  --tile-sky-b: oklch(82% 0.105 225);
-  /* Sensors family — door / window / siren / plug share a "blush" warm
-   * rose tint so they read as a coherent group, distinct from
-   * appliances (terracotta=tv, sage=laundry, ochre=light, sky=ac,
-   * mauve=cameras). */
-  --tile-blush-a: oklch(89% 0.07 10);
-  --tile-blush-b: oklch(81% 0.115 12);
-
   /* === Status colors — warm-adjusted === */
   --color-success: oklch(65% 0.14 150);
   --color-warning: oklch(75% 0.16 75);
@@ -110,6 +88,36 @@
   --duration-default: 280ms;
   --duration-slow: 500ms;
   --duration-orchestration: 700ms;
+}
+
+/*
+ * Tinted tile backgrounds — kept OUTSIDE the `@theme` block on purpose.
+ * Tailwind v4 strips unused `@theme` tokens from the production CSS,
+ * and we only reference these via `var(--tile-…)` inside JS template
+ * literals (DeviceTile, home-tiles glows, …). The static scanner can't
+ * see those, so the tokens used to disappear in production builds —
+ * the result on the panel was: every kind looked white in light mode
+ * except `mauve`, which happened to also appear as a class somewhere.
+ *
+ * Light-mode pastels are pushed warmer / more saturated than the
+ * original ~93% L / ~0.04 C set, which collapsed to near-white on
+ * most iPad screens.
+ */
+:root {
+  --tile-terracotta-a: oklch(88% 0.075 40);
+  --tile-terracotta-b: oklch(80% 0.115 35);
+  --tile-sage-a: oklch(89% 0.065 150);
+  --tile-sage-b: oklch(82% 0.10 150);
+  --tile-ochre-a: oklch(91% 0.075 80);
+  --tile-ochre-b: oklch(84% 0.115 80);
+  --tile-mauve-a: oklch(89% 0.065 320);
+  --tile-mauve-b: oklch(82% 0.10 320);
+  --tile-sky-a: oklch(89% 0.07 220);
+  --tile-sky-b: oklch(82% 0.105 225);
+  /* Sensors family — door / window / siren / plug share a "blush"
+   * warm-rose tint so they form a coherent visual group. */
+  --tile-blush-a: oklch(89% 0.07 10);
+  --tile-blush-b: oklch(81% 0.115 12);
 }
 
 /*
