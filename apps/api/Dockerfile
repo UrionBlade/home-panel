@@ -29,13 +29,17 @@ RUN pnpm --filter @home-panel/api build
 # ---------- 2. Runtime: minimal image with better-sqlite3 + ffmpeg ----------
 # ffmpeg is needed by the IP cameras provider to pull JPEG snapshots from
 # arbitrary RTSP streams (CamHiPro / Anpviz / Reolink / …). Alpine's
-# package is ~30 MB including shared codec libs.
+# package is ~30 MB including shared codec libs. tzdata + TZ make container
+# log timestamps and any local-time computations fall back to Europe/Rome
+# instead of UTC; the routines scheduler is timezone-aware in code anyway,
+# so this is purely about log readability.
 FROM node:${NODE_VERSION} AS runtime
-RUN apk add --no-cache libstdc++ tini ffmpeg
+RUN apk add --no-cache libstdc++ tini ffmpeg tzdata
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
 ENV DATABASE_URL=/data/home-panel.sqlite
+ENV TZ=Europe/Rome
 WORKDIR /app
 
 COPY apps/api/package.runtime.json package.json
