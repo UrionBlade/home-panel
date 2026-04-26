@@ -39,6 +39,7 @@ extern "C" {
     fn ios_voice_set_sensitivity(level: std::os::raw::c_double);
     fn ios_voice_poll_embedding() -> *const std::os::raw::c_float;
     fn ios_voice_begin_enrollment_capture();
+    fn ios_voice_end_enrollment_capture();
     fn ios_voice_poll_enrollment_embedding() -> *const std::os::raw::c_float;
 }
 
@@ -247,6 +248,10 @@ pub async fn voice_capture_speaker_embedding() -> Result<Vec<f32>, String> {
                 }
             }
             if Instant::now() > deadline {
+                /* Tell Swift to drop the enrolment capture and bring the
+                 * live SFSpeechRecognizer back online; without this the
+                 * voice assistant would stay deaf after a silent timeout. */
+                unsafe { ios_voice_end_enrollment_capture() };
                 return Err(
                     "timeout: nessun campione audio sufficiente nei 4s".to_string()
                 );

@@ -550,14 +550,27 @@ private func runSpeakerModel(samples: [Float]) {
         let src = emb.dataPointer.bindMemory(to: Float.self, capacity: count)
         for i in 0..<count { out[i] = src[i] }
         gLock.lock()
-        if gIsEnrollmentMode {
+        let wasEnrollment = gIsEnrollmentMode
+        if wasEnrollment {
             gPendingEnrollmentEmbedding = out
             gIsEnrollmentMode = false
         } else {
             gPendingEmbedding = out
         }
         gLock.unlock()
-        voiceLog("speaker: embedding ready")
+        voiceLog("speaker: embedding ready\(wasEnrollment ? " (enrollment)" : "")")
+        /* Enrolment paused the SFSpeechRecognizer so the "ok casa…"
+         * prompt wouldn't auto-trigger the wake-word flow. Now that the
+         * embedding is in hand, bring the recogniser back so the next
+         * utterance is heard as a normal command. */
+        if wasEnrollment {
+            DispatchQueue.main.async {
+                if gIsRunning {
+                    startRecognitionSession()
+                    setStatus("idle")
+                }
+            }
+        }
     } catch {
         voiceLog("speaker model predict error: \(error)")
     }
@@ -579,7 +592,9 @@ public func ios_voice_poll_embedding() -> UnsafePointer<Float>? {
 
 /// Mark the next captured 2.5 s window as an enrollment sample so its
 /// embedding lands in the dedicated slot polled separately from the
-/// command flow.
+/// command flow. Pauses the SFSpeechRecognizer for the duration of the
+/// capture so the prompt phrase the user reads ("Ok casa, ...") doesn't
+/// trigger wake-word detection mid-enrolment.
 @_cdecl("ios_voice_begin_enrollment_capture")
 public func ios_voice_begin_enrollment_capture() {
     DispatchQueue.main.async {
@@ -587,7 +602,35 @@ public func ios_voice_begin_enrollment_capture() {
         gIsEnrollmentMode = true
         gPendingEnrollmentEmbedding = nil
         gLock.unlock()
+
+        // Tear down the live recognition so neither the wake-word matcher
+        // nor a possibly-already-fired wake handler eats the audio. Same
+        // safe path the wake-word code uses (cancel only, never endAudio).
+        gRestartTimer?.invalidate(); gRestartTimer = nil
+        gWatchdogTimer?.invalidate(); gWatchdogTimer = nil
+        gRecognitionRequest = nil
+        gRecognitionTask?.cancel()
+        gRecognitionTask = nil
+        setStatus("enrolling")
+
         beginSpeakerCapture()
+    }
+}
+
+/// Bail out of an enrolment capture without producing an embedding. Used
+/// by the Rust side when the capture times out so we restore the live
+/// recogniser even if the user stayed silent.
+@_cdecl("ios_voice_end_enrollment_capture")
+public func ios_voice_end_enrollment_capture() {
+    DispatchQueue.main.async {
+        gLock.lock()
+        gIsEnrollmentMode = false
+        gSpeakerCaptureStartIdx = nil
+        gLock.unlock()
+        if gIsRunning {
+            startRecognitionSession()
+            setStatus("idle")
+        }
     }
 }
 
