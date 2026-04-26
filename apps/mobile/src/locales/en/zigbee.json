@@ -1,0 +1,66 @@
+{
+  "title": "Zigbee",
+  "subtitle": "Sensors and devices paired on the home Zigbee mesh.",
+  "bridge": {
+    "online": "Bridge online",
+    "offline": "Bridge offline",
+    "mqttDisconnected": "MQTT unreachable — check that Mosquitto is running.",
+    "z2mDown": "Zigbee2MQTT is offline — verify the dongle is plugged into the NAS.",
+    "deviceCount_one": "{{count}} device",
+    "deviceCount_other": "{{count}} devices"
+  },
+  "permitJoin": {
+    "open": "Search for new devices",
+    "closing": "Stop searching",
+    "openFor": "Search for {{seconds}}s",
+    "active": "Pairing window open — press the device's pair button now",
+    "remaining": "Closes in {{seconds}}s",
+    "tooltip": "Opens the join window for 60 seconds.",
+    "error": "Could not open search: {{message}}"
+  },
+  "list": {
+    "empty": "No paired devices yet. Tap \"Search for new devices\" and hold your sensor's pair button.",
+    "loading": "Loading devices…",
+    "battery": "Battery",
+    "linkQuality": "Signal",
+    "lastSeen": "Seen",
+    "online": "Online",
+    "offline": "Offline",
+    "unknown": "Unknown"
+  },
+  "device": {
+    "rename": "Rename",
+    "renamePrompt": "New name for {{name}}",
+    "remove": "Remove from mesh",
+    "removeConfirm": "Really remove {{name}}? You'll have to pair it again.",
+    "removeError": "Removal failed: {{message}}",
+    "renameError": "Rename failed: {{message}}",
+    "noState": "No reading received yet."
+  },
+  "state": {
+    "contact": {
+      "true": "Open",
+      "false": "Closed"
+    },
+    "occupancy": {
+      "true": "Motion",
+      "false": "No motion"
+    },
+    "water_leak": {
+      "true": "Leak detected",
+      "false": "Dry"
+    },
+    "smoke": {
+      "true": "Smoke detected",
+      "false": "No smoke"
+    },
+    "tamper": {
+      "true": "Tampering",
+      "false": "OK"
+    },
+    "vibration": {
+      "true": "Vibration",
+      "false": "Stable"
+    }
+  }
+}

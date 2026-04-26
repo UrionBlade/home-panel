@@ -21,6 +21,7 @@ import { startAcWsSubscriber } from "./lib/ge/ws-subscriber.js";
 import { registerAppFetch } from "./lib/internal-fetch.js";
 import { reconcileAll as reconcileIpCameras } from "./lib/ipCameras/mediamtx.js";
 import { startRoutinesScheduler } from "./lib/routines/scheduler.js";
+import { startZigbeeBridge } from "./lib/zigbee/client.js";
 import { apiAuth } from "./middleware/auth.js";
 import { acRouter } from "./routes/ac.js";
 import { blinkRouter } from "./routes/blink.js";
@@ -48,6 +49,7 @@ import { tvRouter } from "./routes/tv.js";
 import { voiceRouter } from "./routes/voice.js";
 import { wasteRouter } from "./routes/waste.js";
 import { weatherRouter } from "./routes/weather.js";
+import { zigbeeRouter } from "./routes/zigbee.js";
 
 // Apply pending migrations before any DB access (seeds, routes, etc.)
 migrate(db, { migrationsFolder: "./drizzle" });
@@ -203,6 +205,7 @@ app.route(`/api/${API_VERSION}/spotify`, spotifyRouter);
 app.route(`/api/${API_VERSION}/ac`, acRouter);
 app.route(`/api/${API_VERSION}/ip-cameras`, ipCamerasRouter);
 app.route(`/api/${API_VERSION}/routines`, routinesRouter);
+app.route(`/api/${API_VERSION}/zigbee`, zigbeeRouter);
 
 /* Register the Hono app with the internal-fetch dispatcher so routines can
  * invoke peer routes in-process without duplicating handler logic. */
@@ -219,6 +222,7 @@ serve({ fetch: app.fetch, port, hostname }, (info) => {
   startAcScheduler();
   startAcWsSubscriber(geTokenStore);
   startRoutinesScheduler();
+  startZigbeeBridge();
   /* Upsert su MediaMTX di tutti i path IP camera: così dopo un riavvio
    * del sidecar (o del backend) ogni camera ha il suo endpoint WebRTC
    * pronto senza dipendere da un'azione utente. */

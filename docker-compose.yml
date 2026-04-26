@@ -33,6 +33,11 @@ services:
       # nobody outside needs to reach :9997.
       MEDIAMTX_API_URL: http://mediamtx:9997
       MEDIAMTX_WEBRTC_URL: http://mediamtx:8889
+      # MQTT bridge: the API subscribes to Z2M topics and proxies
+      # pairing requests. Broker reachable only on the internal docker
+      # network — nobody from the LAN can hit it directly.
+      MQTT_URL: mqtt://mosquitto:1883
+      ZIGBEE2MQTT_BASE_TOPIC: zigbee2mqtt
     ports:
       - "3000:3000"
     volumes:
@@ -40,6 +45,7 @@ services:
       - ./blink-clips:/clips/blink
     depends_on:
       - mediamtx
+      - mosquitto
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
       interval: 30s
@@ -66,3 +72,44 @@ services:
     # L'image di MediaMTX è distroless: niente healthcheck perché
     # manca sia wget che curl e tenere un binary aggiuntivo è overkill.
     # Il monitoring effettivo lo facciamo dal backend via il control plane.
+
+  # MQTT broker — used as the bus between the SONOFF Zigbee coordinator
+  # (via Zigbee2MQTT) and the home-panel API. Bound to the internal
+  # docker network only: there is no host port mapping, so nothing
+  # outside the docker network can reach :1883.
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: home-panel-mosquitto
+    restart: unless-stopped
+    volumes:
+      - ./mosquitto/config:/mosquitto/config:ro
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+
+  # Zigbee2MQTT — bridges the SONOFF ZBDongle-P (CC2652P) to MQTT.
+  # The frontend on :8080 is exposed to the LAN for debug/mesh map only;
+  # pairing and device control go through the home-panel API (which in
+  # turn publishes to the bridge/request/* topics on the internal MQTT).
+  zigbee2mqtt:
+    image: koenkk/zigbee2mqtt:latest
+    container_name: home-panel-zigbee2mqtt
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+    volumes:
+      - ./zigbee2mqtt/data:/app/data
+      - /run/udev:/run/udev:ro
+    devices:
+      # Sonoff ZBDongle-P. Cp210x driver is loaded at boot via
+      # /usr/local/etc/rc.d/usb-serial-drivers.sh on the NAS, so the
+      # dongle appears as /dev/ttyUSB0 once plugged into the Synology.
+      # If you ever plug another USB-serial device in, switch to a
+      # stable /dev/serial/by-id/* path instead.
+      - "${ZIGBEE_SERIAL_PORT:-/dev/ttyUSB0}:/dev/ttyUSB0"
+    environment:
+      TZ: Europe/Rome
+    ports:
+      # Frontend Z2M (mappa mesh, log live, debug). LAN only —
+      # niente reverse proxy esterno; per gestire i dispositivi si
+      # passa per l'API home-panel.
+      - "8080:8080"

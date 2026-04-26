@@ -1,0 +1,66 @@
+{
+  "title": "Zigbee",
+  "subtitle": "Sensori e dispositivi paired sulla rete mesh di casa.",
+  "bridge": {
+    "online": "Bridge online",
+    "offline": "Bridge offline",
+    "mqttDisconnected": "MQTT non raggiungibile — controlla che Mosquitto sia attivo.",
+    "z2mDown": "Zigbee2MQTT è offline — verifica che il dongle sia inserito sul NAS.",
+    "deviceCount_one": "{{count}} dispositivo",
+    "deviceCount_other": "{{count}} dispositivi"
+  },
+  "permitJoin": {
+    "open": "Cerca nuovi dispositivi",
+    "closing": "Chiudi ricerca",
+    "openFor": "Cerca per {{seconds}}s",
+    "active": "Ricerca aperta — premi il pulsantino del sensore per accoppiarlo",
+    "remaining": "Si chiude tra {{seconds}}s",
+    "tooltip": "Apre la finestra di pairing per 60 secondi.",
+    "error": "Impossibile aprire la ricerca: {{message}}"
+  },
+  "list": {
+    "empty": "Nessun dispositivo accoppiato. Premi \"Cerca nuovi dispositivi\" e poi tieni premuto il pulsante del sensore.",
+    "loading": "Carico i dispositivi…",
+    "battery": "Batteria",
+    "linkQuality": "Segnale",
+    "lastSeen": "Visto",
+    "online": "Online",
+    "offline": "Offline",
+    "unknown": "Stato sconosciuto"
+  },
+  "device": {
+    "rename": "Rinomina",
+    "renamePrompt": "Nuovo nome per {{name}}",
+    "remove": "Rimuovi dalla rete",
+    "removeConfirm": "Vuoi davvero rimuovere {{name}}? Andrà reaccoppiato da capo.",
+    "removeError": "Rimozione fallita: {{message}}",
+    "renameError": "Rinomina fallita: {{message}}",
+    "noState": "Nessuna lettura ancora ricevuta."
+  },
+  "state": {
+    "contact": {
+      "true": "Aperto",
+      "false": "Chiuso"
+    },
+    "occupancy": {
+      "true": "Movimento",
+      "false": "Nessun movimento"
+    },
+    "water_leak": {
+      "true": "Perdita rilevata",
+      "false": "Asciutto"
+    },
+    "smoke": {
+      "true": "Fumo rilevato",
+      "false": "Nessun fumo"
+    },
+    "tamper": {
+      "true": "Tampering",
+      "false": "OK"
+    },
+    "vibration": {
+      "true": "Vibrazione",
+      "false": "Stabile"
+    }
+  }
+}

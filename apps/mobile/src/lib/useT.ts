@@ -22,7 +22,8 @@ type Namespace =
   | "tv"
   | "voice"
   | "waste"
-  | "weather";
+  | "weather"
+  | "zigbee";
 
 /**
  * Wrapper di useTranslation con namespace bound.

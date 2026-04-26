@@ -15,6 +15,7 @@ import { TvSettings } from "../components/settings/TvSettings";
 import { VoiceSettings } from "../components/settings/VoiceSettings";
 import { WasteSettings } from "../components/settings/WasteSettings";
 import { WeatherSettings } from "../components/settings/WeatherSettings";
+import { ZigbeeSettings } from "../components/settings/ZigbeeSettings";
 import { useT } from "../lib/useT";
 import { type ThemeMode, useThemeStore } from "../store/theme-store";
 
@@ -146,6 +147,7 @@ export function SettingsPage() {
           <AcSettings />
           <TvSettings />
           <LightsSettings />
+          <ZigbeeSettings />
         </>
       )}
 

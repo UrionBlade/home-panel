@@ -1,0 +1,123 @@
+/**
+ * SQLite store for Zigbee devices. Wraps Drizzle so the MQTT client and
+ * the HTTP routes share a consistent shape (`ZigbeeDevice`).
+ */
+
+import type { ZigbeeDevice } from "@home-panel/shared";
+import { eq } from "drizzle-orm";
+import { db } from "../../db/client.js";
+import { type NewZigbeeDeviceRow, type ZigbeeDeviceRow, zigbeeDevices } from "../../db/schema.js";
+
+function rowToDevice(row: ZigbeeDeviceRow): ZigbeeDevice {
+  let state: Record<string, unknown> = {};
+  try {
+    const parsed = JSON.parse(row.lastStateJson || "{}");
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      state = parsed as Record<string, unknown>;
+    }
+  } catch {
+    /* keep state empty if the stored JSON ever gets corrupted. */
+  }
+  return {
+    ieeeAddress: row.ieeeAddress,
+    friendlyName: row.friendlyName,
+    vendor: row.vendor,
+    model: row.model,
+    description: row.description,
+    type: row.type,
+    state,
+    battery: row.battery,
+    linkQuality: row.linkQuality,
+    availability: row.availability,
+    lastSeenAt: row.lastSeenAt,
+    roomId: row.roomId,
+  };
+}
+
+export function listDevices(): ZigbeeDevice[] {
+  const rows = db.select().from(zigbeeDevices).all();
+  return rows.map(rowToDevice);
+}
+
+export function getDevice(ieeeAddress: string): ZigbeeDevice | null {
+  const row = db
+    .select()
+    .from(zigbeeDevices)
+    .where(eq(zigbeeDevices.ieeeAddress, ieeeAddress))
+    .get();
+  return row ? rowToDevice(row) : null;
+}
+
+export interface UpsertInput {
+  ieeeAddress: string;
+  friendlyName?: string;
+  vendor?: string | null;
+  model?: string | null;
+  description?: string | null;
+  type?: string | null;
+  state?: Record<string, unknown>;
+  battery?: number | null;
+  linkQuality?: number | null;
+  availability?: "online" | "offline" | "unknown";
+  lastSeenAt?: string | null;
+}
+
+/** Insert or merge — partial updates are common (state-only refresh, etc.). */
+export function upsertDevice(input: UpsertInput): ZigbeeDevice | null {
+  const existing = db
+    .select()
+    .from(zigbeeDevices)
+    .where(eq(zigbeeDevices.ieeeAddress, input.ieeeAddress))
+    .get();
+
+  const now = new Date().toISOString();
+  if (!existing) {
+    if (!input.friendlyName) return null;
+    const insert: NewZigbeeDeviceRow = {
+      ieeeAddress: input.ieeeAddress,
+      friendlyName: input.friendlyName,
+      vendor: input.vendor ?? null,
+      model: input.model ?? null,
+      description: input.description ?? null,
+      type: input.type ?? null,
+      lastStateJson: input.state ? JSON.stringify(input.state) : "{}",
+      battery: input.battery ?? null,
+      linkQuality: input.linkQuality ?? null,
+      availability: input.availability ?? "unknown",
+      lastSeenAt: input.lastSeenAt ?? null,
+      updatedAt: now,
+    };
+    db.insert(zigbeeDevices).values(insert).run();
+    return getDevice(input.ieeeAddress);
+  }
+
+  const updates: Partial<NewZigbeeDeviceRow> = { updatedAt: now };
+  if (input.friendlyName !== undefined) updates.friendlyName = input.friendlyName;
+  if (input.vendor !== undefined) updates.vendor = input.vendor;
+  if (input.model !== undefined) updates.model = input.model;
+  if (input.description !== undefined) updates.description = input.description;
+  if (input.type !== undefined) updates.type = input.type;
+  if (input.state !== undefined) updates.lastStateJson = JSON.stringify(input.state);
+  if (input.battery !== undefined) updates.battery = input.battery;
+  if (input.linkQuality !== undefined) updates.linkQuality = input.linkQuality;
+  if (input.availability !== undefined) updates.availability = input.availability;
+  if (input.lastSeenAt !== undefined) updates.lastSeenAt = input.lastSeenAt;
+
+  db.update(zigbeeDevices)
+    .set(updates)
+    .where(eq(zigbeeDevices.ieeeAddress, input.ieeeAddress))
+    .run();
+  return getDevice(input.ieeeAddress);
+}
+
+export function setRoom(ieeeAddress: string, roomId: string | null): ZigbeeDevice | null {
+  db.update(zigbeeDevices)
+    .set({ roomId, updatedAt: new Date().toISOString() })
+    .where(eq(zigbeeDevices.ieeeAddress, ieeeAddress))
+    .run();
+  return getDevice(ieeeAddress);
+}
+
+export function removeDevice(ieeeAddress: string): void {
+  db.delete(zigbeeDevices).where(eq(zigbeeDevices.ieeeAddress, ieeeAddress)).run();
+}

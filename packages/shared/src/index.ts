@@ -29,3 +29,4 @@ export * from "./tv.js";
 export * from "./voice.js";
 export * from "./waste.js";
 export * from "./weather.js";
+export * from "./zigbee.js";

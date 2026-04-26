@@ -610,3 +610,36 @@ export const routines = sqliteTable("routines", {
 });
 export type RoutineRow = typeof routines.$inferSelect;
 export type NewRoutineRow = typeof routines.$inferInsert;
+
+/*
+ * Zigbee devices — mirror of the Z2M `bridge/devices` topic with
+ * home-panel additions (room assignment, last-seen). One row per
+ * paired device (the coordinator itself is filtered out at insert
+ * time). State payloads are kept as opaque JSON so we don't migrate
+ * every time a new sensor model brings new fields.
+ */
+export const zigbeeDevices = sqliteTable("zigbee_devices", {
+  ieeeAddress: text("ieee_address").primaryKey(),
+  friendlyName: text("friendly_name").notNull(),
+  vendor: text("vendor"),
+  model: text("model"),
+  description: text("description"),
+  /** EndDevice | Router | Coordinator. */
+  type: text("type"),
+  /** Last full state payload from the device topic. JSON object. */
+  lastStateJson: text("last_state_json").notNull().default("{}"),
+  /** Battery percent extracted from the last state, when available. */
+  battery: integer("battery"),
+  linkQuality: integer("link_quality"),
+  availability: text("availability", { enum: ["online", "offline", "unknown"] })
+    .notNull()
+    .default("unknown"),
+  lastSeenAt: text("last_seen_at"),
+  /** Nullable room assignment — same semantics as other device tables
+   * (null = "Senza stanza", stale ids silently orphaned). */
+  roomId: text("room_id"),
+  createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+});
+export type ZigbeeDeviceRow = typeof zigbeeDevices.$inferSelect;
+export type NewZigbeeDeviceRow = typeof zigbeeDevices.$inferInsert;

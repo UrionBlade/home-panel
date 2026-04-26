@@ -16,6 +16,7 @@ import { ShoppingPage } from "./pages/ShoppingPage";
 import { SpotifyCallbackPage } from "./pages/SpotifyCallbackPage";
 import { TimerPage } from "./pages/TimerPage";
 import { WeatherPage } from "./pages/WeatherPage";
+import { ZigbeePage } from "./pages/ZigbeePage";
 
 const router = createBrowserRouter([
   {
@@ -153,6 +154,14 @@ const router = createBrowserRouter([
   {
     path: "/spotify-callback",
     element: <SpotifyCallbackPage />,
+  },
+  {
+    path: "/zigbee",
+    element: (
+      <AppShell>
+        <ZigbeePage />
+      </AppShell>
+    ),
   },
   {
     path: "/settings",

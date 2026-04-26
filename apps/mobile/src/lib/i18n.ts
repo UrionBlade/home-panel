@@ -23,6 +23,7 @@ import tvEn from "../locales/en/tv.json";
 import voiceEn from "../locales/en/voice.json";
 import wasteEn from "../locales/en/waste.json";
 import weatherEn from "../locales/en/weather.json";
+import zigbeeEn from "../locales/en/zigbee.json";
 import acIt from "../locales/it/ac.json";
 import boardIt from "../locales/it/board.json";
 import calendarIt from "../locales/it/calendar.json";
@@ -45,6 +46,7 @@ import tvIt from "../locales/it/tv.json";
 import voiceIt from "../locales/it/voice.json";
 import wasteIt from "../locales/it/waste.json";
 import weatherIt from "../locales/it/weather.json";
+import zigbeeIt from "../locales/it/zigbee.json";
 
 void i18next
   .use(LanguageDetector)
@@ -75,6 +77,7 @@ void i18next
       "tv",
       "ac",
       "casa",
+      "zigbee",
     ],
     resources: {
       it: {
@@ -100,6 +103,7 @@ void i18next
         waste: wasteIt,
         weather: weatherIt,
         tv: tvIt,
+        zigbee: zigbeeIt,
       },
       en: {
         ac: acEn,
@@ -124,6 +128,7 @@ void i18next
         waste: wasteEn,
         weather: weatherEn,
         tv: tvEn,
+        zigbee: zigbeeEn,
       },
     },
     interpolation: {
