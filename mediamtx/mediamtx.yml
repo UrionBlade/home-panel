@@ -14,8 +14,11 @@ logDestinations: [stdout]
 # Porte esposte SOLO dentro la Docker network. Il gateway pubblico è
 # sempre l'API Hono, che proxa WHEP dietro il suo Bearer auth.
 rtspAddress: 127.0.0.1:8554
-rtmpDisable: yes
-srtDisable: yes
+# MediaMTX 1.10+ replaced the *Disable flags with simple `<protocol>: no`.
+# We only ever need RTSP (input from cameras) + WebRTC/HLS (output to the
+# browser). SRT and RTMP stay off.
+rtmp: no
+srt: no
 
 # WebRTC server (WHEP). HTTP perché sta dietro un'altra rete Docker:
 # il client non parla mai con MediaMTX direttamente, passa dall'API.
@@ -29,7 +32,7 @@ webrtcAdditionalHosts: []
 # HLS come fallback — utile se il browser blocca WebRTC per qualche
 # motivo (iOS Safari private browsing, ecc.). Stessa rete interna.
 hlsAddress: :8888
-hlsAllowOrigin: '*'
+hlsAllowOrigins: ['*']
 hlsAlwaysRemux: no
 hlsSegmentCount: 4
 hlsSegmentDuration: 1s
