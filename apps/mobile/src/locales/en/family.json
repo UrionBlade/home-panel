@@ -9,7 +9,8 @@
     "addHuman": "Add person",
     "addPet": "Add pet",
     "edit": "Edit",
-    "delete": "Delete"
+    "delete": "Delete",
+    "voice": "Record voice"
   },
   "fields": {
     "displayName": "Name",
@@ -38,5 +39,25 @@
   "kindLabel": {
     "human": "Person",
     "pet": "Pet"
+  },
+  "voice": {
+    "title": "{{name}}'s voice",
+    "intro": "Record a few voice samples for {{name}}: the panel will recognise them when they say \"ok casa\".",
+    "sampleProgress": "Samples recorded: {{current}} of {{total}}",
+    "ready": "Ready",
+    "sayThis": "Hold the button and read:",
+    "recordCta": "Record sample",
+    "recording": "Listening...",
+    "recordHint": "Speak naturally for about 2 seconds. For best accuracy, record samples at different times of day.",
+    "deleteAll": "Delete recorded voice",
+    "errors": {
+      "nativeOnly": "Voice recording only works inside the TestFlight app on iPad/iPhone.",
+      "captureFailed": "I didn't capture enough audio. Try again, a bit louder.",
+      "deleteFailed": "Couldn't delete the voice profile."
+    },
+    "toasts": {
+      "sampleSaved": "Sample {{count}} saved",
+      "deleted": "Voice profile cleared"
+    }
   }
 }

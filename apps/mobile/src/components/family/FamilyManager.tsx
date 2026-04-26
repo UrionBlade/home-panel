@@ -1,5 +1,11 @@
 import type { FamilyMember } from "@home-panel/shared";
-import { PencilIcon, PlusIcon, TrashIcon } from "@phosphor-icons/react";
+import {
+  CheckCircleIcon,
+  MicrophoneIcon,
+  PencilIcon,
+  PlusIcon,
+  TrashIcon,
+} from "@phosphor-icons/react";
 import { useState } from "react";
 import {
   useCreateFamilyMember,
@@ -13,6 +19,7 @@ import { Button } from "../ui/Button";
 import { IconButton } from "../ui/IconButton";
 import { Modal } from "../ui/Modal";
 import { MemberForm } from "./MemberForm";
+import { VoiceEnrollment } from "./VoiceEnrollment";
 
 export function FamilyManager() {
   const { t } = useT("family");
@@ -25,11 +32,13 @@ export function FamilyManager() {
   const [editing, setEditing] = useState<FamilyMember | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<FamilyMember | null>(null);
+  const [enrolling, setEnrolling] = useState<FamilyMember | null>(null);
 
   const closeAll = () => {
     setEditing(null);
     setCreating(false);
     setDeleting(null);
+    setEnrolling(null);
   };
 
   return (
@@ -73,6 +82,19 @@ export function FamilyManager() {
                   : `${t("kindLabel.pet")}${member.species ? ` · ${member.species}` : ""}`}
               </p>
             </div>
+            {member.kind === "human" && (
+              <IconButton
+                icon={
+                  member.voiceSampleCount > 0 ? (
+                    <CheckCircleIcon size={20} weight="fill" className="text-success" />
+                  ) : (
+                    <MicrophoneIcon size={20} weight="duotone" />
+                  )
+                }
+                label={t("actions.voice")}
+                onClick={() => setEnrolling(member)}
+              />
+            )}
             <IconButton
               icon={<PencilIcon size={20} weight="duotone" />}
               label={t("actions.edit")}
@@ -107,6 +129,17 @@ export function FamilyManager() {
             }}
           />
         )}
+      </Modal>
+
+      <Modal
+        open={!!enrolling}
+        onClose={closeAll}
+        title={t("voice.title", {
+          name: enrolling?.displayName ?? "",
+          defaultValue: "Voce di {{name}}",
+        })}
+      >
+        {enrolling && <VoiceEnrollment member={enrolling} />}
       </Modal>
 
       <Modal

@@ -2,6 +2,7 @@ import type {
   CreateFamilyMemberInput,
   FamilyMember,
   UpdateFamilyMemberInput,
+  VoiceEnrollResponse,
 } from "@home-panel/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../api-client";
@@ -37,6 +38,24 @@ export function useDeleteFamilyMember() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => apiClient.delete<void>(`/api/v1/family/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: FAMILY_KEY }),
+  });
+}
+
+export function useEnrollVoice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, embedding }: { id: string; embedding: number[] }) =>
+      apiClient.post<VoiceEnrollResponse>(`/api/v1/family/${id}/voice/enroll`, { embedding }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: FAMILY_KEY }),
+  });
+}
+
+export function useDeleteVoice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient.delete<VoiceEnrollResponse>(`/api/v1/family/${id}/voice/enroll`),
     onSuccess: () => qc.invalidateQueries({ queryKey: FAMILY_KEY }),
   });
 }
