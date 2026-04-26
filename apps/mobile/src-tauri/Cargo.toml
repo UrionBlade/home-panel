@@ -23,6 +23,9 @@ tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
+[target.'cfg(target_os = "ios")'.dependencies]
+libc = "0.2"
+
 [dependencies.tokio]
 version = "1"
 features = ["rt"]

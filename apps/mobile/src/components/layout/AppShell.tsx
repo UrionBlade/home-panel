@@ -3,6 +3,7 @@ import { AnimatePresence } from "framer-motion";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { I18nextProvider } from "react-i18next";
 import { useKioskPhotos, useKioskSettings } from "../../lib/hooks/useKioskSettings";
+import { usePushAutoRegister } from "../../lib/hooks/usePush";
 import { i18next } from "../../lib/i18n";
 import { useKioskMode } from "../../lib/kiosk";
 import { NightModeProvider } from "../../lib/kiosk/NightModeProvider";
@@ -50,6 +51,14 @@ function SSEConnector() {
   return null;
 }
 
+/** Asks for APNs permission on first run and registers the resulting
+ *  token with the backend so the alarm fanout can reach this device
+ *  even when the app is closed. No-op on platforms without Tauri. */
+function PushRegistrar() {
+  usePushAutoRegister();
+  return null;
+}
+
 const DEFAULT_IDLE_MS = 5 * 60 * 1000;
 
 function ScreensaverManager() {
@@ -81,6 +90,7 @@ export function AppShell({ children, hideClock, title }: AppShellProps) {
               <VoiceProvider>
                 <KioskActivator />
                 <SSEConnector />
+                <PushRegistrar />
                 <div className="flex h-full w-full overflow-hidden bg-bg text-text">
                   <SideNav
                     isMobileOpen={mobileNavOpen}

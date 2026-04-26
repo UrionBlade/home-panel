@@ -27,6 +27,7 @@ fn main() {
             .args([
                 "ios/KioskPlugin.swift",
                 "ios/VoicePlugin.swift",
+                "ios/PushPlugin.swift",
                 "-emit-library",
                 "-static",
                 "-module-name", "IOSPlugins",
@@ -44,7 +45,9 @@ fn main() {
         // Frameworks for the Swift plugins
         println!("cargo:rustc-link-lib=framework=AVFoundation");
         println!("cargo:rustc-link-lib=framework=Speech");
+        println!("cargo:rustc-link-lib=framework=UserNotifications");
         println!("cargo:rerun-if-changed=ios/KioskPlugin.swift");
         println!("cargo:rerun-if-changed=ios/VoicePlugin.swift");
+        println!("cargo:rerun-if-changed=ios/PushPlugin.swift");
     }
 }

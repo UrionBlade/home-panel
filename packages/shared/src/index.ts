@@ -20,6 +20,7 @@ export * from "./kiosk.js";
 export * from "./laundry.js";
 export * from "./lights.js";
 export * from "./postits.js";
+export * from "./push.js";
 export * from "./recipes.js";
 export * from "./rooms.js";
 export * from "./routines.js";

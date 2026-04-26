@@ -689,3 +689,33 @@ export const alarmEvents = sqliteTable("alarm_events", {
 });
 export type AlarmEventRow = typeof alarmEvents.$inferSelect;
 export type NewAlarmEventRow = typeof alarmEvents.$inferInsert;
+
+/*
+ * Push notification tokens — one row per (device, platform). Populated
+ * by the panel app the first time it boots and gets an APNs token from
+ * iOS; the backend uses these to fan out alarm notifications when the
+ * panel is closed/backgrounded and the in-app SSE banner can't reach
+ * the user.
+ */
+export const pushTokens = sqliteTable("push_tokens", {
+  id: text("id").primaryKey(),
+  /** Hex-encoded APNs token (or FCM token for future Android). */
+  token: text("token").notNull().unique(),
+  /** "ios" today; reserved for "android"/"web" later. */
+  platform: text("platform", { enum: ["ios", "android", "web"] })
+    .notNull()
+    .default("ios"),
+  /** Free-text label for the device list ("iPhone Matteo", "iPad cucina"). */
+  label: text("label"),
+  /** Optional bind to a family member so the panel can show whose
+   * device is registered. Null = anonymous. */
+  familyMemberId: text("family_member_id").references(() => familyMembers.id, {
+    onDelete: "set null",
+  }),
+  /** Last time this token was refreshed by the app. Used to prune
+   * stale tokens after N months of silence. */
+  lastSeenAt: text("last_seen_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+});
+export type PushTokenRow = typeof pushTokens.$inferSelect;
+export type NewPushTokenRow = typeof pushTokens.$inferInsert;

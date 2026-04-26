@@ -39,6 +39,7 @@ import {
 } from "./routes/laundry.js";
 import { lightsRouter } from "./routes/lights.js";
 import { postitsRouter } from "./routes/postits.js";
+import { pushRouter } from "./routes/push.js";
 import { recipesRouter } from "./routes/recipes.js";
 import { roomsRouter } from "./routes/rooms.js";
 import { routinesRouter } from "./routes/routines.js";
@@ -208,6 +209,7 @@ app.route(`/api/${API_VERSION}/ip-cameras`, ipCamerasRouter);
 app.route(`/api/${API_VERSION}/routines`, routinesRouter);
 app.route(`/api/${API_VERSION}/zigbee`, zigbeeRouter);
 app.route(`/api/${API_VERSION}/alarm`, alarmRouter);
+app.route(`/api/${API_VERSION}/push`, pushRouter);
 
 /* Register the Hono app with the internal-fetch dispatcher so routines can
  * invoke peer routes in-process without duplicating handler logic. */

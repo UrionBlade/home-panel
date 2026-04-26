@@ -22,7 +22,58 @@ import { db } from "../../db/client.js";
 import { zigbeeDevices } from "../../db/schema.js";
 import { sseEmitter } from "../../routes/sse.js";
 import { countUnread, getAlarmState, recordEvent } from "../alarm/store.js";
+import { sendApnsBatch } from "../push/apns.js";
+import { listTokens, removeTokenByValue } from "../push/store.js";
 import { removeDevice as dbRemoveDevice, getDevice, listDevices, upsertDevice } from "./store.js";
+
+const ALARM_KIND_TITLES: Record<string, string> = {
+  contact_open: "Apertura rilevata",
+  motion: "Movimento rilevato",
+  tamper: "Manomissione",
+  leak: "Perdita d'acqua",
+  manual: "Allarme manuale",
+};
+
+/** Fan out an alarm event to every iOS push token registered. */
+async function fanoutAlarmPush(event: {
+  id: string;
+  ieeeAddress: string;
+  friendlyName: string;
+  kind: string;
+}) {
+  const tokens = listTokens("ios").map((t) => t.token);
+  if (tokens.length === 0) return;
+  try {
+    const results = await sendApnsBatch(tokens, {
+      title: ALARM_KIND_TITLES[event.kind] ?? "Allarme",
+      body: event.friendlyName,
+      sound: "default",
+      timeSensitive: true,
+      collapseId: `alarm-${event.ieeeAddress}`,
+      data: {
+        kind: "alarm",
+        alarmKind: event.kind,
+        eventId: event.id,
+        ieeeAddress: event.ieeeAddress,
+      },
+    });
+    /* APNs returns 410 when a token is no longer valid (app uninstalled,
+     * token rotated). Prune those right away so the next alarm doesn't
+     * pay the cost of trying them again. */
+    for (const r of results) {
+      if (r.status === 410) {
+        console.log(`[push] pruning unregistered token ${r.token.slice(0, 8)}…`);
+        removeTokenByValue(r.token);
+      } else if (!r.ok) {
+        console.warn(
+          `[push] APNs ${r.status ?? "?"} for token ${r.token.slice(0, 8)}…: ${r.reason ?? ""}`,
+        );
+      }
+    }
+  } catch (err) {
+    console.error("[push] APNs fanout failed:", err);
+  }
+}
 
 interface Z2MDevice {
   ieee_address: string;
@@ -203,6 +254,10 @@ function applyDeviceState(friendlyName: string, payload: Record<string, unknown>
         event: ALARM_SSE_EVENTS.state,
         payload: { state: alarm, unreadCount: countUnread() },
       });
+      /* Fire-and-forget APNs fanout. Failures are logged inside, never
+       * thrown — the SSE alert is still the primary delivery channel
+       * and we don't want a flaky push to break the live banner. */
+      void fanoutAlarmPush(event);
     }
   }
 }

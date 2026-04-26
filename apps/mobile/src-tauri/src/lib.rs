@@ -2,6 +2,7 @@
 // Mobile target: iPad/iPhone via `tauri ios`.
 
 mod kiosk;
+mod push;
 mod voice;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -22,6 +23,9 @@ pub fn run() {
             voice::voice_stop_continuous,
             voice::voice_speak,
             voice::voice_stop_speaking,
+            push::push_request_permission,
+            push::push_get_token,
+            push::push_authorization_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

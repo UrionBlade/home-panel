@@ -33,6 +33,7 @@ platform :ios do
     ensure_ios_project
     generate_icons
     stamp_build_number
+    configure_push_capability
     build_tauri_ios
     upload_build
   end
@@ -185,6 +186,35 @@ platform :ios do
       }
       set_or_add NSMicrophoneUsageDescription string "#{mic_reason}"
       set_or_add NSSpeechRecognitionUsageDescription string "#{speech_reason}"
+    SHELL
+  end
+
+  # Tauri's `gen/apple/` is regenerated from scratch on every CI run by
+  # `tauri ios init`, so any manual change to Info.plist or
+  # mobile_iOS.entitlements would get clobbered. Patch them here, after
+  # `ensure_ios_project`, with the bits APNs push notifications need:
+  #   - `aps-environment = production` in entitlements
+  #   - `UIBackgroundModes` includes `remote-notification` in Info.plist
+  # Both are idempotent: re-running with values already set is a no-op.
+  private_lane :configure_push_capability do
+    entitlements = File.join(TAURI_IOS_ROOT, "mobile_iOS", "mobile_iOS.entitlements")
+    sh(<<~SHELL)
+      set -e
+      ent="#{entitlements}"
+      /usr/libexec/PlistBuddy -c "Set :aps-environment production" "$ent" 2>/dev/null \
+        || /usr/libexec/PlistBuddy -c "Add :aps-environment string production" "$ent"
+    SHELL
+
+    sh(<<~SHELL)
+      set -e
+      plist="#{INFO_PLIST}"
+      # Make sure UIBackgroundModes is an array containing remote-notification.
+      /usr/libexec/PlistBuddy -c "Print :UIBackgroundModes" "$plist" >/dev/null 2>&1 \
+        || /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes array" "$plist"
+      # Idempotent: only append remote-notification when missing.
+      /usr/libexec/PlistBuddy -c "Print :UIBackgroundModes" "$plist" \
+        | grep -q "remote-notification" \
+        || /usr/libexec/PlistBuddy -c "Add :UIBackgroundModes:0 string remote-notification" "$plist"
     SHELL
   end
 

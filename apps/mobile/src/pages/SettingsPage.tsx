@@ -11,6 +11,7 @@ import { CameraSettings } from "../components/settings/CameraSettings";
 import { KioskSettings } from "../components/settings/KioskSettings";
 import { LaundrySettings } from "../components/settings/LaundrySettings";
 import { LightsSettings } from "../components/settings/LightsSettings";
+import { PushSettings } from "../components/settings/PushSettings";
 import { TvSettings } from "../components/settings/TvSettings";
 import { VoiceSettings } from "../components/settings/VoiceSettings";
 import { WasteSettings } from "../components/settings/WasteSettings";
@@ -148,6 +149,7 @@ export function SettingsPage() {
           <TvSettings />
           <LightsSettings />
           <ZigbeeSettings />
+          <PushSettings />
         </>
       )}
 
