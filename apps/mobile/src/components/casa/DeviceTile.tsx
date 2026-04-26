@@ -1,4 +1,4 @@
-import { DotsThreeIcon } from "@phosphor-icons/react";
+import { DotsThreeIcon, VideoCameraIcon } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { type CSSProperties, type KeyboardEvent, useRef } from "react";
 import type { DeviceKind } from "../../lib/devices/icons";
@@ -274,16 +274,16 @@ function CameraSnapshotBackground({ cameraId }: { cameraId: string }) {
 /*  Camera initial badge (Blink cameras — no live snapshot)           */
 /* ------------------------------------------------------------------ */
 
-function CameraInitialBadge({ name, size }: { name: string; size: "sm" | "lg" }) {
-  const letter = name.trim().charAt(0).toUpperCase() || "C";
-  const sizeClass = size === "lg" ? "w-16 h-16 text-2xl" : "w-12 h-12 text-lg";
+function CameraInitialBadge({ name: _name, size }: { name: string; size: "sm" | "lg" }) {
+  const sizeClass = size === "lg" ? "w-16 h-16" : "w-12 h-12";
+  const iconSize = size === "lg" ? 32 : 24;
   return (
     <span
-      className={`flex items-center justify-center rounded-lg font-display font-black text-text shrink-0 ${sizeClass}`}
+      className={`flex items-center justify-center rounded-lg shrink-0 text-text ${sizeClass}`}
       style={{ backgroundColor: "oklch(from currentColor l c h / 0.12)" }}
       aria-hidden
     >
-      {letter}
+      <VideoCameraIcon size={iconSize} weight="duotone" />
     </span>
   );
 }

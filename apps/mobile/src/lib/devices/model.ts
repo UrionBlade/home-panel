@@ -254,16 +254,22 @@ export function projectZigbee(row: ZigbeeDevice): DeviceEntity {
     kind = "sensor_door";
   }
 
-  /* Status mapping. For contact sensors: closed (`contact: true`) is
-   * "off" (idle, normal), open (`contact: false`) is "on" (notable).
-   * Z2M's `availability` overrides everything when offline. */
+  /* Status mapping. Sensors and sirens use the per-device `armed`
+   * flag (mirroring the cameras' badge semantics: "Attiva" /
+   * "Disattivata") so the live contact state stays in the subtitle
+   * and the badge tells the user whether the alarm is watching the
+   * device. Plugs are still on/off because that's their natural
+   * state vocabulary. Offline always wins. */
   let status: DeviceStatus = "unknown";
   if (row.availability === "offline") {
     status = "offline";
-  } else if (typeof state.contact === "boolean") {
-    status = state.contact ? "off" : "on";
+  } else if (kind === "sensor_door" || kind === "sensor_window" || kind === "siren") {
+    status = row.armed ? "armed" : "disarmed";
   } else if (typeof state.state === "string") {
     status = state.state.toLowerCase() === "on" ? "on" : "off";
+  } else if (typeof state.contact === "boolean") {
+    /* Fallback for unknown sensor kinds reporting contact. */
+    status = state.contact ? "off" : "on";
   }
 
   /* Subtitle on the Casa tile reflects the most useful current reading
@@ -294,6 +300,8 @@ export function projectZigbee(row: ZigbeeDevice): DeviceEntity {
     raw: row,
   };
 }
+
+/* ------------------------------------------------------------------ */
 
 export function groupDevicesByRoom(
   rooms: Room[],
