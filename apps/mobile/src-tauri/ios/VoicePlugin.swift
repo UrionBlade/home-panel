@@ -23,7 +23,19 @@ private var gRecognitionTask: SFSpeechRecognitionTask?
 private var gSynthesizer: AVSpeechSynthesizer?
 private var gSpeechDelegate: SpeechDelegate?
 private var gRestartTimer: Timer?
+private var gWatchdogTimer: Timer?
+/// Updated whenever a partial/final result lands. The watchdog uses this to
+/// detect a frozen session (no callbacks for >30s while the engine is alive)
+/// and force a recycle. Real silence is fine — partial results still arrive
+/// every couple of hundred ms when SFSpeechRecognizer is healthy.
+private var gLastPartialAt: Date = Date()
 private var gIsRunning = false
+
+/// How long without any recognition callback before we conclude that
+/// SFSpeechRecognizer is stuck and force a cycle. 30s is well past the
+/// typical partial-result interval (~200ms) but short enough that the user
+/// only loses a single reply.
+private let kWatchdogStuckSeconds: TimeInterval = 30
 
 private var gLock = NSLock()
 private var gPendingCommand: String? = nil
@@ -147,6 +159,7 @@ private func startEngine() {
 private func stopEverything() {
     gIsRunning = false
     gRestartTimer?.invalidate(); gRestartTimer = nil
+    gWatchdogTimer?.invalidate(); gWatchdogTimer = nil
     // For TOTAL shutdown we use endAudio (graceful)
     gRecognitionRequest?.endAudio()
     gRecognitionRequest = nil
@@ -169,6 +182,11 @@ private func startRecognitionSession() {
     guard gIsRunning, let recognizer = gSpeechRecognizer else { return }
 
     gRestartTimer?.invalidate()
+    gWatchdogTimer?.invalidate()
+    /* Reset the last-callback marker at session start: a fresh session is
+     * "alive" by definition, so the watchdog should give it the full grace
+     * window before deciding it's stuck. */
+    gLastPartialAt = Date()
 
     // RULE: new request FIRST, cancel old task AFTER.
     // This way the tap always has a valid destination.
@@ -204,6 +222,10 @@ private func startRecognitionSession() {
     gRecognitionTask = recognizer.recognitionTask(with: newRequest) { result, error in
         // Ignore stale callbacks
         guard gRecognitionRequest === thisRequest else { return }
+
+        // Any callback (partial result, final, or even an error) is proof
+        // the session is alive — bump the marker so the watchdog stays calm.
+        gLastPartialAt = Date()
 
         if let result = result {
             let original = result.bestTranscription.formattedString
@@ -301,6 +323,24 @@ private func startRecognitionSession() {
             startRecognitionSession()
         }
     }
+
+    /* Watchdog: SFSpeechRecognizer occasionally gets stuck without ever
+     * calling back — no partial results, no error, the request just goes
+     * silent. The 55s recycle masked this for the first minute, but when
+     * a stuck session lasts longer than that the user has to restart the
+     * app. We sample every 10s and force-cycle when a healthy session
+     * would have produced at least one callback. */
+    gWatchdogTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { timer in
+        guard gIsRunning, gRecognitionRequest === thisRequest else {
+            timer.invalidate(); return
+        }
+        let stuck = Date().timeIntervalSince(gLastPartialAt)
+        if stuck >= kWatchdogStuckSeconds {
+            voiceLog("watchdog: stuck \(Int(stuck))s, force-cycle")
+            timer.invalidate()
+            startRecognitionSession()
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -334,6 +374,7 @@ public func ios_voice_speak(_ text: UnsafePointer<CChar>) {
         gRecognitionTask?.cancel()
         gRecognitionTask = nil
         gRestartTimer?.invalidate(); gRestartTimer = nil
+        gWatchdogTimer?.invalidate(); gWatchdogTimer = nil
 
         if gSynthesizer == nil { gSynthesizer = AVSpeechSynthesizer() }
         if gSpeechDelegate == nil { gSpeechDelegate = SpeechDelegate() }
