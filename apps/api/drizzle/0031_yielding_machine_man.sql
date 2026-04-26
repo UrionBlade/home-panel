@@ -1,0 +1,1 @@
+ALTER TABLE `zigbee_devices` ADD `kind_override` text;

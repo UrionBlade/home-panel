@@ -1,14 +1,31 @@
-import type { Room } from "@home-panel/shared";
-import { CheckIcon, HouseLineIcon, XIcon } from "@phosphor-icons/react";
+import type { Room, ZigbeeDevice } from "@home-panel/shared";
+import {
+  AppWindowIcon,
+  CheckIcon,
+  DoorIcon,
+  HouseLineIcon,
+  PlugIcon,
+  ShieldCheckIcon,
+  ShieldSlashIcon,
+  SirenIcon,
+  XIcon,
+} from "@phosphor-icons/react";
 import { type FormEvent, useEffect, useState } from "react";
-import { resolveDeviceIcon, resolveRoomIcon } from "../../lib/devices/icons";
+import { type DeviceKind, resolveDeviceIcon, resolveRoomIcon } from "../../lib/devices/icons";
 import type { DeviceEntity } from "../../lib/devices/model";
 import { useDeviceActions } from "../../lib/devices/useHomeDevices";
+import { useZigbeeSetArmed, useZigbeeSetKind } from "../../lib/hooks/useZigbee";
 import { useT } from "../../lib/useT";
 import { useUiStore } from "../../store/ui-store";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { BottomSheet } from "./BottomSheet";
+
+const ZIGBEE_KINDS: DeviceKind[] = ["sensor_door", "sensor_window", "siren", "plug"];
+
+function isZigbeeKind(kind: DeviceKind): boolean {
+  return kind === "sensor_door" || kind === "sensor_window" || kind === "siren" || kind === "plug";
+}
 
 interface DeviceEditorSheetProps {
   open: boolean;
@@ -26,24 +43,37 @@ interface DeviceEditorSheetProps {
 export function DeviceEditorSheet({ open, device, rooms, onClose }: DeviceEditorSheetProps) {
   const { t } = useT("casa");
   const { t: tCommon } = useT("common");
+  const { t: tAlarm } = useT("alarm");
   const actions = useDeviceActions();
   const pushToast = useUiStore((s) => s.pushToast);
+  const setKindMutation = useZigbeeSetKind();
+  const setArmedMutation = useZigbeeSetArmed();
 
   const [name, setName] = useState("");
   const [roomId, setRoomId] = useState<string | null>(null);
+  const [pickedKind, setPickedKind] = useState<DeviceKind | null>(null);
+  const [armed, setArmed] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const isZigbee = device ? isZigbeeKind(device.kind) : false;
+  const zigbeeRaw = isZigbee ? (device?.raw as ZigbeeDevice | undefined) : undefined;
 
   useEffect(() => {
     if (!open || !device) return;
     setName(device.name);
     setRoomId(device.roomId);
-  }, [open, device]);
+    setPickedKind(device.kind);
+    setArmed(zigbeeRaw?.armed ?? true);
+  }, [open, device, zigbeeRaw?.armed]);
 
   if (!device) return null;
   const Ico = resolveDeviceIcon(device.kind);
 
   const kindLabel = t(`kinds.${device.kind}`, { count: 1, defaultValue: device.kind });
-  const dirty = name.trim() !== device.name || roomId !== device.roomId;
+  const kindChanged = isZigbee && pickedKind !== null && pickedKind !== device.kind;
+  const armedChanged = isZigbee && armed !== (zigbeeRaw?.armed ?? true);
+  const dirty =
+    name.trim() !== device.name || roomId !== device.roomId || kindChanged || armedChanged;
   const canSave = dirty && !saving && name.trim().length > 0;
 
   const handleSubmit = async (e?: FormEvent) => {
@@ -57,6 +87,18 @@ export function DeviceEditorSheet({ open, device, rooms, onClose }: DeviceEditor
       }
       if (roomId !== device.roomId) {
         await actions.moveTo(device, roomId);
+      }
+      if (kindChanged && pickedKind) {
+        await setKindMutation.mutateAsync({
+          ieeeAddress: device.id,
+          kindOverride: pickedKind,
+        });
+      }
+      if (armedChanged) {
+        await setArmedMutation.mutateAsync({
+          ieeeAddress: device.id,
+          armed,
+        });
       }
       onClose();
     } catch (err) {
@@ -141,10 +183,95 @@ export function DeviceEditorSheet({ open, device, rooms, onClose }: DeviceEditor
           </div>
         </div>
 
+        {isZigbee && (
+          <>
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-text-muted">
+                {tAlarm("kindPicker.title")}
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                {ZIGBEE_KINDS.map((k) => (
+                  <KindOption
+                    key={k}
+                    selected={pickedKind === k}
+                    onClick={() => setPickedKind(k)}
+                    kind={k}
+                    label={tAlarm(`kindPicker.${k}` as never)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setArmed(!armed)}
+              aria-pressed={armed}
+              className={[
+                "flex items-center gap-3 rounded-md border px-4 py-3 text-left transition-colors",
+                armed
+                  ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                  : "border-border bg-surface text-text-muted hover:border-text-muted/40",
+              ].join(" ")}
+            >
+              {armed ? (
+                <ShieldCheckIcon size={22} weight="fill" className="shrink-0" />
+              ) : (
+                <ShieldSlashIcon size={22} weight="duotone" className="shrink-0" />
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="font-medium leading-tight">
+                  {armed ? tAlarm("deviceArmed") : tAlarm("deviceDisarmed")}
+                </p>
+              </div>
+            </button>
+          </>
+        )}
+
         {/* Hidden submit so Enter from the Input saves */}
         <button type="submit" className="hidden" tabIndex={-1} aria-hidden />
       </form>
     </BottomSheet>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Kind option (door / window / siren / plug)                         */
+/* ------------------------------------------------------------------ */
+
+function KindOption({
+  selected,
+  onClick,
+  kind,
+  label,
+}: {
+  selected: boolean;
+  onClick: () => void;
+  kind: DeviceKind;
+  label: string;
+}) {
+  const Ico =
+    kind === "sensor_window"
+      ? AppWindowIcon
+      : kind === "siren"
+        ? SirenIcon
+        : kind === "plug"
+          ? PlugIcon
+          : DoorIcon;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      className={[
+        "flex items-center gap-2.5 px-3 py-3 rounded-md min-h-[3rem] text-left transition-colors",
+        selected
+          ? "border-2 border-accent bg-accent/10 text-accent"
+          : "border border-border bg-surface text-text-muted hover:border-text-muted/40",
+      ].join(" ")}
+    >
+      <Ico size={20} weight="duotone" />
+      <span className="font-medium leading-tight truncate">{label}</span>
+    </button>
   );
 }
 

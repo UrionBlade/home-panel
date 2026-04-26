@@ -211,6 +211,20 @@
       "when": 1777197076269,
       "tag": "0029_medical_steve_rogers",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "6",
+      "when": 1777199854992,
+      "tag": "0030_easy_mandarin",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "6",
+      "when": 1777200031932,
+      "tag": "0031_yielding_machine_man",
+      "breakpoints": true
     }
   ]
 }

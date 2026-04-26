@@ -37,6 +37,12 @@ export interface ZigbeeDevice {
   lastSeenAt: string | null;
   /** Optional room assignment from the home-panel side. */
   roomId: string | null;
+  /** Whether the device contributes to the alarm system. */
+  armed: boolean;
+  /** Optional override for the rendered DeviceKind on the panel
+   * (e.g. "sensor_door" → "sensor_window" for the same Aqara contact
+   * sensor). Null = use the heuristic default. */
+  kindOverride: string | null;
 }
 
 /** Bridge-level state — connection + pairing window. */
@@ -72,6 +78,14 @@ export interface ZigbeeRenameInput {
 
 export interface ZigbeeAssignRoomInput {
   roomId: string | null;
+}
+
+export interface ZigbeeArmedInput {
+  armed: boolean;
+}
+
+export interface ZigbeeKindOverrideInput {
+  kindOverride: string | null;
 }
 
 /** SSE event names used by the mobile client to refresh state. */

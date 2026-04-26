@@ -31,6 +31,8 @@ function rowToDevice(row: ZigbeeDeviceRow): ZigbeeDevice {
     availability: row.availability,
     lastSeenAt: row.lastSeenAt,
     roomId: row.roomId,
+    armed: row.armed,
+    kindOverride: row.kindOverride,
   };
 }
 
@@ -113,6 +115,25 @@ export function upsertDevice(input: UpsertInput): ZigbeeDevice | null {
 export function setRoom(ieeeAddress: string, roomId: string | null): ZigbeeDevice | null {
   db.update(zigbeeDevices)
     .set({ roomId, updatedAt: new Date().toISOString() })
+    .where(eq(zigbeeDevices.ieeeAddress, ieeeAddress))
+    .run();
+  return getDevice(ieeeAddress);
+}
+
+export function setArmed(ieeeAddress: string, armed: boolean): ZigbeeDevice | null {
+  db.update(zigbeeDevices)
+    .set({ armed, updatedAt: new Date().toISOString() })
+    .where(eq(zigbeeDevices.ieeeAddress, ieeeAddress))
+    .run();
+  return getDevice(ieeeAddress);
+}
+
+export function setKindOverride(
+  ieeeAddress: string,
+  kindOverride: string | null,
+): ZigbeeDevice | null {
+  db.update(zigbeeDevices)
+    .set({ kindOverride, updatedAt: new Date().toISOString() })
     .where(eq(zigbeeDevices.ieeeAddress, ieeeAddress))
     .run();
   return getDevice(ieeeAddress);

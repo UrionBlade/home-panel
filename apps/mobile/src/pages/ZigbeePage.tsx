@@ -6,6 +6,8 @@ import {
   DropIcon,
   PlusCircleIcon,
   PulseIcon,
+  ShieldCheckIcon,
+  ShieldSlashIcon,
   TrashIcon,
   WifiHighIcon,
   WifiSlashIcon,
@@ -15,11 +17,17 @@ import { PageContainer } from "../components/layout/PageContainer";
 import { PageHeader } from "../components/layout/PageHeader";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import {
+  useAlarmAckAll,
+  useAlarmArm,
+  useAlarmDisarm,
+  useAlarmLiveSync,
+  useAlarmState,
+} from "../lib/hooks/useAlarm";
+import {
   useZigbeeClosePermitJoin,
   useZigbeeLiveSync,
   useZigbeePermitJoin,
   useZigbeeRemoveDevice,
-  useZigbeeRenameDevice,
   useZigbeeState,
 } from "../lib/hooks/useZigbee";
 import { useT } from "../lib/useT";
@@ -83,11 +91,9 @@ function StateLine({ device }: { device: ZigbeeDevice }) {
 
 function DeviceCard({
   device,
-  onRename,
   onRemove,
 }: {
   device: ZigbeeDevice;
-  onRename: (d: ZigbeeDevice) => void;
   onRemove: (d: ZigbeeDevice) => void;
 }) {
   const { t } = useT("zigbee");
@@ -123,14 +129,6 @@ function DeviceCard({
           </p>
         </div>
         <div className="flex gap-1">
-          <button
-            type="button"
-            onClick={() => onRename(device)}
-            className="size-9 grid place-items-center rounded-lg text-text-muted hover:text-text hover:bg-surface-2"
-            aria-label={t("device.rename")}
-          >
-            <PulseIcon size={18} />
-          </button>
           <button
             type="button"
             onClick={() => onRemove(device)}
@@ -174,7 +172,6 @@ export function ZigbeePage() {
   useZigbeeLiveSync();
   const permitJoin = useZigbeePermitJoin();
   const closePermitJoin = useZigbeeClosePermitJoin();
-  const renameMutation = useZigbeeRenameDevice();
   const removeMutation = useZigbeeRemoveDevice();
 
   const [removeTarget, setRemoveTarget] = useState<ZigbeeDevice | null>(null);
@@ -212,22 +209,6 @@ export function ZigbeePage() {
       }
     } catch (err) {
       setFeedback(t("permitJoin.error", { message: errorMessage(err) }));
-    }
-  };
-
-  const handleRename = async (device: ZigbeeDevice) => {
-    const next = window.prompt(
-      t("device.renamePrompt", { name: device.friendlyName }),
-      device.friendlyName,
-    );
-    if (!next || next.trim() === device.friendlyName) return;
-    try {
-      await renameMutation.mutateAsync({
-        ieeeAddress: device.ieeeAddress,
-        friendlyName: next.trim(),
-      });
-    } catch (err) {
-      setFeedback(t("device.renameError", { message: errorMessage(err) }));
     }
   };
 
@@ -271,6 +252,8 @@ export function ZigbeePage() {
         z2mOnline={bridge?.z2mOnline ?? false}
       />
 
+      <AlarmSection />
+
       {permitJoinActive && (
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
           {t("permitJoin.active")}
@@ -290,12 +273,7 @@ export function ZigbeePage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {devices.map((d) => (
-            <DeviceCard
-              key={d.ieeeAddress}
-              device={d}
-              onRename={handleRename}
-              onRemove={setRemoveTarget}
-            />
+            <DeviceCard key={d.ieeeAddress} device={d} onRemove={setRemoveTarget} />
           ))}
         </div>
       )}
@@ -311,6 +289,114 @@ export function ZigbeePage() {
         onClose={() => setRemoveTarget(null)}
       />
     </PageContainer>
+  );
+}
+
+/* ----- Alarm arm/disarm + recent events ----- */
+
+function AlarmSection() {
+  const { t } = useT("alarm");
+  const stateQuery = useAlarmState();
+  useAlarmLiveSync();
+  const arm = useAlarmArm();
+  const disarm = useAlarmDisarm();
+  const ackAll = useAlarmAckAll();
+  const [error, setError] = useState<string | null>(null);
+
+  const state = stateQuery.data?.state;
+  const events = stateQuery.data?.events ?? [];
+  const unread = stateQuery.data?.unreadCount ?? 0;
+  const armed = state?.armed ?? false;
+
+  const onToggleArm = async () => {
+    setError(null);
+    try {
+      if (armed) await disarm.mutateAsync();
+      else await arm.mutateAsync(undefined);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "errore";
+      setError(t(armed ? "disarmingError" : "armingError", { message }));
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border border-border bg-surface-1 p-4 flex flex-col gap-3">
+      <div className="flex items-center gap-3">
+        {armed ? (
+          <ShieldCheckIcon size={26} weight="fill" className="text-emerald-500" />
+        ) : (
+          <ShieldSlashIcon size={26} weight="duotone" className="text-text-muted" />
+        )}
+        <div className="min-w-0 flex-1">
+          <h2 className="font-display text-2xl">{t("title")}</h2>
+          <p className="text-sm text-text-muted">{armed ? t("armed") : t("disarmed")}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onToggleArm}
+          disabled={arm.isPending || disarm.isPending}
+          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 font-medium transition disabled:opacity-50 ${
+            armed
+              ? "bg-rose-500/10 text-rose-600 hover:bg-rose-500/20"
+              : "bg-emerald-500 text-white hover:bg-emerald-600"
+          }`}
+        >
+          {armed ? t("disarmNow") : t("armNow")}
+        </button>
+      </div>
+
+      {error && (
+        <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-700 dark:text-rose-300">
+          {error}
+        </div>
+      )}
+
+      {events.length > 0 && (
+        <div className="rounded-xl bg-surface-2 p-3 flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-medium text-text">{t("history")}</h3>
+            {unread > 0 && (
+              <span className="rounded-full bg-rose-500 text-white text-xs px-2 py-0.5">
+                {t("unread", { count: unread })}
+              </span>
+            )}
+            {unread > 0 && (
+              <button
+                type="button"
+                onClick={() => void ackAll.mutateAsync()}
+                className="ml-auto text-xs text-text-muted hover:text-text"
+              >
+                {t("ackAll")}
+              </button>
+            )}
+          </div>
+          <ul className="flex flex-col gap-1 max-h-44 overflow-auto">
+            {events.slice(0, 8).map((ev) => (
+              <li
+                key={ev.id}
+                className={`flex items-center gap-2 text-sm ${
+                  ev.acknowledgedAt ? "text-text-muted" : "text-text"
+                }`}
+              >
+                <span className="font-medium truncate">{ev.friendlyName}</span>
+                <span className="text-text-muted truncate">
+                  ·{" "}
+                  {t(`triggered.${ev.kind}`, {
+                    defaultValue: ev.kind,
+                  })}
+                </span>
+                <span className="ml-auto text-xs text-text-muted shrink-0">
+                  {new Date(ev.triggeredAt).toLocaleTimeString(navigator.language, {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
   );
 }
 

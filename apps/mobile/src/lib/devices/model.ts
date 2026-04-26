@@ -8,7 +8,9 @@ import type {
   SmartThingsConfig,
   TvConfig,
   TvStatus,
+  ZigbeeDevice,
 } from "@home-panel/shared";
+import { i18next } from "../i18n";
 import type { DeviceKind } from "./icons";
 
 /**
@@ -215,6 +217,83 @@ const KIND_RANK: Record<DeviceKind, number> = {
   sensor_window: 9,
   siren: 10,
 };
+
+/**
+ * Projector for paired Zigbee devices (Aqara contact sensors, Heiman
+ * sirens, smart plugs, …). The Z2M definition is opaque enough that we
+ * heuristically pick a `DeviceKind` from description / model: anything
+ * with a "window" hint becomes `sensor_window`, sirens map to `siren`,
+ * plugs to `plug`, everything else with a `contact` payload defaults to
+ * `sensor_door`. Renames and room moves go through the home-panel API,
+ * not directly to Z2M, so the user can pick a friendly Italian name
+ * without re-pairing the device.
+ */
+export function projectZigbee(row: ZigbeeDevice): DeviceEntity {
+  const desc = (row.description ?? "").toLowerCase();
+  const model = (row.model ?? "").toLowerCase();
+  const state = row.state as Record<string, unknown>;
+
+  /* If the user picked an explicit kind from the editor, honour it. */
+  const overrideOk =
+    row.kindOverride === "sensor_door" ||
+    row.kindOverride === "sensor_window" ||
+    row.kindOverride === "siren" ||
+    row.kindOverride === "plug";
+  let kind: DeviceKind;
+  if (overrideOk) {
+    kind = row.kindOverride as DeviceKind;
+  } else if (desc.includes("siren") || model.startsWith("hs2wd")) {
+    kind = "siren";
+  } else if (desc.includes("plug") || desc.includes("outlet")) {
+    kind = "plug";
+  } else {
+    /* Aqara contact sensors describe themselves as "door & window" so
+     * we can't tell them apart from metadata alone. Default to "porta"
+     * and let the user flip individual devices to "finestra" via the
+     * Casa editor. */
+    kind = "sensor_door";
+  }
+
+  /* Status mapping. For contact sensors: closed (`contact: true`) is
+   * "off" (idle, normal), open (`contact: false`) is "on" (notable).
+   * Z2M's `availability` overrides everything when offline. */
+  let status: DeviceStatus = "unknown";
+  if (row.availability === "offline") {
+    status = "offline";
+  } else if (typeof state.contact === "boolean") {
+    status = state.contact ? "off" : "on";
+  } else if (typeof state.state === "string") {
+    status = state.state.toLowerCase() === "on" ? "on" : "off";
+  }
+
+  /* Subtitle on the Casa tile reflects the most useful current reading
+   * — for contact sensors, "Aperto" / "Chiuso"; for leak sensors,
+   * "Perdita" / "Asciutto"; for plugs, on/off. Falls back to
+   * "Sconosciuto" when there's no payload yet (sensor never reported
+   * an event since pairing). */
+  let subtitle: string | undefined;
+  if (typeof state.contact === "boolean") {
+    subtitle = i18next.t(`zigbee:state.contact.${state.contact ? "true" : "false"}` as never);
+  } else if (typeof state.water_leak === "boolean") {
+    subtitle = i18next.t(`zigbee:state.water_leak.${state.water_leak ? "true" : "false"}` as never);
+  } else if (typeof state.occupancy === "boolean") {
+    subtitle = i18next.t(`zigbee:state.occupancy.${state.occupancy ? "true" : "false"}` as never);
+  } else if (typeof state.state === "string") {
+    subtitle = state.state.toLowerCase();
+  }
+
+  return {
+    id: row.ieeeAddress,
+    kind,
+    name: row.friendlyName,
+    roomId: row.roomId,
+    status,
+    subtitle,
+    renameable: true,
+    supportsToggle: false,
+    raw: row,
+  };
+}
 
 export function groupDevicesByRoom(
   rooms: Room[],

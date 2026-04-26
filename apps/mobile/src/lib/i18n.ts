@@ -2,6 +2,7 @@ import i18next from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import { initReactI18next } from "react-i18next";
 import acEn from "../locales/en/ac.json";
+import alarmEn from "../locales/en/alarm.json";
 import boardEn from "../locales/en/board.json";
 import calendarEn from "../locales/en/calendar.json";
 import camerasEn from "../locales/en/cameras.json";
@@ -25,6 +26,7 @@ import wasteEn from "../locales/en/waste.json";
 import weatherEn from "../locales/en/weather.json";
 import zigbeeEn from "../locales/en/zigbee.json";
 import acIt from "../locales/it/ac.json";
+import alarmIt from "../locales/it/alarm.json";
 import boardIt from "../locales/it/board.json";
 import calendarIt from "../locales/it/calendar.json";
 import camerasIt from "../locales/it/cameras.json";
@@ -78,6 +80,7 @@ void i18next
       "ac",
       "casa",
       "zigbee",
+      "alarm",
     ],
     resources: {
       it: {
@@ -104,6 +107,7 @@ void i18next
         weather: weatherIt,
         tv: tvIt,
         zigbee: zigbeeIt,
+        alarm: alarmIt,
       },
       en: {
         ac: acEn,
@@ -129,6 +133,7 @@ void i18next
         weather: weatherEn,
         tv: tvEn,
         zigbee: zigbeeEn,
+        alarm: alarmEn,
       },
     },
     interpolation: {

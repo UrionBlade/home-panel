@@ -1,0 +1,34 @@
+{
+  "title": "Alarm",
+  "subtitle": "Security system for the home Zigbee sensors.",
+  "armed": "Armed",
+  "disarmed": "Disarmed",
+  "armNow": "Arm alarm",
+  "disarmNow": "Disarm",
+  "armingError": "Could not arm: {{message}}",
+  "disarmingError": "Could not disarm: {{message}}",
+  "armedSince": "Armed since {{when}}",
+  "neverArmed": "Never armed",
+  "deviceArmed": "In the alarm",
+  "deviceDisarmed": "Excluded from the alarm",
+  "dismiss": "Dismiss",
+  "ackAll": "Dismiss all",
+  "history": "Event history",
+  "historyEmpty": "No events yet.",
+  "unread_one": "{{count}} new event",
+  "unread_other": "{{count}} new events",
+  "triggered": {
+    "contact_open": "Opening detected",
+    "motion": "Motion detected",
+    "tamper": "Tamper detected",
+    "leak": "Water leak",
+    "manual": "Manual alarm"
+  },
+  "kindPicker": {
+    "title": "Sensor type",
+    "sensor_door": "Door",
+    "sensor_window": "Window",
+    "siren": "Siren",
+    "plug": "Plug"
+  }
+}

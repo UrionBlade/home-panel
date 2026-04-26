@@ -6,6 +6,12 @@ import { useAssignDevices, useLaundryConfig, useLaundryStatus } from "../hooks/u
 import { useLightCommand, useLights, useUpdateLight } from "../hooks/useLights";
 import { useRooms } from "../hooks/useRooms";
 import { useTvAssign, useTvConfig, useTvPower, useTvStatus } from "../hooks/useTv";
+import {
+  useZigbeeAssignRoom,
+  useZigbeeLiveSync,
+  useZigbeeRenameDevice,
+  useZigbeeState,
+} from "../hooks/useZigbee";
 import type { DeviceEntity } from "./model";
 import {
   groupDevicesByRoom,
@@ -16,6 +22,7 @@ import {
   projectLight,
   projectTv,
   projectWasher,
+  projectZigbee,
 } from "./model";
 
 /**
@@ -34,6 +41,9 @@ export function useHomeDevices() {
   const tvStatusQ = useTvStatus();
   const laundryConfigQ = useLaundryConfig();
   const laundryStatusQ = useLaundryStatus();
+  const zigbeeQ = useZigbeeState();
+  /* Wire SSE so device tiles refresh on contact change without a poll. */
+  useZigbeeLiveSync();
 
   const devices: DeviceEntity[] = useMemo(() => {
     const out: DeviceEntity[] = [];
@@ -54,6 +64,8 @@ export function useHomeDevices() {
     const dryer = projectDryer(laundryCfg, dryerAppliance);
     if (dryer) out.push(dryer);
 
+    for (const z of zigbeeQ.data?.devices ?? []) out.push(projectZigbee(z));
+
     return out;
   }, [
     lightsQ.data,
@@ -64,6 +76,7 @@ export function useHomeDevices() {
     tvStatusQ.data,
     laundryConfigQ.data,
     laundryStatusQ.data,
+    zigbeeQ.data,
   ]);
 
   const grouped = useMemo(
@@ -108,6 +121,8 @@ export function useDeviceActions() {
   const tvPower = useTvPower();
   const tvAssign = useTvAssign();
   const laundryAssign = useAssignDevices();
+  const zigbeeRename = useZigbeeRenameDevice();
+  const zigbeeAssignRoom = useZigbeeAssignRoom();
 
   return useMemo(
     () => ({
@@ -157,6 +172,14 @@ export function useDeviceActions() {
             return laundryAssign.mutateAsync({ washerNickname: newName });
           case "dryer":
             return laundryAssign.mutateAsync({ dryerNickname: newName });
+          case "sensor_door":
+          case "sensor_window":
+          case "siren":
+          case "plug":
+            return zigbeeRename.mutateAsync({
+              ieeeAddress: entity.id,
+              friendlyName: newName,
+            });
           default:
             return Promise.reject(new Error("Rinomina non supportata per questo tipo"));
         }
@@ -182,6 +205,11 @@ export function useDeviceActions() {
             return laundryAssign.mutateAsync({ washerRoomId: roomId });
           case "dryer":
             return laundryAssign.mutateAsync({ dryerRoomId: roomId });
+          case "sensor_door":
+          case "sensor_window":
+          case "siren":
+          case "plug":
+            return zigbeeAssignRoom.mutateAsync({ ieeeAddress: entity.id, roomId });
           default:
             return Promise.reject(new Error("Assegnazione non supportata"));
         }
@@ -198,6 +226,8 @@ export function useDeviceActions() {
       tvPower,
       tvAssign,
       laundryAssign,
+      zigbeeRename,
+      zigbeeAssignRoom,
     ],
   );
 }

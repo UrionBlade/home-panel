@@ -1,5 +1,7 @@
 import type {
+  ZigbeeArmedInput,
   ZigbeeAssignRoomInput,
+  ZigbeeKindOverrideInput,
   ZigbeePermitJoinInput,
   ZigbeePermitJoinResponse,
   ZigbeeRenameInput,
@@ -13,7 +15,9 @@ import {
   removeZigbeeDevice,
   renameDevice,
 } from "../lib/zigbee/client.js";
-import { getDevice, listDevices, setRoom } from "../lib/zigbee/store.js";
+import { getDevice, listDevices, setArmed, setKindOverride, setRoom } from "../lib/zigbee/store.js";
+
+const ALLOWED_KIND_OVERRIDES = new Set(["sensor_door", "sensor_window", "siren", "plug"]);
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : "errore sconosciuto";
@@ -92,6 +96,43 @@ export const zigbeeRouter = new Hono()
     const dev = getDevice(c.req.param("id"));
     if (!dev) return c.json({ error: "device non trovato" }, 404);
     return c.json(dev);
+  })
+
+  /** Override the rendered DeviceKind for this device — used by the
+   *  panel to flip an Aqara contact sensor between "porta" and
+   *  "finestra" (the same hardware reports both descriptions in Z2M's
+   *  metadata, so the heuristic can't pick reliably). */
+  .patch("/devices/:id/kind", async (c) => {
+    const id = c.req.param("id");
+    const body = (await c.req.json().catch(() => null)) as ZigbeeKindOverrideInput | null;
+    if (!body || !("kindOverride" in body)) {
+      return c.json({ error: "kindOverride richiesto (string | null)" }, 400);
+    }
+    const value = body.kindOverride;
+    if (value !== null && !ALLOWED_KIND_OVERRIDES.has(value)) {
+      return c.json(
+        {
+          error: `kindOverride non valido (ammessi: ${[...ALLOWED_KIND_OVERRIDES].join(", ")})`,
+        },
+        400,
+      );
+    }
+    const updated = setKindOverride(id, value);
+    if (!updated) return c.json({ error: "device non trovato" }, 404);
+    return c.json(updated);
+  })
+
+  /** Opt-in / opt-out a single device from the alarm system. Doesn't
+   *  touch Z2M — purely a home-panel flag. */
+  .patch("/devices/:id/armed", async (c) => {
+    const id = c.req.param("id");
+    const body = (await c.req.json().catch(() => null)) as ZigbeeArmedInput | null;
+    if (!body || typeof body.armed !== "boolean") {
+      return c.json({ error: "armed (boolean) richiesto" }, 400);
+    }
+    const updated = setArmed(id, body.armed);
+    if (!updated) return c.json({ error: "device non trovato" }, 404);
+    return c.json(updated);
   })
 
   /** Remove the device from the mesh. The bridge will follow up with a

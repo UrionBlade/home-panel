@@ -126,3 +126,37 @@ export function useZigbeeAssignRoom() {
     },
   });
 }
+
+export function useZigbeeSetKind() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      ieeeAddress,
+      kindOverride,
+    }: {
+      ieeeAddress: string;
+      kindOverride: string | null;
+    }) =>
+      apiClient.patch<ZigbeeDevice>(
+        `/api/v1/zigbee/devices/${encodeURIComponent(ieeeAddress)}/kind`,
+        { kindOverride },
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ZIGBEE_STATE_KEY });
+    },
+  });
+}
+
+export function useZigbeeSetArmed() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ ieeeAddress, armed }: { ieeeAddress: string; armed: boolean }) =>
+      apiClient.patch<ZigbeeDevice>(
+        `/api/v1/zigbee/devices/${encodeURIComponent(ieeeAddress)}/armed`,
+        { armed },
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ZIGBEE_STATE_KEY });
+    },
+  });
+}

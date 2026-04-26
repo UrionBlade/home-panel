@@ -9,9 +9,19 @@
  * roundtrip handling.
  */
 
-import { ZIGBEE_SSE_EVENTS, type ZigbeeBridgeState, type ZigbeeDevice } from "@home-panel/shared";
+import {
+  ALARM_SSE_EVENTS,
+  type AlarmEventKind,
+  ZIGBEE_SSE_EVENTS,
+  type ZigbeeBridgeState,
+  type ZigbeeDevice,
+} from "@home-panel/shared";
+import { eq } from "drizzle-orm";
 import mqtt, { type MqttClient } from "mqtt";
+import { db } from "../../db/client.js";
+import { zigbeeDevices } from "../../db/schema.js";
 import { sseEmitter } from "../../routes/sse.js";
+import { countUnread, getAlarmState, recordEvent } from "../alarm/store.js";
 import { removeDevice as dbRemoveDevice, getDevice, listDevices, upsertDevice } from "./store.js";
 
 interface Z2MDevice {
@@ -111,6 +121,41 @@ function applyDeviceList(list: Z2MDevice[]) {
   broadcastBridge();
 }
 
+/** Look up the per-device "armed" opt-in flag (`zigbee_devices.armed`). */
+function isDeviceArmed(ieeeAddress: string): boolean {
+  const row = db
+    .select({ armed: zigbeeDevices.armed })
+    .from(zigbeeDevices)
+    .where(eq(zigbeeDevices.ieeeAddress, ieeeAddress))
+    .get();
+  return row?.armed ?? true;
+}
+
+/**
+ * Decide whether a state payload represents a triggerable alarm event,
+ * comparing the previous and the new state. Aqara/Z2M conventions:
+ *   contact: false  → door/window OPEN
+ *   occupancy: true → motion detected
+ *   tamper: true    → device housing tampered
+ *   water_leak: true→ leak detected
+ */
+function detectAlarmKind(
+  prev: Record<string, unknown> | undefined,
+  next: Record<string, unknown>,
+): AlarmEventKind | null {
+  const wasContact = prev && typeof prev.contact === "boolean" ? prev.contact : true;
+  if (typeof next.contact === "boolean" && wasContact && next.contact === false) {
+    return "contact_open";
+  }
+  const wasOccupancy = prev && prev.occupancy === true;
+  if (next.occupancy === true && !wasOccupancy) return "motion";
+  const wasTamper = prev && prev.tamper === true;
+  if (next.tamper === true && !wasTamper) return "tamper";
+  const wasLeak = prev && prev.water_leak === true;
+  if (next.water_leak === true && !wasLeak) return "leak";
+  return null;
+}
+
 /** Apply a `<friendly_name>` state payload to the matching device. */
 function applyDeviceState(friendlyName: string, payload: Record<string, unknown>) {
   // Z2M emits the device topic keyed by friendly name, not ieee address.
@@ -122,6 +167,11 @@ function applyDeviceState(friendlyName: string, payload: Record<string, unknown>
   const battery = parseBattery(payload);
   const linkQuality = parseLinkQuality(payload);
 
+  /* Capture previous state BEFORE the upsert so the trigger predicate
+   * can see what changed. */
+  const prevState = dev.state;
+  const alarmKind = detectAlarmKind(prevState, payload);
+
   const updated = upsertDevice({
     ieeeAddress: dev.ieeeAddress,
     friendlyName: dev.friendlyName,
@@ -132,6 +182,28 @@ function applyDeviceState(friendlyName: string, payload: Record<string, unknown>
   });
   if (updated) {
     emit(ZIGBEE_SSE_EVENTS.device, updated);
+  }
+
+  /* Fire the alarm only if the system is armed AND the device is opted
+   * in. Disarmed → silent log of state changes (already done above). */
+  if (alarmKind) {
+    const alarm = getAlarmState();
+    if (alarm.armed && isDeviceArmed(dev.ieeeAddress)) {
+      const event = recordEvent({
+        ieeeAddress: dev.ieeeAddress,
+        friendlyName: dev.friendlyName,
+        kind: alarmKind,
+        payload,
+      });
+      sseEmitter.emit("push", {
+        event: ALARM_SSE_EVENTS.triggered,
+        payload: event,
+      });
+      sseEmitter.emit("push", {
+        event: ALARM_SSE_EVENTS.state,
+        payload: { state: alarm, unreadCount: countUnread() },
+      });
+    }
   }
 }
 

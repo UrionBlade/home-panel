@@ -12,6 +12,7 @@ import { subscribeRoutineClientActions } from "../../lib/routines/sseListener";
 import { sseClient } from "../../lib/sse-client";
 import { ThemeProvider } from "../../lib/theme/ThemeProvider";
 import { VoiceProvider } from "../../lib/voice/VoiceProvider";
+import { AlarmAlertOverlay } from "../alarm/AlarmAlertOverlay";
 import { ScreensaverOverlay } from "../kiosk/ScreensaverOverlay";
 import { TimerOverlay } from "../timers/TimerOverlay";
 import { ToastContainer } from "../ui/Toast";
@@ -96,6 +97,7 @@ export function AppShell({ children, hideClock, title }: AppShellProps) {
                   <ToastContainer />
                 </div>
                 <TimerOverlay />
+                <AlarmAlertOverlay />
                 <VoiceListeningOverlay />
                 <VoiceDebugPanel />
                 <ScreensaverManager />

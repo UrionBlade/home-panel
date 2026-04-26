@@ -21,6 +21,7 @@ import type voiceIt from "../locales/it/voice.json";
 import type wasteIt from "../locales/it/waste.json";
 import type weatherIt from "../locales/it/weather.json";
 import type zigbeeIt from "../locales/it/zigbee.json";
+import type alarmIt from "../locales/it/alarm.json";
 
 declare module "i18next" {
   interface CustomTypeOptions {
@@ -49,6 +50,7 @@ declare module "i18next" {
       weather: typeof weatherIt;
       tv: typeof tvIt;
       zigbee: typeof zigbeeIt;
+      alarm: typeof alarmIt;
     };
   }
 }

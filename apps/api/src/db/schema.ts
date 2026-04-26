@@ -638,8 +638,54 @@ export const zigbeeDevices = sqliteTable("zigbee_devices", {
   /** Nullable room assignment — same semantics as other device tables
    * (null = "Senza stanza", stale ids silently orphaned). */
   roomId: text("room_id"),
+  /** When true, this device contributes to the alarm: an open/triggered
+   * state event will fire `alarm:triggered` if `alarm_state.armed` is on.
+   * Defaults to true so newly-paired sensors are protected by default. */
+  armed: integer("armed", { mode: "boolean" }).notNull().default(true),
+  /** Optional override for the projected DeviceKind. Z2M's description
+   * for an Aqara contact sensor says "door & window" so the auto
+   * heuristic is unreliable; this column lets the user pick explicitly
+   * (porta vs finestra vs sirena vs presa). Null = keep the default. */
+  kindOverride: text("kind_override"),
   createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
   updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
 });
 export type ZigbeeDeviceRow = typeof zigbeeDevices.$inferSelect;
 export type NewZigbeeDeviceRow = typeof zigbeeDevices.$inferInsert;
+
+/*
+ * Alarm system state — singleton (id = 1) with the global armed flag.
+ * The semantics are intentionally simple: when `armed` is true, any
+ * trigger event from a participating device generates an alarm_event
+ * row and pushes `alarm:triggered` over SSE. Disarming clears the
+ * "armed" flag and silences pending notifications.
+ */
+export const alarmState = sqliteTable("alarm_state", {
+  id: integer("id").primaryKey().default(1),
+  armed: integer("armed", { mode: "boolean" }).notNull().default(false),
+  armedAt: text("armed_at"),
+  /** Free-text mode label ("home" / "away" / "night") for future
+   * use — the current MVP is binary armed/disarmed. */
+  mode: text("mode").notNull().default("away"),
+  updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+});
+export type AlarmStateRow = typeof alarmState.$inferSelect;
+
+/*
+ * Alarm events — audit log of every armed-state trigger. Acknowledgement
+ * is tracked per-event so the panel can show a counter of unread
+ * incidents until the user explicitly clears them.
+ */
+export const alarmEvents = sqliteTable("alarm_events", {
+  id: text("id").primaryKey(),
+  ieeeAddress: text("ieee_address").notNull(),
+  friendlyName: text("friendly_name").notNull(),
+  /** Discriminator: "contact_open" | "motion" | "tamper" | "leak" | "manual". */
+  kind: text("kind").notNull(),
+  triggeredAt: text("triggered_at").notNull(),
+  acknowledgedAt: text("acknowledged_at"),
+  /** Snapshot of the state payload that fired the event. JSON. */
+  payload: text("payload").notNull().default("{}"),
+});
+export type AlarmEventRow = typeof alarmEvents.$inferSelect;
+export type NewAlarmEventRow = typeof alarmEvents.$inferInsert;

@@ -1,0 +1,34 @@
+{
+  "title": "Allarme",
+  "subtitle": "Sistema di sicurezza per i sensori Zigbee della casa.",
+  "armed": "Armato",
+  "disarmed": "Disarmato",
+  "armNow": "Arma allarme",
+  "disarmNow": "Disarma",
+  "armingError": "Impossibile armare: {{message}}",
+  "disarmingError": "Impossibile disarmare: {{message}}",
+  "armedSince": "Armato da {{when}}",
+  "neverArmed": "Mai armato",
+  "deviceArmed": "Incluso nell'allarme",
+  "deviceDisarmed": "Escluso dall'allarme",
+  "dismiss": "Tacita",
+  "ackAll": "Tacita tutti",
+  "history": "Storico eventi",
+  "historyEmpty": "Nessun evento registrato.",
+  "unread_one": "{{count}} nuovo evento",
+  "unread_other": "{{count}} nuovi eventi",
+  "triggered": {
+    "contact_open": "Apertura rilevata",
+    "motion": "Movimento rilevato",
+    "tamper": "Manomissione",
+    "leak": "Perdita d'acqua",
+    "manual": "Allarme manuale"
+  },
+  "kindPicker": {
+    "title": "Tipo di sensore",
+    "sensor_door": "Porta",
+    "sensor_window": "Finestra",
+    "siren": "Sirena",
+    "plug": "Presa"
+  }
+}

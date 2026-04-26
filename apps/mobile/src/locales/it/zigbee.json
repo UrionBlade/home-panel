@@ -39,8 +39,8 @@
   },
   "state": {
     "contact": {
-      "true": "Aperto",
-      "false": "Chiuso"
+      "true": "Chiuso",
+      "false": "Aperto"
     },
     "occupancy": {
       "true": "Movimento",

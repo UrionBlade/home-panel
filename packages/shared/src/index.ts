@@ -10,6 +10,7 @@ export type HealthResponse = {
   uptime: number;
 };
 
+export * from "./alarm.js";
 export * from "./blink.js";
 export * from "./calendar.js";
 export * from "./family.js";

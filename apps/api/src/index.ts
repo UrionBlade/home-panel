@@ -24,6 +24,7 @@ import { startRoutinesScheduler } from "./lib/routines/scheduler.js";
 import { startZigbeeBridge } from "./lib/zigbee/client.js";
 import { apiAuth } from "./middleware/auth.js";
 import { acRouter } from "./routes/ac.js";
+import { alarmRouter } from "./routes/alarm.js";
 import { blinkRouter } from "./routes/blink.js";
 import { calendarRouter } from "./routes/calendar.js";
 import { calendarSourcesRouter } from "./routes/calendar-sources.js";
@@ -206,6 +207,7 @@ app.route(`/api/${API_VERSION}/ac`, acRouter);
 app.route(`/api/${API_VERSION}/ip-cameras`, ipCamerasRouter);
 app.route(`/api/${API_VERSION}/routines`, routinesRouter);
 app.route(`/api/${API_VERSION}/zigbee`, zigbeeRouter);
+app.route(`/api/${API_VERSION}/alarm`, alarmRouter);
 
 /* Register the Hono app with the internal-fetch dispatcher so routines can
  * invoke peer routes in-process without duplicating handler logic. */
