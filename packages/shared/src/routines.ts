@@ -82,6 +82,9 @@ export type RoutineActionType =
   | "tv.launch_app"
   // Shopping
   | "shopping.add"
+  // Home alarm (Zigbee contact / motion sensors)
+  | "alarm.arm"
+  | "alarm.disarm"
   // Timer
   | "timer.start"
   | "timer.stop_all"
@@ -132,6 +135,15 @@ export type RoutineStep =
   | { action: "tv.mute"; params: { muted: boolean }; continueOnError?: boolean }
   | { action: "tv.launch_app"; params: { appId: string }; continueOnError?: boolean }
   | { action: "shopping.add"; params: { name: string }; continueOnError?: boolean }
+  | {
+      action: "alarm.arm";
+      /** `mode` is a free-form tag ("home" / "away" / "night"). Currently the
+       * MVP just flips the boolean — the field is reserved for future per-mode
+       * sensor masks and is forwarded as-is to /alarm/arm. */
+      params?: { mode?: string | null };
+      continueOnError?: boolean;
+    }
+  | { action: "alarm.disarm"; params?: Record<string, never>; continueOnError?: boolean }
   | {
       action: "timer.start";
       params: { durationSeconds: number; label?: string | null };

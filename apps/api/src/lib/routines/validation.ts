@@ -45,6 +45,8 @@ const ACTION_TYPES: ReadonlySet<RoutineActionType> = new Set<RoutineActionType>(
   "tv.mute",
   "tv.launch_app",
   "shopping.add",
+  "alarm.arm",
+  "alarm.disarm",
   "timer.start",
   "timer.stop_all",
   "delay",
@@ -176,6 +178,16 @@ export function isValidStep(step: unknown): Check {
       return OK;
     case "shopping.add":
       if (typeof p.name !== "string" || !p.name.trim()) return err("name richiesto");
+      return OK;
+    case "alarm.arm":
+      /* `mode` opzionale, free-form. Lo accettiamo solo come stringa non vuota
+       * o assente; sanity check leggero, lato server è solo un tag. */
+      if (p.mode !== undefined && p.mode !== null) {
+        if (typeof p.mode !== "string" || p.mode.length > 32)
+          return err("mode deve essere una stringa breve");
+      }
+      return OK;
+    case "alarm.disarm":
       return OK;
     case "timer.start":
       if (

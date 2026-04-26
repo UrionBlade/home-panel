@@ -107,6 +107,8 @@
     "tv.mute": "TV: muta/smuta",
     "tv.launch_app": "TV: apri app",
     "shopping.add": "Spesa: aggiungi voce",
+    "alarm.arm": "Allarme casa: arma",
+    "alarm.disarm": "Allarme casa: disarma",
     "timer.start": "Avvia un timer",
     "timer.stop_all": "Ferma tutti i timer",
     "delay": "Aspetta alcuni ms",
@@ -118,6 +120,7 @@
     "cameras": "Telecamere",
     "spotify": "Spotify",
     "tv": "TV",
+    "alarm": "Allarme casa",
     "shopping": "Spesa",
     "timer": "Timer",
     "meta": "Altro"
@@ -157,7 +160,12 @@
     "durationSeconds": "Durata (secondi)",
     "label": "Etichetta (opzionale)",
     "ms": "Millisecondi",
-    "text": "Testo da dire"
+    "text": "Testo da dire",
+    "alarmMode": "Modalità",
+    "alarmModeDefault": "Predefinita",
+    "alarmModeHome": "In casa",
+    "alarmModeAway": "Fuori casa",
+    "alarmModeNight": "Notte"
   },
   "create": {
     "success": "Routine creata",

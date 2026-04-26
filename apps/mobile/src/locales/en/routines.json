@@ -107,6 +107,8 @@
     "tv.mute": "TV: mute/unmute",
     "tv.launch_app": "TV: launch app",
     "shopping.add": "Shopping: add item",
+    "alarm.arm": "Home alarm: arm",
+    "alarm.disarm": "Home alarm: disarm",
     "timer.start": "Start a timer",
     "timer.stop_all": "Stop all timers",
     "delay": "Wait a few ms",
@@ -118,6 +120,7 @@
     "cameras": "Cameras",
     "spotify": "Spotify",
     "tv": "TV",
+    "alarm": "Home alarm",
     "shopping": "Shopping",
     "timer": "Timer",
     "meta": "Other"
@@ -157,7 +160,12 @@
     "durationSeconds": "Duration (seconds)",
     "label": "Label (optional)",
     "ms": "Milliseconds",
-    "text": "Text to speak"
+    "text": "Text to speak",
+    "alarmMode": "Mode",
+    "alarmModeDefault": "Default",
+    "alarmModeHome": "Home",
+    "alarmModeAway": "Away",
+    "alarmModeNight": "Night"
   },
   "create": {
     "success": "Routine created",

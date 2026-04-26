@@ -56,6 +56,7 @@ const ACTION_GROUPS: { key: string; actions: RoutineActionType[] }[] = [
     ],
   },
   { key: "tv", actions: ["tv.power", "tv.volume", "tv.mute", "tv.launch_app"] },
+  { key: "alarm", actions: ["alarm.arm", "alarm.disarm"] },
   { key: "shopping", actions: ["shopping.add"] },
   { key: "timer", actions: ["timer.start", "timer.stop_all"] },
   { key: "meta", actions: ["voice.speak", "delay"] },
@@ -351,8 +352,23 @@ function StepParamsEditor({
     case "spotify.pause":
     case "spotify.next":
     case "spotify.previous":
+    case "alarm.disarm":
     case "timer.stop_all":
       return null;
+    case "alarm.arm":
+      return (
+        <Dropdown
+          label={t("params.alarmMode")}
+          value={step.params?.mode ?? ""}
+          options={[
+            { value: "", label: t("params.alarmModeDefault") },
+            { value: "home", label: t("params.alarmModeHome") },
+            { value: "away", label: t("params.alarmModeAway") },
+            { value: "night", label: t("params.alarmModeNight") },
+          ]}
+          onChange={(v) => onChange({ ...step, params: v ? { mode: v } : { mode: null } })}
+        />
+      );
     case "spotify.volume":
       return (
         <Input
@@ -546,8 +562,11 @@ function defaultStepForAction(action: RoutineActionType): RoutineStep {
     case "spotify.pause":
     case "spotify.next":
     case "spotify.previous":
+    case "alarm.disarm":
     case "timer.stop_all":
       return { action };
+    case "alarm.arm":
+      return { action, params: { mode: null } };
     case "spotify.volume":
       return { action, params: { volumePercent: 50 } };
     case "spotify.play_uri":

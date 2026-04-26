@@ -173,6 +173,16 @@ async function dispatch(step: RoutineStep, ctx: RoutineRunContext): Promise<stri
       await internalFetch("POST", "/shopping/items/by-name", { name: step.params.name });
       return;
 
+    // ---- Home alarm ----
+    case "alarm.arm": {
+      const mode = step.params?.mode?.trim();
+      await internalFetch("POST", "/alarm/arm", mode ? { mode } : {});
+      return;
+    }
+    case "alarm.disarm":
+      await internalFetch("POST", "/alarm/disarm", {});
+      return;
+
     // ---- Timers ----
     case "timer.start":
       await internalFetch("POST", "/timers/timers", {
