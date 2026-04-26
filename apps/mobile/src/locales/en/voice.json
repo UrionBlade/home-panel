@@ -433,6 +433,27 @@
         "The AC is not responding, try again in a moment"
       ]
     },
+    "alarm": {
+      "armed": ["Alarm armed", "Alarm is on, home under watch"],
+      "disarmed": ["Alarm disarmed", "Alarm is off"],
+      "armedKind_one": "Armed {{count}} {{kind}}",
+      "armedKind_other": "Armed {{count}} {{kind}}",
+      "disarmedKind_one": "Disarmed {{count}} {{kind}}",
+      "disarmedKind_other": "Disarmed {{count}} {{kind}}",
+      "armedRoom_one": "Armed {{count}} sensor in {{room}}",
+      "armedRoom_other": "Armed {{count}} sensors in {{room}}",
+      "disarmedRoom_one": "Disarmed {{count}} sensor in {{room}}",
+      "disarmedRoom_other": "Disarmed {{count}} sensors in {{room}}",
+      "noMatches": "I couldn't find any sensors to update",
+      "roomNotFound": "I couldn't find the room {{name}}",
+      "kind": {
+        "sensor_door": "door",
+        "sensor_window": "window",
+        "siren": "siren",
+        "plug": "plug"
+      },
+      "error": "Alarm: {{message}}"
+    },
     "errors": {
       "generic": "Something went wrong"
     }

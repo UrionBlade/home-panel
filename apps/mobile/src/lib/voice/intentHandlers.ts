@@ -12,6 +12,7 @@ import { i18next } from "../i18n";
 import { primeAudio } from "../timers/alertSound";
 import { dismissActiveAlert, hasActiveAlert } from "../timers/alertStore";
 import { handleAcIntent, isAcIntent } from "./acIntents";
+import { handleAlarmIntent, isAlarmIntent } from "./alarmIntents";
 import { handleLaundryIntent, isLaundryIntent } from "./laundryIntents";
 import { handleLightIntent, isLightIntent } from "./lightIntents";
 import { nativeVoiceClient } from "./nativeVoiceClient";
@@ -241,6 +242,9 @@ export async function handleIntent(command: ParsedCommand): Promise<string> {
   if (isAcIntent(command.intent)) {
     const acResponse = await handleAcIntent(command, _queryClient);
     if (acResponse !== null) return acResponse;
+  }
+  if (isAlarmIntent(command.intent) && _queryClient) {
+    return handleAlarmIntent(command, _queryClient);
   }
 
   switch (command.intent) {
@@ -657,6 +661,10 @@ export async function handleIntent(command: ParsedCommand): Promise<string> {
     case "ac_set_mode":
     case "ac_set_fan":
     case "ac_status":
+    /* Alarm intents are handled above via handleAlarmIntent; reaching
+     * this branch means the QueryClient wasn't ready yet at boot. */
+    case "alarm_arm":
+    case "alarm_disarm":
       return vt("errors.generic");
   }
 }

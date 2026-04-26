@@ -432,6 +432,27 @@
         "Il condizionatore non risponde, riprova tra un attimo"
       ]
     },
+    "alarm": {
+      "armed": ["Allarme armato", "Allarme attivo, casa sotto controllo"],
+      "disarmed": ["Allarme disarmato", "Allarme disattivato"],
+      "armedKind_one": "Ho armato {{count}} {{kind}}",
+      "armedKind_other": "Ho armato {{count}} {{kind}}",
+      "disarmedKind_one": "Ho disarmato {{count}} {{kind}}",
+      "disarmedKind_other": "Ho disarmato {{count}} {{kind}}",
+      "armedRoom_one": "Ho armato {{count}} sensore in {{room}}",
+      "armedRoom_other": "Ho armato {{count}} sensori in {{room}}",
+      "disarmedRoom_one": "Ho disarmato {{count}} sensore in {{room}}",
+      "disarmedRoom_other": "Ho disarmato {{count}} sensori in {{room}}",
+      "noMatches": "Non ho trovato sensori da modificare",
+      "roomNotFound": "Non ho trovato la stanza {{name}}",
+      "kind": {
+        "sensor_door": "porta",
+        "sensor_window": "finestra",
+        "siren": "sirena",
+        "plug": "presa"
+      },
+      "error": "Allarme: {{message}}"
+    },
     "errors": {
       "generic": "Si è verificato un errore"
     }

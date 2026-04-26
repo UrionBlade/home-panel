@@ -1,5 +1,6 @@
 import type { ParsedCommand, VoiceIntent } from "@home-panel/shared";
 import { matchAcIntent } from "./acIntents";
+import { matchAlarmIntent } from "./alarmIntents";
 import { matchLaundryIntent } from "./laundryIntents";
 import { matchLightIntent } from "./lightIntents";
 import { matchRoutineTrigger } from "./routineTriggerRegistry";
@@ -707,6 +708,10 @@ export function parseVoiceCommand(text: string): ParsedCommand | null {
   if (tv) return tv;
   const laundry = matchLaundryIntent(text);
   if (laundry) return laundry;
+  /* Alarm runs before lights so "arma le luci" (a typo or odd phrasing)
+   * doesn't swallow the literal "luci" through the lights matcher. */
+  const alarm = matchAlarmIntent(text);
+  if (alarm) return alarm;
   const light = matchLightIntent(text);
   if (light) return light;
 

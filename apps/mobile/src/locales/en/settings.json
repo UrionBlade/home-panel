@@ -31,7 +31,9 @@
       "rust": "Rust",
       "sage": "Sage",
       "amber": "Amber"
-    }
+    },
+    "customColor": "Custom colour",
+    "resetColor": "Reset"
   },
   "info": {
     "version": "Version",

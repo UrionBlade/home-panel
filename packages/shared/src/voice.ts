@@ -70,7 +70,9 @@ export type VoiceIntent =
   | "ac_set_temp"
   | "ac_set_mode"
   | "ac_set_fan"
-  | "ac_status";
+  | "ac_status"
+  | "alarm_arm"
+  | "alarm_disarm";
 
 export interface ParsedCommand {
   intent: VoiceIntent;

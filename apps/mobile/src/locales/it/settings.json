@@ -31,7 +31,9 @@
       "rust": "Ruggine",
       "sage": "Salvia",
       "amber": "Ambra"
-    }
+    },
+    "customColor": "Colore personalizzato",
+    "resetColor": "Reset"
   },
   "info": {
     "version": "Versione",

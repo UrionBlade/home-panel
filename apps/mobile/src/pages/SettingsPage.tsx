@@ -206,9 +206,7 @@ export function SettingsPage() {
 
           <section>
             <h2 className="font-display text-3xl mb-5">{t("appearance.accentColor")}</h2>
-            <div className="flex flex-wrap gap-3">
-              {/* Custom hex picker removed — palette is intentionally constrained to warm
-                  tones to preserve the system's identity. See tokens.css header. */}
+            <div className="flex flex-wrap items-center gap-3">
               {PRESET_COLORS.map((c) => {
                 const isActive =
                   c.key === "terracotta"
@@ -236,6 +234,49 @@ export function SettingsPage() {
                   </button>
                 );
               })}
+              {/* Free hex picker — for users who want bright accents
+                outside the warm-tone preset palette. Sets accentColor to
+                the chosen hex; "reset" returns to the system default
+                (terracotta). */}
+              <label
+                className={clsx(
+                  "w-11 h-11 rounded-full border-2 transition-all flex items-center justify-center cursor-pointer relative overflow-hidden",
+                  accentColor !== null && !PRESET_COLORS.some((c) => c.hex === accentColor)
+                    ? "border-text scale-110"
+                    : "border-border hover:border-text-muted",
+                )}
+                style={{
+                  background:
+                    "conic-gradient(from 90deg at 50% 50%, #ff5252, #ffd542, #57e389, #5dd6ff, #b069ff, #ff5252)",
+                }}
+                title={t("appearance.customColor", { defaultValue: "Colore personalizzato" })}
+              >
+                <input
+                  type="color"
+                  value={
+                    accentColor !== null && !PRESET_COLORS.some((c) => c.hex === accentColor)
+                      ? accentColor
+                      : "#c25838"
+                  }
+                  onChange={(e) => setAccentColor(e.target.value)}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  aria-label={t("appearance.customColor", {
+                    defaultValue: "Colore personalizzato",
+                  })}
+                />
+                <span className="text-text font-display font-black text-base drop-shadow-[0_1px_0_rgba(255,255,255,0.8)]">
+                  +
+                </span>
+              </label>
+              {accentColor !== null && (
+                <button
+                  type="button"
+                  onClick={() => setAccentColor(null)}
+                  className="text-sm text-text-muted hover:text-text underline-offset-2 hover:underline"
+                >
+                  {t("appearance.resetColor", { defaultValue: "Reset" })}
+                </button>
+              )}
             </div>
           </section>
 
