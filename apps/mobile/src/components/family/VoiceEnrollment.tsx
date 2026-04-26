@@ -2,16 +2,16 @@
  * Voice enrollment modal — captures speaker embeddings for a family member.
  *
  * Flow:
- *  1. User taps "Registra campione".
- *  2. We call the native `voice_capture_speaker_embedding` Tauri command,
- *     which blocks for up to 4 s while the iOS plugin gathers 2.5 s of
- *     audio and runs ECAPA-TDNN to produce a 192-d vector.
- *  3. The vector is POSTed to /api/v1/family/:id/voice/enroll, which
- *     appends it to the member's sample set and recomputes the centroid.
+ *  1. User taps "Registra questa frase".
+ *  2. We call `voice_capture_speaker_embedding`, the iOS plugin records
+ *     2.5 s of audio and runs ECAPA-TDNN to produce a 192-d vector.
+ *  3. The vector is POSTed to /api/v1/family/:id/voice/enroll, appended
+ *     to the member's sample set, and the centroid is recomputed.
  *
- * Five samples (the kRecommended count) is enough for a stable centroid;
- * the user can add more later or wipe the profile entirely. We don't have
- * a "delete single sample" UX — the centroid is opaque to the user.
+ * Five samples is enough for a stable centroid. We show all five phrases
+ * in a checklist so the user can see exactly which ones they've covered;
+ * the next phrase to read is highlighted. The user can re-record the
+ * profile by wiping it (no per-sample delete — the centroid is opaque).
  */
 
 import type { FamilyMember } from "@home-panel/shared";
@@ -29,12 +29,14 @@ interface VoiceEnrollmentProps {
 
 const kRecommendedSamples = 5;
 
+/* Frasi che l'utente legge ad alta voce. Cinque frasi diverse forzano una
+ * varietà fonetica nel centroide — meglio per la robustezza del match. */
 const kPhrases = [
-  "Ok casa, accendi le luci del salotto",
-  "Ok casa, che tempo fa oggi",
-  "Ok casa, metti la sveglia alle sette",
-  "Ok casa, spegni la TV",
-  "Ok casa, apri il calendario di oggi",
+  "Ok casa, accendi le luci del salotto.",
+  "Ok casa, che tempo fa oggi?",
+  "Ok casa, metti la sveglia alle sette di domani.",
+  "Ok casa, spegni la televisione.",
+  "Ok casa, apri il calendario di oggi.",
 ];
 
 export function VoiceEnrollment({ member }: VoiceEnrollmentProps) {
@@ -44,8 +46,11 @@ export function VoiceEnrollment({ member }: VoiceEnrollmentProps) {
   const pushToast = useUiStore((s) => s.pushToast);
   const [recording, setRecording] = useState(false);
 
-  const sampleCount = member.voiceSampleCount;
-  const nextPhrase = kPhrases[Math.min(sampleCount, kPhrases.length - 1)];
+  /* Defensive default: cached payloads from before the schema change can
+   * arrive without `voiceSampleCount`, and `Math.min(undefined, …)` is
+   * NaN — which used to bleed straight into the UI. */
+  const sampleCount = member.voiceSampleCount ?? 0;
+  const currentIndex = Math.min(sampleCount, kPhrases.length - 1);
   const isComplete = sampleCount >= kRecommendedSamples;
 
   const handleRecord = async () => {
@@ -85,40 +90,82 @@ export function VoiceEnrollment({ member }: VoiceEnrollmentProps) {
   };
 
   return (
-    <section className="flex flex-col gap-4">
-      <header className="flex flex-col gap-1">
-        <p className="text-sm text-text-muted">{t("voice.intro", { name: member.displayName })}</p>
-      </header>
+    <section className="flex flex-col gap-5">
+      <p className="text-sm text-text-muted">{t("voice.intro", { name: member.displayName })}</p>
 
-      <div className="rounded-md border border-border bg-surface-muted/40 p-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3">
-          <span className="font-medium">
-            {t("voice.sampleProgress", {
-              current: Math.min(sampleCount, kRecommendedSamples),
-              total: kRecommendedSamples,
-            })}
+      {/* Progress + status pill */}
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium">
+          {t("voice.sampleProgress", {
+            current: Math.min(sampleCount, kRecommendedSamples),
+            total: kRecommendedSamples,
+          })}
+        </span>
+        {isComplete && (
+          <span className="inline-flex items-center gap-1.5 text-sm text-success">
+            <CheckCircleIcon size={16} weight="fill" />
+            {t("voice.ready")}
           </span>
-          {isComplete && (
-            <span className="inline-flex items-center gap-1 text-sm text-success">
-              <CheckCircleIcon size={16} weight="fill" />
-              {t("voice.ready")}
-            </span>
-          )}
-        </div>
+        )}
+      </div>
 
-        <div className="rounded bg-bg p-3 text-sm">
-          <p className="text-text-muted mb-1">{t("voice.sayThis")}</p>
-          <p className="font-display text-lg">{nextPhrase}</p>
-        </div>
+      {/* Lista delle 5 frasi: già fatte (✓), corrente (highlight), future (grigie) */}
+      <ol className="flex flex-col gap-2">
+        {kPhrases.map((phrase, idx) => {
+          const done = idx < sampleCount;
+          const current = idx === currentIndex && !isComplete;
+          return (
+            <li
+              key={phrase}
+              className={`flex items-start gap-3 rounded-md border p-3 transition-colors ${
+                current
+                  ? "border-accent bg-accent/5"
+                  : done
+                    ? "border-border bg-surface-muted/40"
+                    : "border-border bg-surface"
+              }`}
+            >
+              <span
+                className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold ${
+                  done
+                    ? "bg-success text-white"
+                    : current
+                      ? "bg-accent text-white"
+                      : "bg-surface-muted text-text-muted"
+                }`}
+                aria-hidden
+              >
+                {done ? "✓" : idx + 1}
+              </span>
+              <p
+                className={`text-base leading-snug ${
+                  done
+                    ? "text-text-muted line-through"
+                    : current
+                      ? "text-text font-medium"
+                      : "text-text"
+                }`}
+              >
+                {phrase}
+              </p>
+            </li>
+          );
+        })}
+      </ol>
 
+      {/* CTA + hint */}
+      <div className="flex flex-col gap-2">
         <Button
           onClick={handleRecord}
           isLoading={recording || enroll.isPending}
           iconLeft={<MicrophoneIcon size={18} weight="fill" />}
         >
-          {recording ? t("voice.recording") : t("voice.recordCta")}
+          {recording
+            ? t("voice.recording")
+            : isComplete
+              ? t("voice.recordExtraCta")
+              : t("voice.recordCta", { number: currentIndex + 1 })}
         </Button>
-
         <p className="text-xs text-text-muted">{t("voice.recordHint")}</p>
       </div>
 

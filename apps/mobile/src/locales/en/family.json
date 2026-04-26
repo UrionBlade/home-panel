@@ -42,13 +42,13 @@
   },
   "voice": {
     "title": "{{name}}'s voice",
-    "intro": "Record a few voice samples for {{name}}: the panel will recognise them when they say \"ok casa\".",
-    "sampleProgress": "Samples recorded: {{current}} of {{total}}",
-    "ready": "Ready",
-    "sayThis": "Hold the button and read:",
-    "recordCta": "Record sample",
-    "recording": "Listening...",
-    "recordHint": "Speak naturally for about 2 seconds. For best accuracy, record samples at different times of day.",
+    "intro": "To recognise {{name}} when they say \"ok casa\", we need five short samples of their voice. Read the highlighted sentence each time.",
+    "sampleProgress": "{{current}} of {{total}} done",
+    "ready": "Profile complete",
+    "recordCta": "Record sentence {{number}}",
+    "recordExtraCta": "Add another sample",
+    "recording": "I'm listening, speak now…",
+    "recordHint": "Tap, wait a beat, then read the highlighted sentence at a normal volume. I stop listening after about two seconds.",
     "deleteAll": "Delete recorded voice",
     "errors": {
       "nativeOnly": "Voice recording only works inside the TestFlight app on iPad/iPhone.",
@@ -56,7 +56,7 @@
       "deleteFailed": "Couldn't delete the voice profile."
     },
     "toasts": {
-      "sampleSaved": "Sample {{count}} saved",
+      "sampleSaved": "Sentence {{count}} of 5 recorded",
       "deleted": "Voice profile cleared"
     }
   }

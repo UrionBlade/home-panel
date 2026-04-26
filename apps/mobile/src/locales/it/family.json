@@ -42,13 +42,13 @@
   },
   "voice": {
     "title": "Voce di {{name}}",
-    "intro": "Registra alcuni campioni della voce di {{name}}: il pannello la riconoscerà quando dirà \"ok casa\".",
-    "sampleProgress": "Campioni registrati: {{current}} di {{total}}",
-    "ready": "Pronto",
-    "sayThis": "Tieni il pulsante e leggi:",
-    "recordCta": "Registra campione",
-    "recording": "Sto ascoltando...",
-    "recordHint": "Parla in modo naturale per circa 2 secondi. Per migliorare la precisione, registra i campioni in momenti diversi della giornata.",
+    "intro": "Per riconoscere {{name}} quando dice \"ok casa\", servono cinque campioni della sua voce. Leggi a turno le frasi qui sotto.",
+    "sampleProgress": "{{current}} di {{total}} fatti",
+    "ready": "Profilo completo",
+    "recordCta": "Registra la frase {{number}}",
+    "recordExtraCta": "Aggiungi un altro campione",
+    "recording": "Ti sto ascoltando, parla ora…",
+    "recordHint": "Tocca, aspetta un attimo e leggi la frase evidenziata a voce normale. Dopo circa due secondi smetto di ascoltare.",
     "deleteAll": "Cancella la voce registrata",
     "errors": {
       "nativeOnly": "La registrazione voce funziona solo nell'app TestFlight su iPad/iPhone.",
@@ -56,7 +56,7 @@
       "deleteFailed": "Non sono riuscito a cancellare il profilo voce."
     },
     "toasts": {
-      "sampleSaved": "Campione {{count}} salvato",
+      "sampleSaved": "Frase {{count}} di 5 registrata",
       "deleted": "Profilo voce cancellato"
     }
   }
