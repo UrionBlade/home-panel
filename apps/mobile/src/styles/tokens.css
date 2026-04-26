@@ -40,23 +40,27 @@
   --color-ochre-hover: oklch(70% 0.15 80);
   --color-ochre-fg: oklch(22% 0.04 60);
 
-  /* === Tinted tile backgrounds (per hero tiles) === */
-  --tile-terracotta-a: oklch(92% 0.045 40);
-  --tile-terracotta-b: oklch(87% 0.07 35);
-  --tile-sage-a: oklch(93% 0.035 150);
-  --tile-sage-b: oklch(88% 0.055 150);
-  --tile-ochre-a: oklch(95% 0.04 80);
-  --tile-ochre-b: oklch(90% 0.06 80);
-  --tile-mauve-a: oklch(93% 0.035 320);
-  --tile-mauve-b: oklch(88% 0.055 320);
-  --tile-sky-a: oklch(93% 0.04 220);
-  --tile-sky-b: oklch(87% 0.06 225);
+  /* === Tinted tile backgrounds (per hero tiles) ===
+   * Light-mode pastels — pushed warmer/saturated enough to read as
+   * coloured tiles on bright displays. Previous values (~93% L,
+   * ~0.04 C) collapsed to near-white on most iPad screens; only mauve
+   * survived because of chroma asymmetry on warmer hues. */
+  --tile-terracotta-a: oklch(88% 0.075 40);
+  --tile-terracotta-b: oklch(80% 0.115 35);
+  --tile-sage-a: oklch(89% 0.065 150);
+  --tile-sage-b: oklch(82% 0.10 150);
+  --tile-ochre-a: oklch(91% 0.075 80);
+  --tile-ochre-b: oklch(84% 0.115 80);
+  --tile-mauve-a: oklch(89% 0.065 320);
+  --tile-mauve-b: oklch(82% 0.10 320);
+  --tile-sky-a: oklch(89% 0.07 220);
+  --tile-sky-b: oklch(82% 0.105 225);
   /* Sensors family — door / window / siren / plug share a "blush" warm
    * rose tint so they read as a coherent group, distinct from
    * appliances (terracotta=tv, sage=laundry, ochre=light, sky=ac,
    * mauve=cameras). */
-  --tile-blush-a: oklch(94% 0.04 10);
-  --tile-blush-b: oklch(88% 0.07 12);
+  --tile-blush-a: oklch(89% 0.07 10);
+  --tile-blush-b: oklch(81% 0.115 12);
 
   /* === Status colors — warm-adjusted === */
   --color-success: oklch(65% 0.14 150);
