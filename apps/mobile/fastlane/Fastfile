@@ -51,6 +51,8 @@ platform :ios do
       sh("pnpm tauri ios init")
     end
 
+    patch_project_yml_for_speaker_model
+
     # Tauri generates the Xcode project with automatic signing. On CI we use
     # manual signing with the distribution cert + provisioning profile that
     # Fastlane installed in setup_signing. The profile's display name can
@@ -123,6 +125,53 @@ platform :ios do
       </plist>
     PLIST
     UI.message("Wrote ExportOptions.plist with manual signing")
+  end
+
+  # `tauri ios init` regenerates project.yml from Tauri's iOS template, which
+  # doesn't know about our CoreML speaker model. The model is compiled by
+  # build.rs into gen/apple/Resources/SpeakerECAPA.mlmodelc and we need that
+  # folder referenced in the Xcode resources buildPhase, otherwise
+  # `Bundle.main.url(forResource: "SpeakerECAPA", ...)` returns nil at runtime
+  # and voice enrolment hits the 4s timeout. Idempotent: a second run is a
+  # no-op once the entry is already present.
+  private_lane :patch_project_yml_for_speaker_model do
+    require "yaml"
+    project_yml = File.join(TAURI_IOS_ROOT, "project.yml")
+    UI.user_error!("project.yml not found at #{project_yml}") unless File.exist?(project_yml)
+
+    config = YAML.load_file(project_yml)
+    sources = config.dig("targets", "mobile_iOS", "sources")
+    UI.user_error!("mobile_iOS.sources missing in project.yml") unless sources.is_a?(Array)
+
+    already_patched = sources.any? do |entry|
+      entry.is_a?(Hash) && entry["path"] == "Resources"
+    end
+
+    if already_patched
+      UI.message("project.yml already references Resources/ — skipping patch")
+    else
+      sources << {
+        "path" => "Resources",
+        "buildPhase" => "resources",
+        "type" => "folder",
+        "optional" => true,
+      }
+      File.write(project_yml, config.to_yaml)
+      UI.message("Patched project.yml: added Resources folder reference")
+
+      # Re-run xcodegen so the new path lands in mobile.xcodeproj. Tauri does
+      # the initial xcodegen as part of `tauri ios init`; we just need it
+      # again with the patched yaml.
+      Dir.chdir(TAURI_IOS_ROOT) do
+        sh("xcodegen generate")
+      end
+    end
+
+    # build.rs writes the compiled model here during `tauri ios build`, but
+    # xcodegen complained on at least one CI run when the folder didn't exist
+    # at project-generation time. Pre-create it so the resources buildPhase
+    # always has something to point at.
+    FileUtils.mkdir_p(File.join(TAURI_IOS_ROOT, "Resources"))
   end
 
   private_lane :setup_signing do

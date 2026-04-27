@@ -424,8 +424,13 @@ private func startRecognitionSession() {
 /// script. If it's missing the rest of the voice pipeline still works.
 private func loadSpeakerModelIfNeeded() {
     guard gSpeakerModel == nil else { return }
-    guard let url = Bundle.main.url(forResource: "SpeakerECAPA", withExtension: "mlmodelc")
-    else {
+    /* The compiled model lives under `Resources/` inside the app bundle —
+     * see `project.yml`. The plain (top-level) lookup is kept as a fallback
+     * in case the project layout changes back to a flat resource group. */
+    let url = Bundle.main.url(forResource: "SpeakerECAPA", withExtension: "mlmodelc",
+                              subdirectory: "Resources")
+        ?? Bundle.main.url(forResource: "SpeakerECAPA", withExtension: "mlmodelc")
+    guard let url = url else {
         voiceLog("speaker model: SpeakerECAPA.mlmodelc not found in bundle — skipping")
         return
     }
