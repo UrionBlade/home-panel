@@ -44,8 +44,23 @@ const EWELINK: LightProviderAdapter = {
   },
 };
 
+/* DIRIGERA stub — replaced by the real adapter once
+ * `apps/api/src/lib/dirigera/` is wired up (see openspec change
+ * add-dirigera-hub §6). The placeholder throws on use so a misconfigured
+ * environment fails loudly rather than silently routing eWeLink calls
+ * to the wrong handler. */
+const DIRIGERA_PLACEHOLDER: LightProviderAdapter = {
+  async setState() {
+    throw new Error("DIRIGERA provider not yet initialized");
+  },
+  async listRemote() {
+    return [];
+  },
+};
+
 const ADAPTERS: Record<LightProvider, LightProviderAdapter> = {
   ewelink: EWELINK,
+  dirigera: DIRIGERA_PLACEHOLDER,
 };
 
 export function getAdapter(provider: LightProvider): LightProviderAdapter {

@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 /*
  * Family members: people and pets.
@@ -726,3 +726,87 @@ export const pushTokens = sqliteTable("push_tokens", {
 });
 export type PushTokenRow = typeof pushTokens.$inferSelect;
 export type NewPushTokenRow = typeof pushTokens.$inferInsert;
+
+/*
+ * Environmental sensors — temperature, humidity, optionally CO2 + PM2.5.
+ *
+ * Producer today is the IKEA DIRIGERA hub via apps/api/src/lib/dirigera/,
+ * but the schema stays provider-agnostic so a future Matter-direct or
+ * Z2M source plugs in without touching the frontend. Air-only fields
+ * (CO2, PM2.5) are nullable: TIMMERFLÖTTE-class climate sensors leave
+ * them empty.
+ */
+export const envSensors = sqliteTable("env_sensors", {
+  id: text("id").primaryKey(),
+  /** Stable provider device id. UNIQUE so re-syncing upserts the same row. */
+  dirigeraId: text("dirigera_id").notNull().unique(),
+  /** Discriminator surfaced to the UI to know which fields to render. */
+  kind: text("kind", { enum: ["air_quality", "climate"] }).notNull(),
+  friendlyName: text("friendly_name").notNull(),
+  /** Optional FK to rooms — preserved across syncs. */
+  roomId: text("room_id").references(() => rooms.id, { onDelete: "set null" }),
+  lastCo2Ppm: real("last_co2_ppm"),
+  lastPm25: real("last_pm25"),
+  lastTempC: real("last_temp_c"),
+  lastHumidityPct: real("last_humidity_pct"),
+  lastBatteryPct: integer("last_battery_pct"),
+  lastSeen: text("last_seen"),
+  /** True when the hub last reported the device unreachable. */
+  offline: integer("offline", { mode: "boolean" }).notNull().default(false),
+  createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+});
+export type EnvSensorRow = typeof envSensors.$inferSelect;
+export type NewEnvSensorRow = typeof envSensors.$inferInsert;
+
+/*
+ * Water leak detectors — boolean wet/dry plus battery + ack timestamp.
+ *
+ * KLIPPBOK-class device. The transition false→true is what triggers
+ * APNs push + the in-app modal (see add-dirigera-hub design.md).
+ */
+export const leakSensors = sqliteTable("leak_sensors", {
+  id: text("id").primaryKey(),
+  dirigeraId: text("dirigera_id").notNull().unique(),
+  friendlyName: text("friendly_name").notNull(),
+  roomId: text("room_id").references(() => rooms.id, { onDelete: "set null" }),
+  /** True when the hub reports water present. */
+  leakDetected: integer("leak_detected", { mode: "boolean" }).notNull().default(false),
+  batteryPct: integer("battery_pct"),
+  lastSeen: text("last_seen"),
+  /** ISO-8601 of the most recent user acknowledgement; cleared when the
+   * sensor returns to dry. */
+  lastAckAt: text("last_ack_at"),
+  offline: integer("offline", { mode: "boolean" }).notNull().default(false),
+  createdAt: text("created_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+});
+export type LeakSensorRow = typeof leakSensors.$inferSelect;
+export type NewLeakSensorRow = typeof leakSensors.$inferInsert;
+
+/*
+ * Environmental sensor history — append-only ring buffer for the 24h
+ * trend graph. A scheduler (every hour) drops rows older than 7 days
+ * to keep the table bounded — see add-dirigera-hub design Decision 5.
+ */
+export const envSensorHistory = sqliteTable(
+  "env_sensor_history",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    sensorId: text("sensor_id")
+      .notNull()
+      .references(() => envSensors.id, { onDelete: "cascade" }),
+    recordedAt: text("recorded_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+    co2Ppm: real("co2_ppm"),
+    pm25: real("pm25"),
+    tempC: real("temp_c"),
+    humidityPct: real("humidity_pct"),
+  },
+  (t) => ({
+    /* Range queries by sensor + time are the hot path: the 24h history
+     * endpoint scans `WHERE sensor_id = ? AND recorded_at >= ?`. */
+    sensorRecordedAtIdx: index("env_history_sensor_recorded_idx").on(t.sensorId, t.recordedAt),
+  }),
+);
+export type EnvSensorHistoryRow = typeof envSensorHistory.$inferSelect;
+export type NewEnvSensorHistoryRow = typeof envSensorHistory.$inferInsert;

@@ -13,6 +13,7 @@ export type HealthResponse = {
 export * from "./alarm.js";
 export * from "./blink.js";
 export * from "./calendar.js";
+export * from "./dirigera.js";
 export * from "./family.js";
 export * from "./ge.js";
 export * from "./ipCameras.js";
@@ -24,6 +25,7 @@ export * from "./push.js";
 export * from "./recipes.js";
 export * from "./rooms.js";
 export * from "./routines.js";
+export * from "./sensors.js";
 export * from "./shopping.js";
 export * from "./spotify.js";
 export * from "./timers.js";

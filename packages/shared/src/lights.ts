@@ -8,7 +8,7 @@
 
 export type LightState = "on" | "off" | "unknown";
 
-export type LightProvider = "ewelink";
+export type LightProvider = "ewelink" | "dirigera";
 
 /** One physical fixture as presented to the UI. */
 export interface LightSummary {
