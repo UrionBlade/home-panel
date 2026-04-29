@@ -45,6 +45,17 @@ export function getSirenDurationSeconds(): number {
   return Math.min(1800, Math.round(parsed));
 }
 
+/** Which melody index the NEO NAS-AB02B2 should play. The device exposes
+ * 18 tones; 1–9 are cheery doorbell-style chimes (good for nothing in
+ * an emergency), 10+ are proper alarm sirens. Default 18 (the most
+ * recognisable burglar-alarm wail). Override via ALARM_SIREN_MELODY. */
+function getSirenMelody(): number {
+  const raw = process.env.ALARM_SIREN_MELODY;
+  const parsed = raw ? Number(raw) : NaN;
+  if (!Number.isFinite(parsed) || parsed < 1 || parsed > 18) return 18;
+  return Math.round(parsed);
+}
+
 /** Fan out an alarm event to every iOS push token registered. */
 async function fanoutAlarmPush(event: {
   id: string;
@@ -549,7 +560,7 @@ function trigPayloadFor(durationSec: number): Record<string, unknown> {
     alarm: true,
     duration: durationSec,
     volume: "high",
-    melody: 5,
+    melody: getSirenMelody(),
     warning: {
       duration: durationSec,
       mode: "burglar",
