@@ -17,6 +17,7 @@ import musicEn from "../locales/en/music.json";
 import recipesEn from "../locales/en/recipes.json";
 import roomsEn from "../locales/en/rooms.json";
 import routinesEn from "../locales/en/routines.json";
+import sensorsEn from "../locales/en/sensors.json";
 import settingsEn from "../locales/en/settings.json";
 import shoppingEn from "../locales/en/shopping.json";
 import timersEn from "../locales/en/timers.json";
@@ -41,6 +42,7 @@ import musicIt from "../locales/it/music.json";
 import recipesIt from "../locales/it/recipes.json";
 import roomsIt from "../locales/it/rooms.json";
 import routinesIt from "../locales/it/routines.json";
+import sensorsIt from "../locales/it/sensors.json";
 import settingsIt from "../locales/it/settings.json";
 import shoppingIt from "../locales/it/shopping.json";
 import timersIt from "../locales/it/timers.json";
@@ -81,6 +83,7 @@ void i18next
       "casa",
       "zigbee",
       "alarm",
+      "sensors",
     ],
     resources: {
       it: {
@@ -108,6 +111,7 @@ void i18next
         tv: tvIt,
         zigbee: zigbeeIt,
         alarm: alarmIt,
+        sensors: sensorsIt,
       },
       en: {
         ac: acEn,
@@ -134,6 +138,7 @@ void i18next
         tv: tvEn,
         zigbee: zigbeeEn,
         alarm: alarmEn,
+        sensors: sensorsEn,
       },
     },
     interpolation: {

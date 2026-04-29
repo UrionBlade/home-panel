@@ -453,6 +453,27 @@
       },
       "error": "Allarme: {{message}}"
     },
+    "sensors": {
+      "noEnv": "Non ho sensori della qualità dell'aria configurati",
+      "noLeak": "Non ho sensori di perdita configurati",
+      "airGood": "L'aria è buona, {{co2}} ppm di CO₂ e {{pm25}} microgrammi di PM2.5",
+      "airMedium": "L'aria è media, {{co2}} ppm di CO₂",
+      "airHigh": "Attenzione, l'aria è scarsa: {{co2}} ppm di CO₂. Apri una finestra",
+      "airOnlyTemp": "Non ho misurazioni di CO₂ disponibili",
+      "tempRoom": "In {{room}} ci sono {{value}} gradi",
+      "tempSimple": "Ci sono {{value}} gradi",
+      "tempMulti": "Le temperature: {{readings}}",
+      "tempReading": "in {{room}} {{value}} gradi",
+      "tempNoData": "Non ho letture di temperatura recenti",
+      "humidityRoom": "In {{room}} l'umidità è al {{value}}%",
+      "humiditySimple": "L'umidità è al {{value}}%",
+      "humidityMulti": "Le umidità: {{readings}}",
+      "humidityReading": "in {{room}} {{value}}%",
+      "humidityNoData": "Non ho letture di umidità recenti",
+      "leakAllDry": "Nessuna perdita rilevata",
+      "leakActive": "Attenzione, perdita rilevata in {{room}}",
+      "leakActiveNoRoom": "Attenzione, {{sensor}} sta segnalando acqua"
+    },
     "errors": {
       "generic": "Si è verificato un errore"
     }

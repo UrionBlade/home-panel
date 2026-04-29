@@ -17,7 +17,10 @@
  */
 
 import type { LeakAckResponse, LeakAlertPayload } from "@home-panel/shared";
+import { eq } from "drizzle-orm";
 import { Hono } from "hono";
+import { db } from "../db/client.js";
+import { envSensors, leakSensors } from "../db/schema.js";
 import {
   ackLeakSensor,
   getEnvHistory,
@@ -30,6 +33,27 @@ import { isApnsConfigured, sendApnsBatch } from "../lib/push/apns.js";
 import { listTokens } from "../lib/push/store.js";
 import { buildLeakAlertPayload } from "../lib/push/templates/leak-alert.js";
 import { sseEmitter } from "./sse.js";
+
+interface SensorPatchInput {
+  friendlyName?: string;
+  roomId?: string | null;
+}
+
+function parsePatch(raw: unknown): SensorPatchInput | null {
+  if (!raw || typeof raw !== "object") return null;
+  const out: SensorPatchInput = {};
+  const r = raw as Record<string, unknown>;
+  if (typeof r.friendlyName === "string" && r.friendlyName.trim()) {
+    out.friendlyName = r.friendlyName.trim();
+  }
+  if (r.roomId === null) {
+    out.roomId = null;
+  } else if (typeof r.roomId === "string" && r.roomId.trim()) {
+    out.roomId = r.roomId.trim();
+  }
+  if (out.friendlyName === undefined && out.roomId === undefined) return null;
+  return out;
+}
 
 export const sensorsRouter = new Hono()
   .get("/env", (c) => c.json(listEnvSensors()))
@@ -52,7 +76,52 @@ export const sensorsRouter = new Hono()
     return c.json(getEnvHistory(id, hours));
   })
 
+  .patch("/env/:id", async (c) => {
+    const id = c.req.param("id");
+    const sensor = getEnvSensor(id);
+    if (!sensor) return c.json({ error: "not_found" }, 404);
+    const body = await c.req.json().catch(() => null);
+    const patch = parsePatch(body);
+    if (!patch) {
+      return c.json({ error: "Body must include friendlyName or roomId" }, 400);
+    }
+    const updates: Partial<{ friendlyName: string; roomId: string | null; updatedAt: string }> = {
+      updatedAt: new Date().toISOString(),
+    };
+    if (patch.friendlyName !== undefined) updates.friendlyName = patch.friendlyName;
+    if (patch.roomId !== undefined) updates.roomId = patch.roomId;
+    db.update(envSensors).set(updates).where(eq(envSensors.id, id)).run();
+    const updated = getEnvSensor(id);
+    if (!updated) return c.json({ error: "not_found" }, 404);
+    sseEmitter.emit("push", { event: "sensors:env-update", payload: updated });
+    return c.json(updated);
+  })
+
   .get("/leak", (c) => c.json(listLeakSensors()))
+
+  .patch("/leak/:id", async (c) => {
+    const id = c.req.param("id");
+    const sensor = getLeakSensor(id);
+    if (!sensor) return c.json({ error: "not_found" }, 404);
+    const body = await c.req.json().catch(() => null);
+    const patch = parsePatch(body);
+    if (!patch) {
+      return c.json({ error: "Body must include friendlyName or roomId" }, 400);
+    }
+    const updates: Partial<{ friendlyName: string; roomId: string | null; updatedAt: string }> = {
+      updatedAt: new Date().toISOString(),
+    };
+    if (patch.friendlyName !== undefined) updates.friendlyName = patch.friendlyName;
+    if (patch.roomId !== undefined) updates.roomId = patch.roomId;
+    db.update(leakSensors).set(updates).where(eq(leakSensors.id, id)).run();
+    const updated = getLeakSensor(id);
+    if (!updated) return c.json({ error: "not_found" }, 404);
+    sseEmitter.emit("push", {
+      event: "sensors:leak-update",
+      payload: { sensorId: id, leakDetected: updated.leakDetected },
+    });
+    return c.json(updated);
+  })
 
   .post("/leak/:id/ack", (c) => {
     const id = c.req.param("id");

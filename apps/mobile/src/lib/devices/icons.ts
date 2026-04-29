@@ -53,7 +53,10 @@ export type DeviceKind =
   | "sensor_door"
   | "sensor_window"
   | "siren"
-  | "plug";
+  | "plug"
+  | "sensor_air"
+  | "sensor_climate"
+  | "sensor_leak";
 
 export const DEVICE_ICON: Record<DeviceKind, Icon> = {
   light: LightbulbFilamentIcon,
@@ -67,6 +70,13 @@ export const DEVICE_ICON: Record<DeviceKind, Icon> = {
   sensor_window: AppWindowIcon,
   siren: SirenIcon,
   plug: PlugIcon,
+  /* Air-quality sensors carry CO2/PM2.5 + temp/humidity → wind glyph
+   * reads as "ambient air"; climate sensors (temp/humidity only) reuse
+   * the thermometer; leak detectors get a literal water-droplet via
+   * the bathtub icon to be unambiguous in icon-only contexts. */
+  sensor_air: WindIcon,
+  sensor_climate: ThermometerIcon,
+  sensor_leak: BathtubIcon,
 };
 
 /** Secondary icons, used as status overlays or inside editor sheets. */

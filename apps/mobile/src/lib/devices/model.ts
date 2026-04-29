@@ -1,8 +1,10 @@
 import type {
   AcDevice,
   BlinkCamera,
+  EnvSensor,
   IpCamera,
   LaundryAppliance,
+  LeakSensor,
   LightSummary,
   Room,
   SmartThingsConfig,
@@ -216,6 +218,9 @@ const KIND_RANK: Record<DeviceKind, number> = {
   sensor_door: 8,
   sensor_window: 9,
   siren: 10,
+  sensor_air: 11,
+  sensor_climate: 12,
+  sensor_leak: 13,
 };
 
 /**
@@ -295,6 +300,64 @@ export function projectZigbee(row: ZigbeeDevice): DeviceEntity {
     roomId: row.roomId,
     status,
     subtitle,
+    renameable: true,
+    supportsToggle: false,
+    raw: row,
+  };
+}
+
+/**
+ * Projector for environmental sensors (ALPSTUGA + TIMMERFLÖTTE class).
+ * Sensors are read-only, so the tile is informational with no toggle.
+ * Subtitle prefers the most "expensive" reading available: CO2 ppm
+ * when present (ALPSTUGA), else temperature.
+ */
+export function projectEnvSensor(row: EnvSensor): DeviceEntity {
+  const kind: DeviceKind = row.kind === "air_quality" ? "sensor_air" : "sensor_climate";
+  let subtitle: string | undefined;
+  if (row.co2Ppm != null) {
+    subtitle = `${Math.round(row.co2Ppm)} ppm CO₂`;
+  } else if (row.temperatureC != null) {
+    subtitle = `${row.temperatureC.toFixed(1)}°`;
+    if (row.humidityPct != null) subtitle += ` · ${Math.round(row.humidityPct)}%`;
+  }
+  return {
+    id: row.id,
+    kind,
+    name: row.friendlyName,
+    roomId: row.roomId,
+    status: row.offline ? "offline" : "unknown",
+    subtitle,
+    renameable: true,
+    supportsToggle: false,
+    raw: row,
+  };
+}
+
+/**
+ * Projector for water-leak sensors (KLIPPBOK class). Status flips to
+ * "armed" when a leak is currently active so the badge stands out;
+ * otherwise we stay quiet ("disarmed" reads as "all dry, monitoring").
+ */
+export function projectLeakSensor(row: LeakSensor): DeviceEntity {
+  const status: DeviceStatus = row.offline ? "offline" : row.leakDetected ? "armed" : "disarmed";
+  let subtitle: string | undefined;
+  if (row.offline) {
+    subtitle = i18next.t("zigbee:state.availability.offline" as never) || "offline";
+  } else if (row.leakDetected) {
+    subtitle = i18next.t("sensors:voice.leakActive" as never, {
+      room: row.roomName ?? row.friendlyName,
+    });
+  } else {
+    subtitle = i18next.t("sensors:voice.leakAllDry" as never);
+  }
+  return {
+    id: row.id,
+    kind: "sensor_leak",
+    name: row.friendlyName,
+    roomId: row.roomId,
+    status,
+    subtitle: typeof subtitle === "string" ? subtitle : undefined,
     renameable: true,
     supportsToggle: false,
     raw: row,

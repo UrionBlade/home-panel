@@ -1,10 +1,18 @@
 import { useMemo } from "react";
 import { useAcCommand, useAcConfig, useAcDevices, useUpdateAcDevice } from "../hooks/useAc";
 import { useCameras, useUpdateCamera, useUpdateCameraRoom } from "../hooks/useBlink";
+import { useEnvSensors } from "../hooks/useEnvSensors";
 import { useIpCameras, useUpdateIpCamera } from "../hooks/useIpCameras";
 import { useAssignDevices, useLaundryConfig, useLaundryStatus } from "../hooks/useLaundry";
+import { useLeakSensors } from "../hooks/useLeakSensors";
 import { useLightCommand, useLights, useUpdateLight } from "../hooks/useLights";
 import { useRooms } from "../hooks/useRooms";
+import {
+  useRenameEnvSensor,
+  useRenameLeakSensor,
+  useUpdateEnvSensorRoom,
+  useUpdateLeakSensorRoom,
+} from "../hooks/useSensorActions";
 import { useTvAssign, useTvConfig, useTvPower, useTvStatus } from "../hooks/useTv";
 import {
   useZigbeeAssignRoom,
@@ -18,7 +26,9 @@ import {
   projectAc,
   projectCamera,
   projectDryer,
+  projectEnvSensor,
   projectIpCamera,
+  projectLeakSensor,
   projectLight,
   projectTv,
   projectWasher,
@@ -44,6 +54,8 @@ export function useHomeDevices() {
   const zigbeeQ = useZigbeeState();
   /* Wire SSE so device tiles refresh on contact change without a poll. */
   useZigbeeLiveSync();
+  const envSensorsQ = useEnvSensors();
+  const leakSensorsQ = useLeakSensors();
 
   const devices: DeviceEntity[] = useMemo(() => {
     const out: DeviceEntity[] = [];
@@ -65,6 +77,8 @@ export function useHomeDevices() {
     if (dryer) out.push(dryer);
 
     for (const z of zigbeeQ.data?.devices ?? []) out.push(projectZigbee(z));
+    for (const s of envSensorsQ.data ?? []) out.push(projectEnvSensor(s));
+    for (const s of leakSensorsQ.data ?? []) out.push(projectLeakSensor(s));
 
     return out;
   }, [
@@ -77,6 +91,8 @@ export function useHomeDevices() {
     laundryConfigQ.data,
     laundryStatusQ.data,
     zigbeeQ.data,
+    envSensorsQ.data,
+    leakSensorsQ.data,
   ]);
 
   const grouped = useMemo(
@@ -123,6 +139,10 @@ export function useDeviceActions() {
   const laundryAssign = useAssignDevices();
   const zigbeeRename = useZigbeeRenameDevice();
   const zigbeeAssignRoom = useZigbeeAssignRoom();
+  const envSensorRoom = useUpdateEnvSensorRoom();
+  const envSensorRename = useRenameEnvSensor();
+  const leakSensorRoom = useUpdateLeakSensorRoom();
+  const leakSensorRename = useRenameLeakSensor();
 
   return useMemo(
     () => ({
@@ -180,6 +200,11 @@ export function useDeviceActions() {
               ieeeAddress: entity.id,
               friendlyName: newName,
             });
+          case "sensor_air":
+          case "sensor_climate":
+            return envSensorRename.mutateAsync({ id: entity.id, name: newName });
+          case "sensor_leak":
+            return leakSensorRename.mutateAsync({ id: entity.id, name: newName });
           default:
             return Promise.reject(new Error("Rinomina non supportata per questo tipo"));
         }
@@ -210,6 +235,11 @@ export function useDeviceActions() {
           case "siren":
           case "plug":
             return zigbeeAssignRoom.mutateAsync({ ieeeAddress: entity.id, roomId });
+          case "sensor_air":
+          case "sensor_climate":
+            return envSensorRoom.mutateAsync({ id: entity.id, roomId });
+          case "sensor_leak":
+            return leakSensorRoom.mutateAsync({ id: entity.id, roomId });
           default:
             return Promise.reject(new Error("Assegnazione non supportata"));
         }
@@ -228,6 +258,10 @@ export function useDeviceActions() {
       laundryAssign,
       zigbeeRename,
       zigbeeAssignRoom,
+      envSensorRoom,
+      envSensorRename,
+      leakSensorRoom,
+      leakSensorRename,
     ],
   );
 }

@@ -454,6 +454,27 @@
       },
       "error": "Alarm: {{message}}"
     },
+    "sensors": {
+      "noEnv": "I have no air-quality sensors configured",
+      "noLeak": "I have no leak sensors configured",
+      "airGood": "Air quality is good, {{co2}} ppm CO₂ and {{pm25}} micrograms PM2.5",
+      "airMedium": "Air quality is medium, {{co2}} ppm CO₂",
+      "airHigh": "Watch out, air quality is poor: {{co2}} ppm CO₂. Crack a window",
+      "airOnlyTemp": "I have no CO₂ readings available",
+      "tempRoom": "{{room}} is at {{value}} degrees",
+      "tempSimple": "It is {{value}} degrees",
+      "tempMulti": "Temperatures: {{readings}}",
+      "tempReading": "{{room}} {{value}} degrees",
+      "tempNoData": "I have no recent temperature readings",
+      "humidityRoom": "{{room}} humidity is {{value}}%",
+      "humiditySimple": "Humidity is {{value}}%",
+      "humidityMulti": "Humidity: {{readings}}",
+      "humidityReading": "{{room}} {{value}}%",
+      "humidityNoData": "I have no recent humidity readings",
+      "leakAllDry": "No leaks detected",
+      "leakActive": "Watch out, leak detected in {{room}}",
+      "leakActiveNoRoom": "Watch out, {{sensor}} is reporting water"
+    },
     "errors": {
       "generic": "Something went wrong"
     }

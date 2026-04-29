@@ -641,6 +641,35 @@ const RULES: IntentRule[] = [
       "importa",
     ],
   },
+
+  /* ==== ENV SENSORS — air quality / temperature / humidity / leaks ==== */
+  /* Sit AFTER read_weather so "che temperatura c'è fuori" stays on the
+   * weather path; the env intents trigger only on phrasing the meteo
+   * rules don't cover (qualità aria, umidità, perdite, gradi in $room). */
+  {
+    intent: "read_air_quality",
+    keywords: ["qualita", "qualità", "aria", "co2", "anidride", "polveri", "pm25", "pm2"],
+    required: ["aria", "co2", "pm25", "pm2", "polveri"],
+  },
+  {
+    intent: "read_humidity",
+    keywords: ["umidità", "umidita"],
+    required: ["umidità", "umidita"],
+  },
+  {
+    intent: "read_temperature",
+    keywords: ["temperatura", "gradi", "caldo", "freddo"],
+    required: ["temperatura", "gradi"],
+    /* Don't fire on "che tempo fa" / "previsioni temperatura" — those
+     * stay weather-routed. We require an explicit room phrase or the
+     * intent reads as "tutti i sensori". */
+    exclude: ["tempo", "meteo", "previsioni", "fuori", "domani"],
+  },
+  {
+    intent: "read_leaks",
+    keywords: ["perdita", "perdite", "acqua", "allagato", "allagamento", "umido"],
+    required: ["perdita", "perdite", "allagato", "allagamento"],
+  },
 ];
 
 function normalizeText(text: string): string {

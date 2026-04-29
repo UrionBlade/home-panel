@@ -1,7 +1,7 @@
 ## 1. Auth flow + setup script
 
 - [x] 1.1 Creare `scripts/dirigera/auth.sh` con il flusso PKCE completo (genera code_verifier S256, chiama `/v1/oauth/authorize` con audience=homesmart.local, prompta press del pulsante con countdown, chiama `/v1/oauth/token`, stampa env vars)
-- [ ] 1.2 Verificare lo script su DIRIGERA reale (192.168.178.164), prendere il bearer e salvarlo localmente per sviluppo
+- [x] 1.2 Verificare lo script su DIRIGERA reale (192.168.178.164), prendere il bearer e salvarlo localmente per sviluppo
 - [x] 1.3 Aggiungere `DIRIGERA_HOST` e `DIRIGERA_TOKEN` a `apps/api/.env.example` con commenti che linkano lo script
 - [x] 1.4 Documentare la procedura one-time in un commento testa di `scripts/dirigera/auth.sh` (no README dedicato)
 
@@ -64,46 +64,46 @@
 
 ## 9. Frontend — shared types e hooks
 
-- [ ] 9.1 Creare `apps/mobile/src/lib/hooks/useEnvSensors.ts`: `useEnvSensors()` (lista) e `useEnvSensorHistory(id, hours)` con TanStack Query, sottoscrizione SSE auto-invalidate
-- [ ] 9.2 Creare `apps/mobile/src/lib/hooks/useLeakSensors.ts`: `useLeakSensors()` lista, `useAckLeak()` mutation
-- [ ] 9.3 Estendere `apps/mobile/src/lib/sse/client.ts` (o equivalente) per gestire i nuovi event types: `sensors:env-update`, `sensors:leak-trigger`, `sensors:leak-ack`
+- [x] 9.1 Creare `apps/mobile/src/lib/hooks/useEnvSensors.ts`: `useEnvSensors()` (lista) e `useEnvSensorHistory(id, hours)` con TanStack Query, sottoscrizione SSE auto-invalidate
+- [x] 9.2 Creare `apps/mobile/src/lib/hooks/useLeakSensors.ts`: `useLeakSensors()` lista, `useAckLeak()` mutation
+- [x] 9.3 Estendere `apps/mobile/src/lib/sse/client.ts` (o equivalente) per gestire i nuovi event types: `sensors:env-update`, `sensors:leak-trigger`, `sensors:leak-ack`
 
 ## 10. Frontend — AirQualityTile
 
-- [ ] 10.1 Creare `apps/mobile/src/components/home-tiles/AirQualityTile.tsx`: layout per 1+ sensori, color coding CO2 + PM2.5
-- [ ] 10.2 Definire le soglie color in un util `apps/mobile/src/lib/sensors/thresholds.ts` (CO2: 800/1200, PM2.5: 12/35) con types tipo `Severity = "good" | "medium" | "high"`
-- [ ] 10.3 Aggiungere la tile alla home page (l'ordine va concordato con le tile esistenti — typically aria sotto al meteo)
-- [ ] 10.4 Caso "nessun sensore": tile non si renderizza (return null)
+- [x] 10.1 Creare `apps/mobile/src/components/home-tiles/AirQualityTile.tsx`: layout per 1+ sensori, color coding CO2 + PM2.5
+- [x] 10.2 Definire le soglie color in un util `apps/mobile/src/lib/sensors/thresholds.ts` (CO2: 800/1200, PM2.5: 12/35) con types tipo `Severity = "good" | "medium" | "high"`
+- [x] 10.3 Aggiungere la tile alla home page (l'ordine va concordato con le tile esistenti — typically aria sotto al meteo)
+- [x] 10.4 Caso "nessun sensore": tile non si renderizza (return null)
 - [ ] 10.5 Test componente con render condizionale + valori a soglia
 
 ## 11. Frontend — leak alert modale e provider
 
-- [ ] 11.1 Creare `apps/mobile/src/components/sensors/LeakAlertModal.tsx`: modale full-screen con icona, copy, bottone ack
-- [ ] 11.2 Aggiungere asset audio `apps/mobile/public/sounds/leak-alert.mp3` (~2-3s loop, royalty-free)
-- [ ] 11.3 Estendere `apps/mobile/src/store/ui-store.ts` con slice `leakAlert` (stato, push, dismiss, ack)
-- [ ] 11.4 Creare `apps/mobile/src/lib/sensors/LeakAlertProvider.tsx`: subscriber SSE top-level, gestisce coda alert, renderizza il modale, controlla `<audio>` element
-- [ ] 11.5 Montare `LeakAlertProvider` in `App.tsx` accanto agli altri provider top-level
+- [x] 11.1 Creare `apps/mobile/src/components/sensors/LeakAlertModal.tsx`: modale full-screen con icona, copy, bottone ack
+- [x] 11.2 Aggiungere asset audio `apps/mobile/public/sounds/leak-alert.mp3` (~2-3s loop, royalty-free)
+- [x] 11.3 Estendere `apps/mobile/src/store/ui-store.ts` con slice `leakAlert` (stato, push, dismiss, ack)
+- [x] 11.4 Creare `apps/mobile/src/lib/sensors/LeakAlertProvider.tsx`: subscriber SSE top-level, gestisce coda alert, renderizza il modale, controlla `<audio>` element
+- [x] 11.5 Montare `LeakAlertProvider` in `App.tsx` accanto agli altri provider top-level
 - [ ] 11.6 Test e2e: simulare ricezione SSE leak-trigger via mock e verificare che il modale appaia + sound parta
 
 ## 12. Frontend — LightsPage integration
 
-- [ ] 12.1 Verificare che la `LightsPage` esistente legga le luci via dispatcher senza branching per provider (refactor minimo se necessario)
+- [x] 12.1 Verificare che la `LightsPage` esistente legga le luci via dispatcher senza branching per provider (refactor minimo se necessario)
 - [ ] 12.2 Smoke test: KAJPLATS appare, on/off + brightness funzionano, gli stati ottimistici sono confermati da SSE
 - [ ] 12.3 Estendere la sezione settings DIRIGERA con stato connessione hub e link a documentazione re-auth
 
 ## 13. Frontend — i18n
 
-- [ ] 13.1 Creare `apps/mobile/src/locales/it/sensors.json` con tutte le chiavi (label, soglie, modale leak, unità)
-- [ ] 13.2 Creare `apps/mobile/src/locales/en/sensors.json` parallelo
-- [ ] 13.3 Aggiornare la config i18next per registrare il nuovo namespace
-- [ ] 13.4 Verificare che nessuna stringa user-facing nei nuovi componenti sia hardcoded (`pnpm biome check` con regola lint i18n se presente)
+- [x] 13.1 Creare `apps/mobile/src/locales/it/sensors.json` con tutte le chiavi (label, soglie, modale leak, unità)
+- [x] 13.2 Creare `apps/mobile/src/locales/en/sensors.json` parallelo
+- [x] 13.3 Aggiornare la config i18next per registrare il nuovo namespace
+- [x] 13.4 Verificare che nessuna stringa user-facing nei nuovi componenti sia hardcoded (`pnpm biome check` con regola lint i18n se presente)
 
 ## 14. Frontend — voice intents
 
-- [ ] 14.1 Aggiungere pattern regex per `read_air_quality`, `read_temperature`, `read_humidity`, `read_leaks` in `apps/mobile/src/lib/voice/voiceCommandParser.ts` con scenari coperti dallo spec
-- [ ] 14.2 Aggiungere handler corrispondenti in `apps/mobile/src/lib/voice/intentHandlers.ts` che chiamano le route `/api/v1/sensors/*` esistenti
-- [ ] 14.3 Aggiungere chiavi `voice.responses.sensors.*` in IT e EN per tutti i casi (1 sensore, multi sensore con room, nessun sensore configurato, leak attiva, dry)
-- [ ] 14.4 Verificare che `light_on_room` / `light_off_room` esistenti picchino sul dispatcher e funzionino con KAJPLATS senza nuove modifiche al handler luce
+- [x] 14.1 Aggiungere pattern regex per `read_air_quality`, `read_temperature`, `read_humidity`, `read_leaks` in `apps/mobile/src/lib/voice/voiceCommandParser.ts` con scenari coperti dallo spec
+- [x] 14.2 Aggiungere handler corrispondenti in `apps/mobile/src/lib/voice/intentHandlers.ts` che chiamano le route `/api/v1/sensors/*` esistenti
+- [x] 14.3 Aggiungere chiavi `voice.responses.sensors.*` in IT e EN per tutti i casi (1 sensore, multi sensore con room, nessun sensore configurato, leak attiva, dry)
+- [x] 14.4 Verificare che `light_on_room` / `light_off_room` esistenti picchino sul dispatcher e funzionino con KAJPLATS senza nuove modifiche al handler luce
 - [ ] 14.5 Test parser per ogni nuovo intent (almeno 3 frasi test per pattern)
 
 ## 15. End-to-end test + deploy
@@ -111,15 +111,15 @@
 - [ ] 15.1 Far girare l'API in locale con DIRIGERA reale; eseguire smoke test manuale: light on/off, sensor readings, simulazione leak
 - [ ] 15.2 Test sul Tauri iPad reale: home tile aggiornata, modale leak triggerato dal `test-trigger` endpoint
 - [ ] 15.3 Test push APNs sul device fisico (richiede env APNS popolate sul NAS — se non ancora fatte, documentare come blocking task della deploy)
-- [ ] 15.4 Aggiornare `apps/api/.env.example` definitivamente
-- [ ] 15.5 Deploy: SSH al NAS, aggiornare `.env`, `docker compose pull && docker compose up -d`, verificare `/api/v1/dirigera/status`
+- [x] 15.4 Aggiornare `apps/api/.env.example` definitivamente
+- [x] 15.5 Deploy: SSH al NAS, aggiornare `.env`, `docker compose pull && docker compose up -d`, verificare `/api/v1/dirigera/status`
 - [ ] 15.6 Smoke test post-deploy: stesso scenario del 15.1 ma sul backend production
 
 ## 16. Cleanup + archive
 
-- [ ] 16.1 `pnpm biome check` passa con 0 errori in tutto il monorepo
-- [ ] 16.2 `pnpm typecheck` passa
+- [x] 16.1 `pnpm biome check` passa con 0 errori in tutto il monorepo
+- [x] 16.2 `pnpm typecheck` passa
 - [ ] 16.3 Tutti i test passano
-- [ ] 16.4 `openspec validate add-dirigera-hub --strict` passa
+- [x] 16.4 `openspec validate add-dirigera-hub --strict` passa
 - [ ] 16.5 Aggiornare CHANGELOG con sezione DIRIGERA integration
 - [ ] 16.6 Archive della change con `openspec archive add-dirigera-hub` quando deploy verificato in production

@@ -1,0 +1,51 @@
+{
+  "title": "Aria di casa",
+  "labels": {
+    "co2": "CO₂",
+    "pm25": "PM2.5",
+    "temperature": "Temperatura",
+    "humidity": "Umidità",
+    "noSensors": "Nessun sensore configurato"
+  },
+  "units": {
+    "ppm": "ppm",
+    "ugm3": "µg/m³",
+    "celsius": "°C",
+    "percent": "%"
+  },
+  "thresholds": {
+    "co2": {
+      "good": "buona",
+      "medium": "media",
+      "high": "alta"
+    },
+    "pm25": {
+      "good": "buono",
+      "medium": "medio",
+      "high": "alto"
+    }
+  },
+  "leak": {
+    "modalTitle": "Perdita rilevata",
+    "modalBody": "{{sensor}} in {{room}} sta segnalando acqua.",
+    "modalBodyNoRoom": "{{sensor}} sta segnalando acqua.",
+    "ack": "Ho visto, gestisco io",
+    "ackToast": "Allarme tacitato",
+    "tryReachable": "Verifica subito la zona segnalata."
+  },
+  "voice": {
+    "noEnvSensors": "Non ho sensori della qualità dell'aria configurati.",
+    "noLeakSensors": "Non ho sensori di perdita configurati.",
+    "airQualityGood": "L'aria è buona, {{co2}} ppm di CO₂ e {{pm25}} microgrammi di PM2.5.",
+    "airQualityMedium": "L'aria è media, {{co2}} ppm di CO₂.",
+    "airQualityHigh": "Attenzione, l'aria è scarsa: {{co2}} ppm di CO₂. Apri una finestra.",
+    "temperatureRoom": "In {{room}} ci sono {{value}} gradi.",
+    "temperatureMulti": "{{readings}}.",
+    "temperatureNoData": "Non ho letture di temperatura recenti.",
+    "humidityRoom": "In {{room}} l'umidità è al {{value}}%.",
+    "humidityMulti": "{{readings}}.",
+    "humidityNoData": "Non ho letture di umidità recenti.",
+    "leakAllDry": "Nessuna perdita rilevata.",
+    "leakActive": "Attenzione, perdita rilevata in {{room}}."
+  }
+}

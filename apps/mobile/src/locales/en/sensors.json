@@ -1,0 +1,51 @@
+{
+  "title": "Indoor air",
+  "labels": {
+    "co2": "CO₂",
+    "pm25": "PM2.5",
+    "temperature": "Temperature",
+    "humidity": "Humidity",
+    "noSensors": "No sensors configured"
+  },
+  "units": {
+    "ppm": "ppm",
+    "ugm3": "µg/m³",
+    "celsius": "°C",
+    "percent": "%"
+  },
+  "thresholds": {
+    "co2": {
+      "good": "good",
+      "medium": "medium",
+      "high": "high"
+    },
+    "pm25": {
+      "good": "good",
+      "medium": "medium",
+      "high": "high"
+    }
+  },
+  "leak": {
+    "modalTitle": "Water leak",
+    "modalBody": "{{sensor}} in {{room}} is reporting water.",
+    "modalBodyNoRoom": "{{sensor}} is reporting water.",
+    "ack": "Got it, I'll handle it",
+    "ackToast": "Alert acknowledged",
+    "tryReachable": "Check the reported area immediately."
+  },
+  "voice": {
+    "noEnvSensors": "I have no air-quality sensors configured.",
+    "noLeakSensors": "I have no leak sensors configured.",
+    "airQualityGood": "Air quality is good, {{co2}} ppm CO₂ and {{pm25}} micrograms PM2.5.",
+    "airQualityMedium": "Air quality is medium, {{co2}} ppm CO₂.",
+    "airQualityHigh": "Watch out, air quality is poor: {{co2}} ppm CO₂. Crack a window.",
+    "temperatureRoom": "{{room}} is at {{value}} degrees.",
+    "temperatureMulti": "{{readings}}.",
+    "temperatureNoData": "I have no recent temperature readings.",
+    "humidityRoom": "{{room}} humidity is {{value}}%.",
+    "humidityMulti": "{{readings}}.",
+    "humidityNoData": "I have no recent humidity readings.",
+    "leakAllDry": "No leaks detected.",
+    "leakActive": "Watch out, leak detected in {{room}}."
+  }
+}

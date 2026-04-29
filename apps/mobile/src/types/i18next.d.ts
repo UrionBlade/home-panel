@@ -1,4 +1,5 @@
 import type acIt from "../locales/it/ac.json";
+import type alarmIt from "../locales/it/alarm.json";
 import type boardIt from "../locales/it/board.json";
 import type calendarIt from "../locales/it/calendar.json";
 import type camerasIt from "../locales/it/cameras.json";
@@ -13,6 +14,7 @@ import type musicIt from "../locales/it/music.json";
 import type recipesIt from "../locales/it/recipes.json";
 import type roomsIt from "../locales/it/rooms.json";
 import type routinesIt from "../locales/it/routines.json";
+import type sensorsIt from "../locales/it/sensors.json";
 import type settingsIt from "../locales/it/settings.json";
 import type shoppingIt from "../locales/it/shopping.json";
 import type timersIt from "../locales/it/timers.json";
@@ -21,7 +23,6 @@ import type voiceIt from "../locales/it/voice.json";
 import type wasteIt from "../locales/it/waste.json";
 import type weatherIt from "../locales/it/weather.json";
 import type zigbeeIt from "../locales/it/zigbee.json";
-import type alarmIt from "../locales/it/alarm.json";
 
 declare module "i18next" {
   interface CustomTypeOptions {
@@ -51,6 +52,7 @@ declare module "i18next" {
       tv: typeof tvIt;
       zigbee: typeof zigbeeIt;
       alarm: typeof alarmIt;
+      sensors: typeof sensorsIt;
     };
   }
 }

@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { AirQualityTile } from "../components/home-tiles/AirQualityTile";
 import { BoardTile } from "../components/home-tiles/BoardTile";
 import { CamerasTile } from "../components/home-tiles/CamerasTile";
 import { ClimateTile } from "../components/home-tiles/ClimateTile";
@@ -45,6 +46,7 @@ const tiles = [
    * speeds + temperature stepper. It sits right under the 4×2 weather
    * hero so the two "environment" tiles share the top of the mosaic. */
   { key: "climate", Component: ClimateTile, span: "md:col-span-3 md:row-span-2" },
+  { key: "air-quality", Component: AirQualityTile, span: "md:col-span-3" },
   { key: "shopping", Component: ShoppingTile, span: "md:col-span-3" },
   { key: "cameras", Component: CamerasTile, span: "md:col-span-3" },
   { key: "lights", Component: LightsTile, span: "md:col-span-3" },

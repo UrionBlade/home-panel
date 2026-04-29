@@ -356,6 +356,102 @@ export async function handleIntent(
       return data.voiceText;
     }
 
+    // ==== ENV SENSORS ====
+    case "read_air_quality": {
+      const sensors =
+        await apiClient.get<import("@home-panel/shared").EnvSensor[]>("/api/v1/sensors/env");
+      const withCo2 = sensors.filter((s) => s.co2Ppm != null);
+      if (withCo2.length === 0) {
+        const withTemp = sensors.find((s) => s.temperatureC != null);
+        return withTemp ? vt("sensors.airOnlyTemp") : vt("sensors.noEnv");
+      }
+      /* Speak only the worst reading — overlapping room messages just
+       * make the response unreadable. */
+      const worst = withCo2.reduce((a, b) => ((a.co2Ppm ?? 0) >= (b.co2Ppm ?? 0) ? a : b));
+      const co2 = Math.round(worst.co2Ppm ?? 0);
+      const pm25 = worst.pm25 != null ? Math.round(worst.pm25) : null;
+      if (co2 >= 1200) return vt("sensors.airHigh", { co2 });
+      if (co2 >= 800) return vt("sensors.airMedium", { co2 });
+      return pm25 != null ? vt("sensors.airGood", { co2, pm25 }) : vt("sensors.airMedium", { co2 });
+    }
+
+    case "read_temperature": {
+      const sensors =
+        await apiClient.get<import("@home-panel/shared").EnvSensor[]>("/api/v1/sensors/env");
+      const withTemp = sensors.filter((s) => s.temperatureC != null);
+      if (withTemp.length === 0) return vt("sensors.tempNoData");
+      const room = command.entities.room?.toLowerCase().trim();
+      if (room) {
+        const match = withTemp.find((s) => s.roomName?.toLowerCase().includes(room));
+        if (match && match.temperatureC != null) {
+          return vt("sensors.tempRoom", {
+            room: match.roomName ?? match.friendlyName,
+            value: match.temperatureC.toFixed(1),
+          });
+        }
+      }
+      if (withTemp.length === 1) {
+        const s = withTemp[0];
+        if (!s || s.temperatureC == null) return vt("sensors.tempNoData");
+        return s.roomName
+          ? vt("sensors.tempRoom", { room: s.roomName, value: s.temperatureC.toFixed(1) })
+          : vt("sensors.tempSimple", { value: s.temperatureC.toFixed(1) });
+      }
+      const readings = withTemp
+        .map((s) =>
+          vt("sensors.tempReading", {
+            room: s.roomName ?? s.friendlyName,
+            value: (s.temperatureC ?? 0).toFixed(1),
+          }),
+        )
+        .join(", ");
+      return vt("sensors.tempMulti", { readings });
+    }
+
+    case "read_humidity": {
+      const sensors =
+        await apiClient.get<import("@home-panel/shared").EnvSensor[]>("/api/v1/sensors/env");
+      const withHum = sensors.filter((s) => s.humidityPct != null);
+      if (withHum.length === 0) return vt("sensors.humidityNoData");
+      const room = command.entities.room?.toLowerCase().trim();
+      if (room) {
+        const match = withHum.find((s) => s.roomName?.toLowerCase().includes(room));
+        if (match && match.humidityPct != null) {
+          return vt("sensors.humidityRoom", {
+            room: match.roomName ?? match.friendlyName,
+            value: Math.round(match.humidityPct),
+          });
+        }
+      }
+      if (withHum.length === 1) {
+        const s = withHum[0];
+        if (!s || s.humidityPct == null) return vt("sensors.humidityNoData");
+        return s.roomName
+          ? vt("sensors.humidityRoom", { room: s.roomName, value: Math.round(s.humidityPct) })
+          : vt("sensors.humiditySimple", { value: Math.round(s.humidityPct) });
+      }
+      const readings = withHum
+        .map((s) =>
+          vt("sensors.humidityReading", {
+            room: s.roomName ?? s.friendlyName,
+            value: Math.round(s.humidityPct ?? 0),
+          }),
+        )
+        .join(", ");
+      return vt("sensors.humidityMulti", { readings });
+    }
+
+    case "read_leaks": {
+      const sensors =
+        await apiClient.get<import("@home-panel/shared").LeakSensor[]>("/api/v1/sensors/leak");
+      if (sensors.length === 0) return vt("sensors.noLeak");
+      const active = sensors.find((s) => s.leakDetected);
+      if (!active) return vt("sensors.leakAllDry");
+      return active.roomName
+        ? vt("sensors.leakActive", { room: active.roomName })
+        : vt("sensors.leakActiveNoRoom", { sensor: active.friendlyName });
+    }
+
     // ==== TIMER ====
     case "set_timer": {
       const duration = command.entities.duration;

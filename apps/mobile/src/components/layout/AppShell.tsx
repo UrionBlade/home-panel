@@ -15,6 +15,7 @@ import { ThemeProvider } from "../../lib/theme/ThemeProvider";
 import { VoiceProvider } from "../../lib/voice/VoiceProvider";
 import { AlarmAlertOverlay } from "../alarm/AlarmAlertOverlay";
 import { ScreensaverOverlay } from "../kiosk/ScreensaverOverlay";
+import { LeakAlertOverlay } from "../sensors/LeakAlertOverlay";
 import { TimerOverlay } from "../timers/TimerOverlay";
 import { ToastContainer } from "../ui/Toast";
 import { VoiceDebugPanel } from "../voice/VoiceDebugPanel";
@@ -108,6 +109,7 @@ export function AppShell({ children, hideClock, title }: AppShellProps) {
                 </div>
                 <TimerOverlay />
                 <AlarmAlertOverlay />
+                <LeakAlertOverlay />
                 <VoiceListeningOverlay />
                 <VoiceDebugPanel />
                 <ScreensaverManager />
