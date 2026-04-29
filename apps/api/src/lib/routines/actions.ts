@@ -116,14 +116,42 @@ async function dispatch(step: RoutineStep, ctx: RoutineRunContext): Promise<stri
       return;
     case "blink.arm_all":
     case "blink.disarm_all": {
-      const cameras = await internalFetch<Array<{ id: string }>>("GET", "/blink/cameras");
+      const cameras = await internalFetch<Array<{ id: string; deviceType?: string }>>(
+        "GET",
+        "/blink/cameras",
+      );
       if (cameras.length === 0) return;
       const verb = step.action === "blink.arm_all" ? "arm" : "disarm";
       /* Run sequentially: the Blink API rate-limits aggressively and parallel
        * arm/disarm calls occasionally return 429. Cost is a handful of cams so
-       * serial is fine. */
+       * serial is fine.
+       *
+       * Per-camera failures are tolerated and logged — a Blink doorbell or
+       * an offline cam returning 404/500 from upstream must not abort the
+       * whole "Disattiva allarme" routine, which the user expects to be
+       * best-effort across the fleet. The first failure is captured so we
+       * can surface it as a warning without throwing. */
+      const failures: Array<{ id: string; reason: string }> = [];
       for (const cam of cameras) {
-        await internalFetch("POST", `/blink/cameras/${encodeURIComponent(cam.id)}/${verb}`);
+        try {
+          await internalFetch("POST", `/blink/cameras/${encodeURIComponent(cam.id)}/${verb}`);
+        } catch (err) {
+          const reason =
+            err instanceof InternalFetchError
+              ? `HTTP ${err.status}: ${err.message}`
+              : err instanceof Error
+                ? err.message
+                : "unknown";
+          failures.push({ id: cam.id, reason });
+          console.warn(`[routines] blink.${verb} skipped ${cam.id}: ${reason}`);
+        }
+      }
+      if (failures.length === cameras.length) {
+        throw new Error(
+          `Tutte le ${cameras.length} camere Blink hanno fallito ${verb}: ${failures
+            .map((f) => f.reason)
+            .join("; ")}`,
+        );
       }
       return;
     }

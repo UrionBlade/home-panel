@@ -134,9 +134,26 @@ function RoutineCard({
   const Icon = iconForRoutine(routine.icon);
   const swatch = swatchForRoutine(routine.color);
 
+  /* The whole card is the primary tap target (= edit). Earlier we tried
+   * an absolute-positioned <button> overlay on top of the card, but the
+   * inner `relative` content ended up above it in stacking order and
+   * stole every pointer event except a 1-pixel sliver of border — the
+   * user's "magia nera, solo un mini px lo apre". Click on the wrapper
+   * div instead; the inner action buttons stop propagation so toggling
+   * / running still works. */
   return (
     <div
-      className={`relative flex flex-col gap-3 rounded-lg border bg-surface-elevated p-5 transition-colors ${
+      role="button"
+      tabIndex={0}
+      onClick={onEdit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onEdit();
+        }
+      }}
+      aria-label={`${t("actions.edit")} ${routine.name}`}
+      className={`flex flex-col gap-3 rounded-lg border bg-surface-elevated p-5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
         disabled ? "opacity-60 border-border" : "border-border hover:border-accent/60"
       }`}
       style={
@@ -148,15 +165,7 @@ function RoutineCard({
           : undefined
       }
     >
-      {/* Primary tap area — full card except action buttons */}
-      <button
-        type="button"
-        onClick={onEdit}
-        className="absolute inset-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        aria-label={`${t("actions.edit")} ${routine.name}`}
-      />
-
-      <div className="relative flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 flex-1 min-w-0">
           <div
             className="p-2.5 rounded-md shrink-0"
@@ -193,7 +202,7 @@ function RoutineCard({
         </span>
       </div>
 
-      <div className="relative flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <span className="text-xs text-text-subtle truncate">
           {routine.lastRunAt
             ? `${t("list.lastRun")}: ${formatTimestamp(routine.lastRunAt)}`
