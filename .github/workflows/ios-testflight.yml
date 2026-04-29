@@ -90,15 +90,21 @@ jobs:
           key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: pnpm-${{ runner.os }}-
 
+      # Cache only the immutable bits (downloaded crates + git). The
+      # build target/ directory holds .o / .a artefacts that bake in
+      # the Swift ABI of the SDK they were compiled against — keeping
+      # them around across an Xcode major-version bump leaves stale
+      # `swiftCompatibility56` references in libapp.a that fail to
+      # link against the new toolchain. Cheap to recompile compared
+      # to debugging stale artefact issues.
       - name: Cache Cargo registry
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            apps/mobile/src-tauri/target
-          key: cargo-ios-${{ hashFiles('apps/mobile/src-tauri/Cargo.lock') }}
-          restore-keys: cargo-ios-
+          key: cargo-ios-registry-v2-${{ hashFiles('apps/mobile/src-tauri/Cargo.lock') }}
+          restore-keys: cargo-ios-registry-v2-
 
       - name: Install pnpm deps
         run: pnpm install --frozen-lockfile
