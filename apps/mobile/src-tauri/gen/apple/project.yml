@@ -127,37 +127,33 @@ targets:
       - script: |
           set -e
           APP="$BUILT_PRODUCTS_DIR/$WRAPPER_NAME"
-          xattr -cr "$APP" || true
 
-          for png in "$APP"/AppIcon*.png; do
-            [ -f "$png" ] && rm -f "$png"
-          done
-
-          # Xcode runs build-phase scripts with /bin/sh (POSIX), so no
-          # bash-only process substitution. Use find -exec instead.
+          # Pre-sign every nested directory bundle that Xcode 26's
+          # ibtool / actool / coremlcompiler now produce with embedded
+          # Swift / CoreML glue. CodeSign on the parent treats them as
+          # nested code that has to already carry a signature, and the
+          # main pass runs without --deep (--deep broke -exportArchive
+          # with "Missing Bundle Identifier" in 28e634c). Use find -exec
+          # because Xcode build-phase scripts run under /bin/sh, not
+          # bash, so we can't use process substitution.
           if [ -n "${EXPANDED_CODE_SIGN_IDENTITY:-}" ]; then
-            # Nested directory bundles (.storyboardc, .mlmodelc, …):
-            # Xcode 26 produces these with embedded executable Swift /
-            # CoreML glue, and CodeSign on the parent treats them as
-            # nested code that has to be already signed.
             find "$APP" -type d \
               \( -name "*.storyboardc" -o -name "*.mlmodelc" \
                  -o -name "*.bundle" -o -name "*.framework" \) \
               -exec sh -c 'echo "[pre-sign] $1"; /usr/bin/codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" --timestamp=none --generate-entitlement-der "$1" || true' _ {} \;
-
-            # Single files that CodeSign also treats as nested code on
-            # Xcode 26 (Assets.car holds compiled asset symbols and
-            # embedded CoreML / AR resources that look signable). Sign
-            # them in place before the main bundle pass.
-            for asset in "$APP"/Assets.car "$APP"/Assets-*.car; do
-              [ -f "$asset" ] || continue
-              echo "[pre-sign] $asset"
-              /usr/bin/codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" \
-                --timestamp=none "$asset" || true
-            done
           else
             echo "[pre-sign] EXPANDED_CODE_SIGN_IDENTITY unset, skipping"
           fi
+
+          # NOTE: an earlier revision of this script ran
+          # `xattr -cr "$APP"` to strip extended attributes that Xcode 16
+          # emplaced on AppIcon PNG copies. With Xcode 26 those PNGs
+          # aren't emplaced at all, and stripping xattrs from the bundle
+          # breaks the codesign-resource-rules markers actool attaches
+          # to Assets.car and Xcode attaches to embedded.mobileprovision
+          # — codesign then treats those marker-less files as nested
+          # unsigned code objects and bails. Do nothing destructive here
+          # on Xcode 26.
 
           /usr/bin/touch "$DERIVED_FILE_DIR/clean-icons.stamp"
         name: Pre-codesign bundle cleanup
