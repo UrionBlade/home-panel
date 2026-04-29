@@ -85,14 +85,16 @@ jobs:
       - name: Mount MetalToolchain cryptex
         run: |
           DMG=$(ls /System/Library/AssetsV2/com_apple_MobileAsset_MetalToolchain/*.asset/AssetData/Restore/*.dmg 2>/dev/null | head -1)
-          if [ -n "$DMG" ]; then
-            echo "Mounting $DMG"
-            open "$DMG" || true
-            sleep 5
-          else
+          if [ -z "$DMG" ]; then
             echo "::warning::No MetalToolchain DMG found, swift-rs link may fail"
+            exit 0
           fi
-          ls /var/run/com.apple.security.cryptexd/mnt/ 2>&1 || true
+          echo "Mounting $DMG at /Volumes/MetalToolchainCryptex"
+          # `open` doesn't actually mount on CI (no GUI to confirm).
+          # Use hdiutil with explicit mountpoint matching the path the
+          # linker hard-codes when it goes looking for swiftCompatibility*.
+          sudo hdiutil attach "$DMG" -nobrowse -readonly -mountpoint /Volumes/MetalToolchainCryptex
+          ls /Volumes/MetalToolchainCryptex/Metal.xctoolchain/usr/lib/swift-5.0/iphoneos/ 2>&1 | head -20
 
       - name: Set up Node
         uses: actions/setup-node@v4
