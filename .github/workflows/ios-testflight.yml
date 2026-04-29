@@ -34,6 +34,13 @@ jobs:
       IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
       VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
       VITE_API_TOKEN: ${{ secrets.VITE_API_TOKEN }}
+      # swift-rs and Tauri's Channel.swift are compiled by cargo (not
+      # xcodebuild), so they pick up their deployment floor from env
+      # rather than from project.yml. Without this they default to a
+      # Swift 5.6 ABI (iOS 13/14) and the linker pulls in the
+      # back-deploy compatibility libraries (swiftCompatibility56,
+      # Concurrency, Packs) that Xcode 26's toolchain no longer ships.
+      IPHONEOS_DEPLOYMENT_TARGET: "17.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
