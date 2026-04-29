@@ -13,6 +13,7 @@ import {
   countUnread,
   DISARM_CODE_PATTERN,
   getAlarmState,
+  getDisarmCodeLength,
   isDisarmCodeConfigured,
   isDisarmResetEnabled,
   listEvents,
@@ -86,6 +87,7 @@ export const alarmRouter = new Hono()
     return c.json<DisarmCodeStatus>({
       configured: isDisarmCodeConfigured(),
       resetEnabled: isDisarmResetEnabled(),
+      length: getDisarmCodeLength(),
     });
   })
 

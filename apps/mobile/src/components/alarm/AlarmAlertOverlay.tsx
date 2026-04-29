@@ -12,7 +12,7 @@
  * code that doesn't exist.
  */
 
-import type { AlarmEvent } from "@home-panel/shared";
+import { ALARM_SSE_EVENTS, type AlarmEvent } from "@home-panel/shared";
 import { BackspaceIcon, ShieldWarningIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -23,6 +23,7 @@ import {
   useAlarmSilence,
   useDisarmCodeStatus,
 } from "../../lib/hooks/useAlarm";
+import { sseClient } from "../../lib/sse-client";
 import { useT } from "../../lib/useT";
 
 let audioCtx: AudioContext | null = null;
@@ -99,6 +100,21 @@ export function AlarmAlertOverlay() {
 
   useAlarmLiveSync(onTriggered);
 
+  /* When ANY device on the LAN silences the alarm (POST /silence with
+   * the right code, or POST /disarm), the API broadcasts
+   * `alarm:silenced` over SSE. Every panel/iPad that has the modal
+   * open closes it and stops its local beep — so a single keypad
+   * entry shuts down the whole house, not just the device that typed
+   * the code. */
+  useEffect(() => {
+    const off = sseClient.subscribe(ALARM_SSE_EVENTS.silenced, () => {
+      stopAudioRef.current?.();
+      stopAudioRef.current = null;
+      setActiveEvent(null);
+    });
+    return off;
+  }, []);
+
   useEffect(
     () => () => {
       stopAudioRef.current?.();
@@ -142,6 +158,7 @@ export function AlarmAlertOverlay() {
 
             {codeStatus?.configured ? (
               <CodeKeypad
+                length={codeStatus.length}
                 onSubmit={async (code) => {
                   try {
                     await silenceMutation.mutateAsync({ code });
@@ -188,20 +205,31 @@ export function AlarmAlertOverlay() {
 /* ------------------------------------------------------------------ */
 
 interface CodeKeypadProps {
+  /** Exact length of the configured disarm code, or null for legacy
+   * rows where it's unknown. Drives the dot count and auto-submit
+   * threshold so a 6-digit code doesn't get submitted prematurely
+   * after 4 keys. */
+  length: number | null;
   onSubmit: (code: string) => Promise<{ ok: boolean; reason?: string }>;
 }
 
-function CodeKeypad({ onSubmit }: CodeKeypadProps) {
+function CodeKeypad({ length, onSubmit }: CodeKeypadProps) {
   const { t } = useT("alarm");
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const shake = useAnimationControls();
 
+  const expectedLen = length ?? null;
+  const dotsCount = expectedLen ?? Math.max(4, code.length);
+
   const append = (digit: string) => {
     if (busy) return;
     setError(null);
-    setCode((prev) => (prev.length >= MAX_CODE_LEN ? prev : prev + digit));
+    setCode((prev) => {
+      const cap = expectedLen ?? MAX_CODE_LEN;
+      return prev.length >= cap ? prev : prev + digit;
+    });
   };
 
   const backspace = () => {
@@ -228,22 +256,24 @@ function CodeKeypad({ onSubmit }: CodeKeypadProps) {
      * touch local state here so the close animation can play. */
   }, [busy, code, onSubmit, shake, t]);
 
-  /* Auto-submit when the user has entered enough digits. We pick 4 as
-   * the floor and submit on every keystroke beyond that — one less tap
-   * compared to a manual "Conferma" button, which a panicked user
-   * shouldn't need to find. */
+  /* Auto-submit only when the entered code matches the configured
+   * length. When `length` is unknown (legacy stored rows) we degrade
+   * to a manual confirm so we never submit too early. */
   useEffect(() => {
-    if (code.length >= 4 && !busy) {
-      const id = setTimeout(() => void submit(), 200);
+    if (busy) return;
+    if (expectedLen != null && code.length === expectedLen) {
+      const id = setTimeout(() => void submit(), 150);
       return () => clearTimeout(id);
     }
-  }, [code, busy, submit]);
+  }, [code, busy, submit, expectedLen]);
+
+  const canManualSubmit = expectedLen == null && code.length >= 4 && !busy;
 
   return (
     <motion.div animate={shake} className="w-full flex flex-col gap-4">
-      {/* Code dots — show one filled circle per entered digit, max 8. */}
+      {/* Code dots — N filled per entered digit, total = configured length */}
       <div className="flex items-center justify-center gap-2 h-10">
-        {Array.from({ length: Math.max(4, code.length || 4) }).map((_, i) => (
+        {Array.from({ length: dotsCount }).map((_, i) => (
           <span
             key={i}
             className={[
@@ -269,6 +299,19 @@ function CodeKeypad({ onSubmit }: CodeKeypadProps) {
           aria-label={t("modal.backspace")}
         />
       </div>
+
+      {/* Manual confirm fallback for legacy rows where we don't know
+       * the exact digit count. */}
+      {expectedLen == null && (
+        <button
+          type="button"
+          onClick={() => void submit()}
+          disabled={!canManualSubmit}
+          className="rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-semibold py-2.5 disabled:opacity-40 disabled:cursor-default"
+        >
+          {t("modal.confirm")}
+        </button>
+      )}
     </motion.div>
   );
 }

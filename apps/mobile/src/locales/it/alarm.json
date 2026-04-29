@@ -33,10 +33,11 @@
   },
   "modal": {
     "title": "Allarme attivo",
-    "codeMissing": "Nessun codice di disarmo configurato. Impostane uno dalla pagina Allarme per usare il tastierino.",
+    "codeMissing": "Nessun codice di disarmo configurato. Impostane uno da Impostazioni → Dispositivi per usare il tastierino.",
     "codeWrong": "Codice errato",
     "codeError": "Errore nell'invio del codice",
-    "backspace": "Cancella ultima cifra"
+    "backspace": "Cancella ultima cifra",
+    "confirm": "Conferma"
   },
   "code": {
     "section": "Codice di disarmo",

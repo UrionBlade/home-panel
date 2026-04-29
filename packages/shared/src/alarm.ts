@@ -53,6 +53,10 @@ export interface DisarmCodeStatus {
   /** True when ALARM_DISARM_RESET=true on the API — lets the user set a
    * fresh code without supplying the previous one. */
   resetEnabled: boolean;
+  /** Exact digit count of the configured code (4-8), so the keypad
+   * modal can auto-submit at the right length and show the right
+   * number of dots. Null when no code is set. */
+  length: number | null;
 }
 
 export interface SetDisarmCodeInput {

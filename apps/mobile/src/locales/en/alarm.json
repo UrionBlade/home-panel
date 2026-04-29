@@ -33,10 +33,11 @@
   },
   "modal": {
     "title": "Alarm active",
-    "codeMissing": "No disarm code configured. Set one from the Alarm page to use the keypad.",
+    "codeMissing": "No disarm code configured. Set one from Settings → Devices to use the keypad.",
     "codeWrong": "Wrong code",
     "codeError": "Error submitting code",
-    "backspace": "Delete last digit"
+    "backspace": "Delete last digit",
+    "confirm": "Confirm"
   },
   "code": {
     "section": "Disarm code",

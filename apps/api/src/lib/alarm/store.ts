@@ -24,14 +24,20 @@ const SCRYPT_KEYLEN = 64;
 const SALT_BYTES = 16;
 export const DISARM_CODE_PATTERN = /^\d{4,8}$/;
 
+/* Stored format: `saltHex:hashHex:length`. The trailing length is
+ * appended so the keypad can render the right number of dots and
+ * auto-submit at the configured digit count without leaking the code
+ * itself. Older rows without `:length` still verify correctly — we
+ * just lose the auto-submit hint until the user re-saves. */
 function hashCode(plain: string): string {
   const salt = randomBytes(SALT_BYTES);
   const derived = scryptSync(plain, salt, SCRYPT_KEYLEN);
-  return `${salt.toString("hex")}:${derived.toString("hex")}`;
+  return `${salt.toString("hex")}:${derived.toString("hex")}:${plain.length}`;
 }
 
 function verifyHash(plain: string, stored: string): boolean {
-  const [saltHex, hashHex] = stored.split(":");
+  const parts = stored.split(":");
+  const [saltHex, hashHex] = parts;
   if (!saltHex || !hashHex) return false;
   let saltBuf: Buffer;
   let storedBuf: Buffer;
@@ -44,6 +50,15 @@ function verifyHash(plain: string, stored: string): boolean {
   if (storedBuf.length !== SCRYPT_KEYLEN) return false;
   const derived = scryptSync(plain, saltBuf, SCRYPT_KEYLEN);
   return timingSafeEqual(derived, storedBuf);
+}
+
+function lengthFromStored(stored: string | null): number | null {
+  if (!stored) return null;
+  const parts = stored.split(":");
+  if (parts.length < 3) return null;
+  const n = Number(parts[2]);
+  if (!Number.isFinite(n) || n < 4 || n > 8) return null;
+  return n;
 }
 
 /** True when ALARM_DISARM_RESET is the literal string "true". Any other
@@ -181,6 +196,13 @@ export function acknowledgeAll(): number {
 export function isDisarmCodeConfigured(): boolean {
   const row = ensureSingleton();
   return Boolean(row.disarmCodeHash && row.disarmCodeHash.length > 0);
+}
+
+/** Digit count of the currently stored code, or null if not configured
+ * (or stored before this column was introduced). */
+export function getDisarmCodeLength(): number | null {
+  const row = ensureSingleton();
+  return lengthFromStored(row.disarmCodeHash);
 }
 
 /** Replace the stored disarm code with a fresh hash. The caller is
