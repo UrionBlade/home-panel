@@ -96,29 +96,57 @@ targets:
           - $(SRCROOT)/Externals/x86_64/${CONFIGURATION}/libapp.a
           - $(SRCROOT)/Externals/arm64/${CONFIGURATION}/libapp.a
     postBuildScripts:
-      # GitHub macos-15 image patches between 26-29 April 2026
-      # introduced a regression where Xcode 16.4 emplaces AppIcon PNG
-      # copies in the bundle root with a code-signing extended
-      # attribute that CodeSign then refuses to sign:
-      #   Home Panel.app: code object is not signed at all
-      #   In subcomponent: Home Panel.app/AppIcon60x60@2x.png
-      # The exact same project succeeded on the same `runs-on:
-      # macos-latest` three days earlier — it's an image-side
-      # regression, not a project change. Strip the xattrs and
-      # remove the bundle-root PNGs (they're a back-compat artefact
-      # for iOS < 13; deployment target is 14 so Assets.car covers
-      # the runtime icon). inputFiles forces this phase to run
-      # AFTER the resources phase emplaces the PNGs and BEFORE
-      # CodeSign reads the bundle.
+      # Pre-codesign cleanup that the main CodeSign step depends on:
+      #
+      # 1. Strip extended attributes — Xcode user scripts, asset catalog
+      #    compiles and resource copies all leave xattrs that CodeSign
+      #    treats as foreign code-signing metadata.
+      #
+      # 2. Remove the bundle-root AppIcon*.png copies that Xcode 16
+      #    emplaces (a back-compat artefact for iOS < 13). With our
+      #    iOS 17 deployment target Assets.car covers the runtime icon
+      #    and the loose PNGs only confuse CodeSign with:
+      #      "code object is not signed at all" / In subcomponent:
+      #      Home Panel.app/AppIcon60x60@2x.png
+      #    Xcode 26 doesn't emplace them so the loop is a no-op there.
+      #
+      # 3. Pre-sign every nested directory bundle (.storyboardc,
+      #    .mlmodelc, .bundle, .framework). Xcode 26's ibtool --link
+      #    started producing storyboardc bundles with embedded Swift
+      #    glue, which CodeSign now treats as nested code that has to
+      #    be signed before the main bundle pass:
+      #      Home Panel.app: code object is not signed at all
+      #      In subcomponent: Home Panel.app/LaunchScreen.storyboardc
+      #    Same goes for the SpeakerECAPA.mlmodelc that build.rs drops
+      #    into the bundle. We don't want --deep on the main CodeSign
+      #    (it broke archive packaging with "Missing Bundle Identifier"
+      #    in 28e634c), so handle the inner bundles explicitly here.
+      #
+      # inputFiles forces this phase to run AFTER the resources phase
+      # emplaces everything and BEFORE the implicit CodeSign step.
       - script: |
           set -e
           APP="$BUILT_PRODUCTS_DIR/$WRAPPER_NAME"
           xattr -cr "$APP" || true
+
           for png in "$APP"/AppIcon*.png; do
             [ -f "$png" ] && rm -f "$png"
           done
+
+          if [ -n "${EXPANDED_CODE_SIGN_IDENTITY:-}" ]; then
+            while IFS= read -r -d '' nested; do
+              echo "[pre-sign] $nested"
+              /usr/bin/codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" \
+                --timestamp=none --generate-entitlement-der "$nested" || true
+            done < <(find "$APP" -type d \
+              \( -name "*.storyboardc" -o -name "*.mlmodelc" \
+                 -o -name "*.bundle" -o -name "*.framework" \) -print0)
+          else
+            echo "[pre-sign] EXPANDED_CODE_SIGN_IDENTITY unset, skipping"
+          fi
+
           /usr/bin/touch "$DERIVED_FILE_DIR/clean-icons.stamp"
-        name: Clean emplaced AppIcon PNGs
+        name: Pre-codesign bundle cleanup
         basedOnDependencyAnalysis: false
         inputFiles:
           - $(BUILT_PRODUCTS_DIR)/$(WRAPPER_NAME)/Info.plist
