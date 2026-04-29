@@ -89,23 +89,23 @@ jobs:
         run: docker compose up -d api mediamtx mosquitto
 
       # Zigbee2MQTT can only start when the SONOFF dongle is enumerated
-      # as /dev/ttyUSB0. When it's missing (NAS reboot before the user
-      # plugs the stick back in, dongle relocated, …) we skip the start
-      # instead of failing the deploy: api + mosquitto are independent
-      # and must keep deploying. The next push (or workflow_dispatch)
-      # picks up Z2M as soon as the device is back.
-      - name: Start Zigbee2MQTT if the dongle is present
+      # as /dev/ttyUSB0. The previous version of this step ran a host
+      # `[ -e $PORT ]` test and `docker compose rm -f zigbee2mqtt` when
+      # it failed — but the self-hosted runner is itself a container
+      # without `/dev` passthrough, so the check ALWAYS reported the
+      # device as missing and silently destroyed the Z2M container on
+      # every release. The siren stack went quiet for the rest of the
+      # day until somebody noticed and ran `docker compose up -d`
+      # manually.
+      #
+      # Now we always `up -d zigbee2mqtt`. The compose file has a
+      # `devices: /dev/ttyUSB0:/dev/ttyUSB0` mapping so Docker handles
+      # the dongle-missing case itself: the container goes into a
+      # restart loop on failure and recovers automatically when the
+      # device returns. No more silent disappearances.
+      - name: Start Zigbee2MQTT
         working-directory: /volume1/docker/home-panel
-        run: |
-          PORT="${ZIGBEE_SERIAL_PORT:-/dev/ttyUSB0}"
-          if [ -e "$PORT" ]; then
-            echo "Found $PORT — bringing up zigbee2mqtt"
-            docker compose up -d zigbee2mqtt
-          else
-            echo "Zigbee dongle not present at $PORT — skipping zigbee2mqtt"
-            docker compose stop zigbee2mqtt 2>/dev/null || true
-            docker compose rm -f zigbee2mqtt 2>/dev/null || true
-          fi
+        run: docker compose up -d zigbee2mqtt
 
       - name: Prune old images
         run: docker image prune -f

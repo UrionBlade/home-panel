@@ -548,19 +548,29 @@ export async function removeZigbeeDevice(ieeeAddress: string): Promise<void> {
 /*  Siren control                                                      */
 /* ------------------------------------------------------------------ */
 
-/* Z2M expose contract differs across siren models. We send a payload
- * that is a superset of all supported keys: each device only reads the
- * properties its converter understands and ignores the rest. NEO
- * NAS-AB02B2 reads `alarm` + `duration` + `volume` + `melody`; HEIMAN
- * HS2WD-E and other IAS-WD sirens read the `warning` cluster object.
- * Sending both in one publish keeps this resilient when a different
- * model is added later. */
-function trigPayloadFor(durationSec: number): Record<string, unknown> {
+/* Z2M expose contract differs across siren models.
+ *
+ * NEO NAS-AB02B2: `alarm: true` triggers the wail via a Zigbee warning
+ * command, but `melody`/`volume`/`duration` are persistent attributes
+ * written to separate clusters. When all keys are sent in a single
+ * publish Z2M only honours the warning command and silently drops the
+ * attribute writes — so the siren keeps playing whatever melody it
+ * had cached (the cheery doorbell tone). Splitting into two publishes
+ * (config first, then trigger) lets each cluster get its own write.
+ *
+ * HEIMAN HS2WD-E and other IAS-WD sirens consume the `warning` object
+ * — that one is happily delivered on the same publish as `alarm`. */
+function configPayload(durationSec: number): Record<string, unknown> {
   return {
-    alarm: true,
     duration: durationSec,
     volume: "high",
     melody: getSirenMelody(),
+  };
+}
+
+function triggerPayload(durationSec: number): Record<string, unknown> {
+  return {
+    alarm: true,
     warning: {
       duration: durationSec,
       mode: "burglar",
@@ -593,7 +603,13 @@ function publishSirenSet(friendlyName: string, payload: Record<string, unknown>)
 /** Fire every armed siren on the network for `durationSec`. The siren
  * itself enforces the cutoff so a backend crash mid-alarm still stops
  * the noise. Disarmed sirens (per-device `armed` opted out) are
- * skipped — useful for demo/dummy units kept in the inventory. */
+ * skipped — useful for demo/dummy units kept in the inventory.
+ *
+ * Two-step publish per siren: melody/volume/duration first as cluster
+ * attributes, then the actual `alarm: true` warning command after a
+ * short delay so Z2M has time to process the attribute writes. The
+ * NEO converter only honours one of the two clusters per publish, so
+ * combining them in a single message silently drops the melody change. */
 export function triggerSirens(durationSec: number): { fired: number } {
   const sirens = listDevices()
     .filter(isSirenDevice)
@@ -602,12 +618,20 @@ export function triggerSirens(durationSec: number): { fired: number } {
     console.log("[zigbee] triggerSirens: no armed siren found");
     return { fired: 0 };
   }
-  const payload = trigPayloadFor(durationSec);
+  const cfg = configPayload(durationSec);
+  const trig = triggerPayload(durationSec);
   for (const dev of sirens) {
-    publishSirenSet(dev.friendlyName, payload);
+    publishSirenSet(dev.friendlyName, cfg);
   }
+  /* 250ms is a comfortable margin: Z2M typically flushes the attribute
+   * write under 100ms, but we don't want to race the radio. */
+  setTimeout(() => {
+    for (const dev of sirens) {
+      publishSirenSet(dev.friendlyName, trig);
+    }
+  }, 250);
   console.log(
-    `[zigbee] triggered ${sirens.length} siren(s) for ${durationSec}s: ${sirens
+    `[zigbee] triggered ${sirens.length} siren(s) for ${durationSec}s (melody=${getSirenMelody()}): ${sirens
       .map((d) => d.friendlyName)
       .join(", ")}`,
   );
