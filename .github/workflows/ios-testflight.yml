@@ -44,7 +44,7 @@ jobs:
           ls -d /Applications/Xcode_*.app 2>/dev/null || true
           # Prefer the newest Xcode 16 (stable, iOS 18 SDK). Fall back to any
           # available Xcode 16. Skip bleeding-edge versions (17+/26+) that
-          # ship incompatible SDKs for our iOS 14 deployment target.
+          # ship incompatible SDKs for our iOS 15 deployment target.
           candidates=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
           if [ -z "$candidates" ]; then
             candidates=$(ls -d /Applications/Xcode_15*.app 2>/dev/null | sort -V | tail -1)
