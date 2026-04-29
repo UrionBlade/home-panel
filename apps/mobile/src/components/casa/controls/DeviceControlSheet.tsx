@@ -1,6 +1,8 @@
+import type { EnvSensor } from "@home-panel/shared";
 import type { DeviceEntity } from "../../../lib/devices/model";
 import { AcControlSheet } from "./AcControlSheet";
 import { CameraControlSheet } from "./CameraControlSheet";
+import { EnvSensorControlSheet } from "./EnvSensorControlSheet";
 import { IpCameraControlSheet } from "./IpCameraControlSheet";
 import { LaundryControlSheet } from "./LaundryControlSheet";
 import { TvControlSheet } from "./TvControlSheet";
@@ -37,6 +39,15 @@ export function DeviceControlSheet({ device, onClose }: DeviceControlSheetProps)
     case "washer":
     case "dryer":
       return <LaundryControlSheet open={open} device={device} onClose={onClose} />;
+    case "sensor_air":
+    case "sensor_climate":
+      /* The DeviceEntity carries the EnvSensor row in `raw` (see
+       * projectEnvSensor in lib/devices/model.ts). The detail sheet is
+       * read-only — sensors don't expose actions, just a richer view of
+       * their last reading + 7-day history. */
+      return (
+        <EnvSensorControlSheet open={open} sensor={device.raw as EnvSensor} onClose={onClose} />
+      );
     default:
       /* Lights and future sensor/siren/plug kinds don't open a control
        * sheet — they toggle directly or, when not supported, go straight

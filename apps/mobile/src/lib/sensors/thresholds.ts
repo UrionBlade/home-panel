@@ -13,8 +13,18 @@
 
 import type { SensorSeverity } from "@home-panel/shared";
 
-export const CO2_THRESHOLDS = { medium: 800, high: 1200 } as const;
-export const PM25_THRESHOLDS = { medium: 12, high: 35 } as const;
+/* Bands aligned with the IKEA Home smart app for KLIPPBOK / ALPSTUGA so
+ * the panel doesn't disagree with the source the user already trusts.
+ * Temperature + humidity get their own categorical labels (cold / mild
+ * / warm and dry / comfort / humid) since "good/medium/high" doesn't
+ * map cleanly to climate values. */
+export const CO2_THRESHOLDS = { medium: 1000, high: 2000 } as const;
+export const PM25_THRESHOLDS = { medium: 15, high: 85 } as const;
+export const TEMP_THRESHOLDS = { mild: 18, warm: 23 } as const;
+export const HUMIDITY_THRESHOLDS = { comfort: 40, humid: 60 } as const;
+
+export type ClimateLabel = "cold" | "mild" | "warm" | "unknown";
+export type HumidityLabel = "dry" | "comfort" | "humid" | "unknown";
 
 export function severityForCo2(ppm: number | null): SensorSeverity {
   if (ppm == null) return "unknown";
@@ -28,6 +38,20 @@ export function severityForPm25(pm: number | null): SensorSeverity {
   if (pm >= PM25_THRESHOLDS.high) return "high";
   if (pm >= PM25_THRESHOLDS.medium) return "medium";
   return "good";
+}
+
+export function labelForTemperature(c: number | null): ClimateLabel {
+  if (c == null) return "unknown";
+  if (c >= TEMP_THRESHOLDS.warm) return "warm";
+  if (c >= TEMP_THRESHOLDS.mild) return "mild";
+  return "cold";
+}
+
+export function labelForHumidity(pct: number | null): HumidityLabel {
+  if (pct == null) return "unknown";
+  if (pct >= HUMIDITY_THRESHOLDS.humid) return "humid";
+  if (pct >= HUMIDITY_THRESHOLDS.comfort) return "comfort";
+  return "dry";
 }
 
 /** Tailwind-style color mapping the AirQualityTile applies to badges

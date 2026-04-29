@@ -14,17 +14,17 @@
     "percent": "%"
   },
   "thresholds": {
-    "co2": {
-      "good": "good",
-      "medium": "medium",
-      "high": "high"
-    },
-    "pm25": {
-      "good": "good",
-      "medium": "medium",
-      "high": "high"
-    }
+    "co2": { "good": "good", "medium": "moderate", "high": "poor" },
+    "pm25": { "good": "good", "medium": "moderate", "high": "poor" },
+    "temperature": { "cold": "cold", "mild": "mild", "warm": "warm" },
+    "humidity": { "dry": "dry", "comfort": "comfort", "humid": "humid" }
   },
+  "ranges": {
+    "hours": "Hours",
+    "day": "Day",
+    "week": "Week"
+  },
+  "noHistory": "No historical data yet",
   "leak": {
     "modalTitle": "Water leak",
     "modalBody": "{{sensor}} in {{room}} is reporting water.",

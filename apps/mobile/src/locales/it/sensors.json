@@ -14,17 +14,17 @@
     "percent": "%"
   },
   "thresholds": {
-    "co2": {
-      "good": "buona",
-      "medium": "media",
-      "high": "alta"
-    },
-    "pm25": {
-      "good": "buono",
-      "medium": "medio",
-      "high": "alto"
-    }
+    "co2": { "good": "buono", "medium": "moderato", "high": "cattivo" },
+    "pm25": { "good": "buono", "medium": "moderato", "high": "cattivo" },
+    "temperature": { "cold": "freddo", "mild": "mite", "warm": "caldo" },
+    "humidity": { "dry": "secco", "comfort": "comfort", "humid": "umido" }
   },
+  "ranges": {
+    "hours": "Ultime ore",
+    "day": "Giorno",
+    "week": "Settimana"
+  },
+  "noHistory": "Dati storici non ancora disponibili",
   "leak": {
     "modalTitle": "Perdita rilevata",
     "modalBody": "{{sensor}} in {{room}} sta segnalando acqua.",
