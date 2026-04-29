@@ -200,9 +200,15 @@ export function appendEnvHistory(input: {
   tempC: number | null;
   humidityPct: number | null;
 }): void {
+  /* Set recordedAt explicitly as an ISO-8601 string. The SQL default
+   * `CURRENT_TIMESTAMP` produces `YYYY-MM-DD HH:MM:SS` (space separator)
+   * which sorts incorrectly against ISO-8601 cutoffs (`T` separator)
+   * when both values fall in the same day — same-day records would be
+   * filtered out of "last N hours" queries. */
   db.insert(envSensorHistory)
     .values({
       sensorId: input.sensorId,
+      recordedAt: new Date().toISOString(),
       co2Ppm: input.co2Ppm,
       pm25: input.pm25,
       tempC: input.tempC,

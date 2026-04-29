@@ -1,4 +1,4 @@
-import type { Room, ZigbeeDevice } from "@home-panel/shared";
+import type { EnvSensor, Room, ZigbeeDevice } from "@home-panel/shared";
 import {
   AppWindowIcon,
   CheckIcon,
@@ -20,6 +20,7 @@ import { useUiStore } from "../../store/ui-store";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { BottomSheet } from "./BottomSheet";
+import { EnvSensorChartsSection } from "./EnvSensorChartsSection";
 
 const ZIGBEE_KINDS: DeviceKind[] = ["sensor_door", "sensor_window", "siren", "plug"];
 
@@ -57,6 +58,8 @@ export function DeviceEditorSheet({ open, device, rooms, onClose }: DeviceEditor
 
   const isZigbee = device ? isZigbeeKind(device.kind) : false;
   const zigbeeRaw = isZigbee ? (device?.raw as ZigbeeDevice | undefined) : undefined;
+  const isEnvSensor = device?.kind === "sensor_air" || device?.kind === "sensor_climate";
+  const envSensor = isEnvSensor ? (device?.raw as EnvSensor | undefined) : undefined;
 
   useEffect(() => {
     if (!open || !device) return;
@@ -182,6 +185,8 @@ export function DeviceEditorSheet({ open, device, rooms, onClose }: DeviceEditor
             })}
           </div>
         </div>
+
+        {envSensor && <EnvSensorChartsSection sensor={envSensor} />}
 
         {isZigbee && (
           <>

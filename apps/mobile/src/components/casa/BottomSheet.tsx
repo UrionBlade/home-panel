@@ -118,7 +118,7 @@ export function BottomSheet({
             <div
               ref={dialogRef}
               tabIndex={-1}
-              className="pointer-events-auto w-full max-w-2xl mx-4 mb-4 sm:mb-6 rounded-lg bg-surface-elevated border border-border shadow-xl outline-none overflow-hidden"
+              className="pointer-events-auto w-full mx-4 sm:mx-6 mb-4 sm:mb-6 rounded-lg bg-surface-elevated border border-border shadow-xl outline-none overflow-hidden"
               style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
             >
               <div className="flex justify-center pt-3 pb-1">

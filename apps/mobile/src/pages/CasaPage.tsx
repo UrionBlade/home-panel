@@ -48,6 +48,13 @@ export function CasaPage() {
       void actions.toggle(device);
       return;
     }
+    /* Env sensors don't have actionable controls — tapping the tile
+     * opens the same editor surface as the ⋯ menu, where rename + room
+     * move + history charts live together. */
+    if (device.kind === "sensor_air" || device.kind === "sensor_climate") {
+      setEditingDevice(device);
+      return;
+    }
     setControlDevice(device);
   };
 
