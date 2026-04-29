@@ -72,6 +72,11 @@ targets:
         LIBRARY_SEARCH_PATHS[arch=arm64]: $(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)
         ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES: true
         EXCLUDED_ARCHS[sdk=iphoneos*]: x86_64
+        # Required so the postBuildScript below can rm the bundle's
+        # emplaced AppIcon copies before CodeSign runs. Xcode 15+
+        # defaults user scripts to sandboxed, which silently no-op's
+        # rm against $BUILT_PRODUCTS_DIR.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
       groups: [app]
     dependencies:
       - framework: libapp.a
@@ -90,3 +95,32 @@ targets:
         outputFiles:
           - $(SRCROOT)/Externals/x86_64/${CONFIGURATION}/libapp.a
           - $(SRCROOT)/Externals/arm64/${CONFIGURATION}/libapp.a
+    postBuildScripts:
+      # GitHub macos-15 image patches between 26-29 April 2026
+      # introduced a regression where Xcode 16.4 emplaces AppIcon PNG
+      # copies in the bundle root with a code-signing extended
+      # attribute that CodeSign then refuses to sign:
+      #   Home Panel.app: code object is not signed at all
+      #   In subcomponent: Home Panel.app/AppIcon60x60@2x.png
+      # The exact same project succeeded on the same `runs-on:
+      # macos-latest` three days earlier — it's an image-side
+      # regression, not a project change. Strip the xattrs and
+      # remove the bundle-root PNGs (they're a back-compat artefact
+      # for iOS < 13; deployment target is 14 so Assets.car covers
+      # the runtime icon). inputFiles forces this phase to run
+      # AFTER the resources phase emplaces the PNGs and BEFORE
+      # CodeSign reads the bundle.
+      - script: |
+          set -e
+          APP="$BUILT_PRODUCTS_DIR/$WRAPPER_NAME"
+          xattr -cr "$APP" || true
+          for png in "$APP"/AppIcon*.png; do
+            [ -f "$png" ] && rm -f "$png"
+          done
+          /usr/bin/touch "$DERIVED_FILE_DIR/clean-icons.stamp"
+        name: Clean emplaced AppIcon PNGs
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - $(BUILT_PRODUCTS_DIR)/$(WRAPPER_NAME)/Info.plist
+        outputFiles:
+          - $(DERIVED_FILE_DIR)/clean-icons.stamp
