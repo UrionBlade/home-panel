@@ -22,12 +22,12 @@ concurrency:
 jobs:
   build:
     name: Build and upload to TestFlight
-    # macos-15 image (= macos-latest as of 2026) has an in-flight
-    # CodeSign regression on Xcode 16.4 that fails every iOS build
-    # with "code object is not signed at all" on nested bundle
-    # subcomponents. macos-14 is the previous LTS image with Xcode
-    # 16.2 and isn't affected. Pin until GitHub rolls a fix.
-    runs-on: macos-14
+    # As of 2026-04-29 Apple requires every TestFlight upload to be
+    # compiled against the iOS 26 SDK, which only ships with Xcode 26+.
+    # Xcode 26 lives on macos-15 (and macos-latest as runners roll
+    # forward); macos-14 stays on Xcode 16 and produces builds App
+    # Store Connect now rejects.
+    runs-on: macos-15
     timeout-minutes: 60
     env:
       IOS_P12_BASE64: ${{ secrets.IOS_P12_BASE64 }}
@@ -39,29 +39,66 @@ jobs:
       IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
       VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
       VITE_API_TOKEN: ${{ secrets.VITE_API_TOKEN }}
+      # swift-rs and Tauri's Channel.swift are compiled by cargo (not
+      # xcodebuild), so they pick up their deployment floor from env
+      # rather than from project.yml. Without this they default to a
+      # Swift 5.6 ABI baseline (iOS 13/14) and the linker pulls in the
+      # back-deploy compatibility libraries (swiftCompatibility56,
+      # Concurrency, Packs) that Xcode 26's toolchain no longer ships.
+      IPHONEOS_DEPLOYMENT_TARGET: "17.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Select stable Xcode (16.x preferred)
+      - name: Select Xcode (26+ required by Apple, fall back to 16)
         run: |
           echo "Available Xcodes:"
           ls -d /Applications/Xcode_*.app 2>/dev/null || true
-          # Prefer the newest Xcode 16 (stable, iOS 18 SDK). Fall back to any
-          # available Xcode 16. Skip bleeding-edge versions (17+/26+) that
-          # ship incompatible SDKs for our iOS 14 deployment target.
-          candidates=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          # Apple requires builds shipped to App Store Connect (TestFlight
+          # included) to use the iOS 26 SDK, which only ships with Xcode
+          # 26+. Xcode 16 also has a known codesign regression that
+          # treats every bundle subcomponent (AppIcon*.png, Assets.car,
+          # LaunchScreen.storyboardc, …) as signable nested code and
+          # bails with `code object is not signed at all`. Xcode 26
+          # fixes that emplace behaviour, so it's both the
+          # policy-compliant AND the working choice. Deployment target
+          # on the project is iOS 17 to avoid pulling in Swift
+          # back-deploy libs (swiftCompatibility56/Concurrency/Packs)
+          # that aren't shipped with Xcode 26's toolchain.
+          candidates=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
           if [ -z "$candidates" ]; then
-            candidates=$(ls -d /Applications/Xcode_15*.app 2>/dev/null | sort -V | tail -1)
+            echo "::warning::No Xcode 26 found, falling back to Xcode 16 — App Store Connect upload may be rejected and the codesign bug will reappear"
+            candidates=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
           fi
           if [ -z "$candidates" ]; then
-            echo "::error::No Xcode 15 or 16 found on runner"
+            echo "::error::No Xcode 16 or later found on runner"
             exit 1
           fi
           echo "Selected: $candidates"
           sudo xcode-select -s "$candidates"
           xcodebuild -version
           xcodebuild -showsdks | grep -i ios | head -5
+
+      # Xcode 26 ships the Swift back-deploy compat libs via a separate
+      # MetalToolchain cryptex DMG that isn't auto-mounted on every
+      # boot. When swift-rs / Tauri's Channel.swift compile they look
+      # for libs under
+      #   /Volumes/MetalToolchainCryptex/Metal.xctoolchain/usr/lib/swift-5.0/iphoneos
+      # and fail to link with `swiftCompatibility56 not found` if the
+      # mount is missing. `open dmg` doesn't actually mount on CI
+      # (no GUI to confirm); use hdiutil with explicit mountpoint
+      # matching the path the linker hard-codes when it goes looking.
+      # Tracked in tauri-apps/tauri#14864.
+      - name: Mount MetalToolchain cryptex
+        run: |
+          DMG=$(ls /System/Library/AssetsV2/com_apple_MobileAsset_MetalToolchain/*.asset/AssetData/Restore/*.dmg 2>/dev/null | head -1)
+          if [ -z "$DMG" ]; then
+            echo "::warning::No MetalToolchain DMG found, swift-rs link may fail"
+            exit 0
+          fi
+          echo "Mounting $DMG at /Volumes/MetalToolchainCryptex"
+          sudo hdiutil attach "$DMG" -nobrowse -readonly -mountpoint /Volumes/MetalToolchainCryptex
+          ls /Volumes/MetalToolchainCryptex/Metal.xctoolchain/usr/lib/swift-5.0/iphoneos/ 2>&1 | head -20
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -86,15 +123,21 @@ jobs:
           key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: pnpm-${{ runner.os }}-
 
+      # Cache only the immutable bits (downloaded crates + git). The
+      # build target/ directory holds .o / .a artefacts that bake in
+      # the Swift ABI of the SDK they were compiled against — keeping
+      # them around across an Xcode major-version bump leaves stale
+      # `swiftCompatibility56` references in libapp.a that fail to
+      # link against the new toolchain. Cheap to recompile compared
+      # to debugging stale artefact issues.
       - name: Cache Cargo registry
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            apps/mobile/src-tauri/target
-          key: cargo-ios-${{ hashFiles('apps/mobile/src-tauri/Cargo.lock') }}
-          restore-keys: cargo-ios-
+          key: cargo-ios-registry-v2-${{ hashFiles('apps/mobile/src-tauri/Cargo.lock') }}
+          restore-keys: cargo-ios-registry-v2-
 
       - name: Install pnpm deps
         run: pnpm install --frozen-lockfile
