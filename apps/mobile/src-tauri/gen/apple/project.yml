@@ -133,14 +133,13 @@ targets:
             [ -f "$png" ] && rm -f "$png"
           done
 
+          # Xcode runs build-phase scripts with /bin/sh (POSIX), so no
+          # bash-only process substitution. Use find -exec instead.
           if [ -n "${EXPANDED_CODE_SIGN_IDENTITY:-}" ]; then
-            while IFS= read -r -d '' nested; do
-              echo "[pre-sign] $nested"
-              /usr/bin/codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" \
-                --timestamp=none --generate-entitlement-der "$nested" || true
-            done < <(find "$APP" -type d \
+            find "$APP" -type d \
               \( -name "*.storyboardc" -o -name "*.mlmodelc" \
-                 -o -name "*.bundle" -o -name "*.framework" \) -print0)
+                 -o -name "*.bundle" -o -name "*.framework" \) \
+              -exec sh -c 'echo "[pre-sign] $1"; /usr/bin/codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" --timestamp=none --generate-entitlement-der "$1" || true' _ {} \;
           else
             echo "[pre-sign] EXPANDED_CODE_SIGN_IDENTITY unset, skipping"
           fi
