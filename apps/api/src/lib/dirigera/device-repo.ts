@@ -41,20 +41,27 @@ export type DirigeraClassification =
 
 /** Map a hub device into one of our handled buckets. Anything we don't
  * recognise is returned as `ignored` so the sync logs it without
- * crashing or polluting our schema. */
+ * crashing or polluting our schema.
+ *
+ * Routing is attribute-driven first (most reliable across firmware
+ * versions) and falls back to deviceType. DIRIGERA exposes the same
+ * physical class under several deviceType strings — KLIPPBOK is
+ * `waterSensor`, ALPSTUGA is `environmentSensor`, TIMMERFLÖTTE the
+ * generic `sensor` — so trying to match on the string alone misses
+ * devices and silently drops them into `ignored`. */
 export function classifyDevice(device: DirigeraDevice): DirigeraClassification {
   if (device.deviceType === "light") {
     return { kind: "light", device };
   }
   const attrs = device.attributes as Record<string, unknown>;
-  if (typeof attrs.waterLeakDetected === "boolean") {
+  if (device.deviceType === "waterSensor" || typeof attrs.waterLeakDetected === "boolean") {
     return { kind: "leak", device };
   }
   /* ALPSTUGA reports CO2 + PM2.5 alongside temp/humidity. The TIMMERFLÖTTE
    * climate-only sensor only carries temp + humidity, so we route those
    * through the same env_sensors table with the AQ fields nullable. */
   const hasAirQuality = attrs.currentCO2 !== undefined || attrs.currentPM25 !== undefined;
-  if (hasAirQuality) {
+  if (hasAirQuality || device.deviceType === "environmentSensor") {
     return { kind: "air_quality", device };
   }
   if (attrs.currentTemperature !== undefined || attrs.currentRH !== undefined) {
