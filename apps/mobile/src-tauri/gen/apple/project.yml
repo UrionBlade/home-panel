@@ -90,3 +90,20 @@ targets:
         outputFiles:
           - $(SRCROOT)/Externals/x86_64/${CONFIGURATION}/libapp.a
           - $(SRCROOT)/Externals/arm64/${CONFIGURATION}/libapp.a
+    postBuildScripts:
+      # Xcode 16's LinkAssetCatalog "emplaces" copies of AppIcon PNGs in
+      # the bundle root for Spotlight / Settings / Notifications, and
+      # tags them with com.apple.cs.* extended attributes that the
+      # final CodeSign step then refuses to sign:
+      #   Home Panel.app: code object is not signed at all
+      #   In subcomponent: Home Panel.app/AppIcon60x60@2x.png
+      # Stripping all xattrs from the wrapper before codesign runs lets
+      # the app sign cleanly. This script runs after every standard
+      # build phase and before CodeSign (Xcode appends CodeSign as the
+      # last automatic step).
+      - script: |
+          if [ -d "$BUILT_PRODUCTS_DIR/$WRAPPER_NAME" ]; then
+            xattr -cr "$BUILT_PRODUCTS_DIR/$WRAPPER_NAME"
+          fi
+        name: Strip xattr from emplaced app icons
+        basedOnDependencyAnalysis: false
