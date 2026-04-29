@@ -554,27 +554,27 @@ export async function removeZigbeeDevice(ieeeAddress: string): Promise<void> {
  *   - `volume`   enum    — low | medium | high (string)
  *   - `duration` numeric — seconds
  *
- * Two pitfalls we tripped on testing:
+ * Pitfalls we hit live-testing:
  *   1. `melody: 17` (number) is silently dropped by Z2M — the converter
- *      only honours the string form, so we always coerce.
- *   2. The IAS-WD `warning` object is not a converter for NEO devices.
- *      Sending it logs `No converter available for 'warning' on 'Sirena'`
- *      and does nothing. Keep payloads minimal and let the simple
- *      `alarm: true` boolean drive the device.
- *
- * Config payload is published FIRST and the trigger 250ms later so the
- * attribute writes (melody / volume / duration on cluster 0xE001) have
- * time to settle before the warning command runs. */
-function configPayload(durationSec: number): Record<string, unknown> {
-  return {
-    duration: durationSec,
-    volume: "high",
-    melody: String(getSirenMelody()),
-  };
-}
-
-const TRIGGER_PAYLOAD: Record<string, unknown> = { alarm: true };
+ *      only honours the string form. Always coerce.
+ *   2. The IAS-WD `warning` object is not a converter for NEO. Sending
+ *      it logs `No converter available for 'warning' on 'Sirena'` and
+ *      does nothing.
+ *   3. Bundling `{duration, volume, melody}` in a single publish: only
+ *      ONE of the three lands on the device — the others are silently
+ *      dropped. The Tuya converter chains them through a single dpid
+ *      buffer that gets clobbered on each consecutive write before it
+ *      flushes. Each attribute needs its own publish (and a small gap
+ *      between them) to actually take effect. */
 const STOP_PAYLOAD: Record<string, unknown> = { alarm: false };
+const TRIGGER_PAYLOAD: Record<string, unknown> = { alarm: true };
+
+const CONFIG_GAP_MS = 200;
+const TRIGGER_GAP_MS = 200;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function publishSirenSet(friendlyName: string, payload: Record<string, unknown>) {
   if (!state.client || !state.mqttConnected) {
@@ -607,17 +607,29 @@ export function triggerSirens(durationSec: number): { fired: number } {
     console.log("[zigbee] triggerSirens: no armed siren found");
     return { fired: 0 };
   }
-  const cfg = configPayload(durationSec);
-  for (const dev of sirens) {
-    publishSirenSet(dev.friendlyName, cfg);
-  }
-  /* 250ms is a comfortable margin: Z2M typically flushes the attribute
-   * write under 100ms, but we don't want to race the radio. */
-  setTimeout(() => {
+  /* Each attribute on its own publish — chained sequentially so the
+   * Tuya dpid buffer flushes between them. Order: melody first (the
+   * one most likely to have changed since the last trigger), then
+   * volume + duration, then the actual warning command. */
+  const melody = String(getSirenMelody());
+  const fire = async () => {
+    for (const dev of sirens) {
+      publishSirenSet(dev.friendlyName, { melody });
+    }
+    await sleep(CONFIG_GAP_MS);
+    for (const dev of sirens) {
+      publishSirenSet(dev.friendlyName, { volume: "high" });
+    }
+    await sleep(CONFIG_GAP_MS);
+    for (const dev of sirens) {
+      publishSirenSet(dev.friendlyName, { duration: durationSec });
+    }
+    await sleep(TRIGGER_GAP_MS);
     for (const dev of sirens) {
       publishSirenSet(dev.friendlyName, TRIGGER_PAYLOAD);
     }
-  }, 250);
+  };
+  void fire();
   console.log(
     `[zigbee] triggered ${sirens.length} siren(s) for ${durationSec}s (melody=${getSirenMelody()}): ${sirens
       .map((d) => d.friendlyName)
