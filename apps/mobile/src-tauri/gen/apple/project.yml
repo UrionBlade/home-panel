@@ -128,14 +128,30 @@ targets:
           set -e
           APP="$BUILT_PRODUCTS_DIR/$WRAPPER_NAME"
 
-          # Pre-sign every nested directory bundle that Xcode 26's
-          # ibtool / actool / coremlcompiler now produce with embedded
-          # Swift / CoreML glue. CodeSign on the parent treats them as
-          # nested code that has to already carry a signature, and the
-          # main pass runs without --deep (--deep broke -exportArchive
-          # with "Missing Bundle Identifier" in 28e634c). Use find -exec
-          # because Xcode build-phase scripts run under /bin/sh, not
-          # bash, so we can't use process substitution.
+          # 1. Remove the bundle-root AppIcon PNG copies. Xcode 26 (like
+          #    Xcode 16) emplaces them as a back-compat artefact for
+          #    iOS < 13 — devices on our iOS 17 deployment target read
+          #    icons from Assets.car, so the loose PNGs serve no
+          #    purpose, but CodeSign treats each one as a nested
+          #    unsigned code object and bails:
+          #      Home Panel.app: code object is not signed at all
+          #      In subcomponent: Home Panel.app/AppIcon60x60@2x.png
+          #    Targeted file removal works where `xattr -cr` did harm
+          #    (stripping codesign-resource markers actool attaches to
+          #    Assets.car and embedded.mobileprovision).
+          for png in "$APP"/AppIcon*.png; do
+            [ -f "$png" ] && rm -f "$png"
+          done
+
+          # 2. Pre-sign every nested directory bundle that Xcode 26's
+          #    ibtool / actool / coremlcompiler now produce with
+          #    embedded Swift / CoreML glue. CodeSign on the parent
+          #    treats them as nested code that has to already carry a
+          #    signature, and the main pass runs without --deep
+          #    (--deep broke -exportArchive with "Missing Bundle
+          #    Identifier" in 28e634c). Use find -exec because Xcode
+          #    build-phase scripts run under /bin/sh, not bash, so
+          #    process substitution isn't available.
           if [ -n "${EXPANDED_CODE_SIGN_IDENTITY:-}" ]; then
             find "$APP" -type d \
               \( -name "*.storyboardc" -o -name "*.mlmodelc" \
@@ -144,16 +160,6 @@ targets:
           else
             echo "[pre-sign] EXPANDED_CODE_SIGN_IDENTITY unset, skipping"
           fi
-
-          # NOTE: an earlier revision of this script ran
-          # `xattr -cr "$APP"` to strip extended attributes that Xcode 16
-          # emplaced on AppIcon PNG copies. With Xcode 26 those PNGs
-          # aren't emplaced at all, and stripping xattrs from the bundle
-          # breaks the codesign-resource-rules markers actool attaches
-          # to Assets.car and Xcode attaches to embedded.mobileprovision
-          # — codesign then treats those marker-less files as nested
-          # unsigned code objects and bails. Do nothing destructive here
-          # on Xcode 26.
 
           /usr/bin/touch "$DERIVED_FILE_DIR/clean-icons.stamp"
         name: Pre-codesign bundle cleanup
