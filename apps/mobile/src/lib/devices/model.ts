@@ -337,10 +337,15 @@ export function projectEnvSensor(row: EnvSensor): DeviceEntity {
 /**
  * Projector for water-leak sensors (KLIPPBOK class). Status flips to
  * "armed" when a leak is currently active so the badge stands out;
- * otherwise we stay quiet ("disarmed" reads as "all dry, monitoring").
+ * Battery-powered KLIPPBOK is always monitoring once paired — there is
+ * no "off" state, only dry-watching vs leak-detected. We surface both
+ * as "armed" (= Attivo / In ascolto) and let the subtitle tell the
+ * user whether there's currently water or not. The previous mapping
+ * rendered the dry path as "Disattivato" which read as the sensor
+ * being switched off — opposite of the truth.
  */
 export function projectLeakSensor(row: LeakSensor): DeviceEntity {
-  const status: DeviceStatus = row.offline ? "offline" : row.leakDetected ? "armed" : "disarmed";
+  const status: DeviceStatus = row.offline ? "offline" : "armed";
   let subtitle: string | undefined;
   if (row.offline) {
     subtitle = i18next.t("zigbee:state.availability.offline" as never) || "offline";

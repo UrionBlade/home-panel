@@ -321,7 +321,7 @@ function StatusBadge({ status }: { status: DeviceStatus }) {
 interface KindTint {
   /** CSS token name fragment. Add new ones in tokens.css under the
    * `--tile-<name>-{a,b}` namespace before listing them here. */
-  name: "terracotta" | "sage" | "ochre" | "mauve" | "sky" | "blush";
+  name: "terracotta" | "sage" | "ochre" | "mauve" | "sky" | "blush" | "glacier";
   neutral: false;
 }
 
@@ -357,6 +357,14 @@ function tintForKind(kind: DeviceKind): TintResult {
     case "siren":
     case "plug":
       return { name: "blush", neutral: false };
+    /* Environmental + leak sensors share a glacier-pale tint distinct
+     * from sky (AC) and sage (laundry). Cool-but-light reads as
+     * "ambient" rather than "appliance" and keeps the DIRIGERA hub
+     * trio visually grouped. */
+    case "sensor_air":
+    case "sensor_climate":
+    case "sensor_leak":
+      return { name: "glacier", neutral: false };
     default:
       return { neutral: true };
   }

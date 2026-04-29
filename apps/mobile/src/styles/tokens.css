@@ -118,6 +118,11 @@
    * warm-rose tint so they form a coherent visual group. */
   --tile-blush-a: oklch(89% 0.07 10);
   --tile-blush-b: oklch(81% 0.115 12);
+  /* Environmental sensors family — DIRIGERA air / climate / leak share
+   * a glacier tint that's clearly paler and more cyan-leaning than the
+   * sky (AC) hue, so a sensor card never reads as a climate device. */
+  --tile-glacier-a: oklch(96% 0.025 200);
+  --tile-glacier-b: oklch(91% 0.05 200);
 }
 
 /*
@@ -154,6 +159,8 @@
     --tile-sky-b: oklch(20% 0.08 225);
     --tile-blush-a: oklch(28% 0.06 10);
     --tile-blush-b: oklch(22% 0.08 12);
+    --tile-glacier-a: oklch(34% 0.035 200);
+    --tile-glacier-b: oklch(26% 0.05 200);
 
     --color-success: oklch(72% 0.14 150);
     --color-warning: oklch(80% 0.16 80);
@@ -202,6 +209,8 @@
   --tile-mauve-b: oklch(22% 0.07 320);
   --tile-sky-a: oklch(26% 0.06 220);
   --tile-sky-b: oklch(20% 0.08 225);
+  --tile-glacier-a: oklch(34% 0.035 200);
+  --tile-glacier-b: oklch(26% 0.05 200);
 
   --shadow-sm: 0 0.0625rem 0.125rem oklch(0% 0 0 / 0.4);
   --shadow-md: 0 0.375rem 0.875rem oklch(0% 0 0 / 0.45);

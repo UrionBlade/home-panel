@@ -15,15 +15,41 @@ import type {
   LightSyncResult,
 } from "@home-panel/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useUiStore } from "../../store/ui-store";
 import { apiClient } from "../api-client";
 import { i18next } from "../i18n";
+import { sseClient } from "../sse-client";
 
 const LIGHTS_KEY = ["lights"] as const;
 const EWELINK_CREDS_KEY = ["lights", "ewelink", "credentials"] as const;
 
-/** Poll lights every 60s so drift from the vendor app is reconciled. */
+/** Live + 60s safety-net polling. The DIRIGERA WS subscriber (and any
+ * future per-light push provider) emits `lights:update` SSE events
+ * carrying the updated LightSummary; we patch the cache in place so a
+ * toggle from the IKEA app reflects immediately on the panel without
+ * waiting for the next poll. */
 export function useLights() {
+  const qc = useQueryClient();
+  useEffect(() => {
+    const off = sseClient.subscribe("lights:update", (raw) => {
+      const updated = raw as LightSummary | null;
+      if (!updated || typeof updated.id !== "string") {
+        void qc.invalidateQueries({ queryKey: LIGHTS_KEY });
+        return;
+      }
+      qc.setQueryData<LightSummary[]>(LIGHTS_KEY, (prev) => {
+        if (!prev) return [updated];
+        const idx = prev.findIndex((l) => l.id === updated.id);
+        if (idx === -1) return [...prev, updated];
+        const next = prev.slice();
+        next[idx] = updated;
+        return next;
+      });
+    });
+    return off;
+  }, [qc]);
+
   return useQuery({
     queryKey: LIGHTS_KEY,
     queryFn: () => apiClient.get<LightSummary[]>("/api/v1/lights"),
