@@ -77,6 +77,14 @@ targets:
         # defaults user scripts to sandboxed, which silently no-op's
         # rm against $BUILT_PRODUCTS_DIR.
         ENABLE_USER_SCRIPT_SANDBOXING: NO
+        # macos-15 image regression: CodeSign treats every nested file
+        # in the bundle root as a signable subcomponent and fails.
+        # Cleaning AppIcons unblocks the first hit but the next one
+        # (LaunchScreen.storyboardc) immediately trips the same check.
+        # `--deep` forces codesign to sign nested code recursively
+        # instead of bailing on encounter — the canonical workaround
+        # since macOS 11 for nested-component CodeSign failures.
+        OTHER_CODE_SIGN_FLAGS: $(inherited) --deep
       groups: [app]
     dependencies:
       - framework: libapp.a
