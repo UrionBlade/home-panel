@@ -548,44 +548,33 @@ export async function removeZigbeeDevice(ieeeAddress: string): Promise<void> {
 /*  Siren control                                                      */
 /* ------------------------------------------------------------------ */
 
-/* Z2M expose contract differs across siren models.
+/* NEO NAS-AB02B2 expose contract:
+ *   - `alarm`    boolean — fires the wail (Zigbee warning command)
+ *   - `melody`   enum    — the tone, 1..18 sent as a STRING
+ *   - `volume`   enum    — low | medium | high (string)
+ *   - `duration` numeric — seconds
  *
- * NEO NAS-AB02B2: `alarm: true` triggers the wail via a Zigbee warning
- * command, but `melody`/`volume`/`duration` are persistent attributes
- * written to separate clusters. When all keys are sent in a single
- * publish Z2M only honours the warning command and silently drops the
- * attribute writes — so the siren keeps playing whatever melody it
- * had cached (the cheery doorbell tone). Splitting into two publishes
- * (config first, then trigger) lets each cluster get its own write.
+ * Two pitfalls we tripped on testing:
+ *   1. `melody: 17` (number) is silently dropped by Z2M — the converter
+ *      only honours the string form, so we always coerce.
+ *   2. The IAS-WD `warning` object is not a converter for NEO devices.
+ *      Sending it logs `No converter available for 'warning' on 'Sirena'`
+ *      and does nothing. Keep payloads minimal and let the simple
+ *      `alarm: true` boolean drive the device.
  *
- * HEIMAN HS2WD-E and other IAS-WD sirens consume the `warning` object
- * — that one is happily delivered on the same publish as `alarm`. */
+ * Config payload is published FIRST and the trigger 250ms later so the
+ * attribute writes (melody / volume / duration on cluster 0xE001) have
+ * time to settle before the warning command runs. */
 function configPayload(durationSec: number): Record<string, unknown> {
   return {
     duration: durationSec,
     volume: "high",
-    melody: getSirenMelody(),
+    melody: String(getSirenMelody()),
   };
 }
 
-function triggerPayload(durationSec: number): Record<string, unknown> {
-  return {
-    alarm: true,
-    warning: {
-      duration: durationSec,
-      mode: "burglar",
-      level: "high",
-      strobe: true,
-      strobe_duty_cycle: 5,
-      strobe_level: "high",
-    },
-  };
-}
-
-const STOP_PAYLOAD: Record<string, unknown> = {
-  alarm: false,
-  warning: { duration: 0, mode: "stop", strobe: false, level: "low" },
-};
+const TRIGGER_PAYLOAD: Record<string, unknown> = { alarm: true };
+const STOP_PAYLOAD: Record<string, unknown> = { alarm: false };
 
 function publishSirenSet(friendlyName: string, payload: Record<string, unknown>) {
   if (!state.client || !state.mqttConnected) {
@@ -619,7 +608,6 @@ export function triggerSirens(durationSec: number): { fired: number } {
     return { fired: 0 };
   }
   const cfg = configPayload(durationSec);
-  const trig = triggerPayload(durationSec);
   for (const dev of sirens) {
     publishSirenSet(dev.friendlyName, cfg);
   }
@@ -627,7 +615,7 @@ export function triggerSirens(durationSec: number): { fired: number } {
    * write under 100ms, but we don't want to race the radio. */
   setTimeout(() => {
     for (const dev of sirens) {
-      publishSirenSet(dev.friendlyName, trig);
+      publishSirenSet(dev.friendlyName, TRIGGER_PAYLOAD);
     }
   }, 250);
   console.log(
