@@ -32,7 +32,7 @@ fn main() {
                 "-emit-library",
                 "-static",
                 "-module-name", "IOSPlugins",
-                "-target", "arm64-apple-ios15.0",
+                "-target", "arm64-apple-ios17.0",
                 "-sdk", sdk_path,
                 "-o", &lib_path,
             ])

@@ -49,7 +49,10 @@ jobs:
           # (AppIcon*.png, LaunchScreen.storyboardc, …) as signable
           # nested code and bails with `code object is not signed at
           # all`. Xcode 26 fixes that emplace behaviour, so it's both
-          # the policy-compliant AND the working choice.
+          # the policy-compliant AND the working choice. Deployment
+          # target on the project is iOS 17 to avoid pulling in Swift
+          # back-deploy libs (swiftCompatibility56/Concurrency/Packs)
+          # that aren't shipped with Xcode 26's toolchain.
           candidates=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
           if [ -z "$candidates" ]; then
             echo "::warning::No Xcode 26 found, falling back to Xcode 16 — App Store Connect upload may be rejected and the codesign bug will reappear"
