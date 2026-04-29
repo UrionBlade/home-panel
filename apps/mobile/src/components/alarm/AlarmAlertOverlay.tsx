@@ -334,6 +334,7 @@ function KeypadButton({
       disabled={disabled}
       className={[
         "h-14 rounded-lg text-2xl font-semibold transition-colors",
+        "flex items-center justify-center",
         "bg-surface border border-border text-text",
         "hover:bg-surface-warm active:bg-surface-muted",
         "disabled:opacity-30 disabled:cursor-default disabled:hover:bg-surface",
