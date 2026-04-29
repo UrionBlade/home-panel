@@ -77,53 +77,70 @@ interface RequestOptions {
   timeoutMs?: number;
 }
 
+/* Node 22's global `fetch` (undici) does not honour an `agent` option,
+ * so the per-call self-signed TLS bypass we need for the hub doesn't
+ * work via fetch. Drop down to `https.request` which accepts our
+ * dedicated `https.Agent` directly — gives us the same low-level
+ * control without disabling TLS verification globally. */
 async function dirigeraRequest<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const config = resolveConfig();
   if (!config) throw new DirigeraNotConfiguredError();
 
   const method = opts.method ?? "GET";
-  const url = `${baseUrl(config.host)}${path}`;
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), opts.timeoutMs ?? 8_000);
+  const payload = opts.body !== undefined ? JSON.stringify(opts.body) : undefined;
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${config.token}`,
+  };
+  if (payload !== undefined) {
+    headers["Content-Type"] = "application/json";
+    headers["Content-Length"] = String(Buffer.byteLength(payload));
+  }
 
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      method,
-      headers: {
-        Authorization: `Bearer ${config.token}`,
-        ...(opts.body !== undefined ? { "Content-Type": "application/json" } : {}),
+  return new Promise<T>((resolve, reject) => {
+    const req = https.request(
+      {
+        host: config.host,
+        port: 8443,
+        path: `/v1${path}`,
+        method,
+        headers,
+        agent: dirigeraAgent,
+        timeout: opts.timeoutMs ?? 8_000,
       },
-      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-      signal: controller.signal,
-      // The native fetch in Node honours `agent` via the dispatcher option
-      // when undici is used; for the typed surface we cast since the spec
-      // doesn't include `agent`.
-      // @ts-expect-error — Node's undici fetch accepts dispatcher/agent option
-      agent: dirigeraAgent,
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (c) => chunks.push(c));
+        res.on("end", () => {
+          const text = Buffer.concat(chunks).toString("utf8");
+          const status = res.statusCode ?? 0;
+          if (status < 200 || status >= 300) {
+            reject(new DirigeraError(status, `DIRIGERA ${method} ${path} → ${status}`, text));
+            return;
+          }
+          if (status === 204 || text === "") {
+            resolve(null as T);
+            return;
+          }
+          try {
+            resolve(JSON.parse(text) as T);
+          } catch {
+            reject(new DirigeraError(status, `DIRIGERA ${path}: invalid JSON response`));
+          }
+        });
+        res.on("error", (err) => {
+          reject(new DirigeraError(0, `DIRIGERA stream error: ${err.message}`));
+        });
+      },
+    );
+    req.on("timeout", () => {
+      req.destroy(new Error("timeout"));
     });
-  } catch (err) {
-    clearTimeout(timeout);
-    const msg = err instanceof Error ? err.message : String(err);
-    throw new DirigeraError(0, `DIRIGERA fetch failed: ${msg}`);
-  }
-  clearTimeout(timeout);
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new DirigeraError(res.status, `DIRIGERA ${method} ${path} → ${res.status}`, text);
-  }
-  /* 204 No Content is common on PATCH; return null cast as T, callers
-   * that PATCH just ignore the result. */
-  if (res.status === 204) return null as T;
-
-  const text = await res.text();
-  if (text === "") return null as T;
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    throw new DirigeraError(res.status, `DIRIGERA ${path}: invalid JSON response`);
-  }
+    req.on("error", (err) => {
+      reject(new DirigeraError(0, `DIRIGERA fetch failed: ${err.message}`));
+    });
+    if (payload !== undefined) req.write(payload);
+    req.end();
+  });
 }
 
 /* -- Public surface ------------------------------------------------------ */
