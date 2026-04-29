@@ -117,13 +117,30 @@ targets:
       - script: |
           set -e
           APP="$BUILT_PRODUCTS_DIR/$WRAPPER_NAME"
-          echo "[strip-xattr] cleaning $APP"
+          echo "[clean-icons] processing $APP"
+          # First strip every extended attribute on the bundle. Cheap
+          # insurance, even though on its own this didn't fix codesign.
           xattr -cr "$APP"
-          /usr/bin/touch "$DERIVED_FILE_DIR/strip-xattr.stamp"
-          echo "[strip-xattr] done"
-        name: Strip xattr from emplaced app icons
+          # Then delete the PNG icon copies Xcode 16 places in the
+          # bundle root. They're a back-compat artefact for iOS < 13
+          # devices that don't read Assets.car. Our deployment target
+          # is iOS 15, so nothing on a real device needs them — but
+          # codesign sees them as nested signable subcomponents and
+          # bails out with "code object is not signed at all". Asset
+          # catalog (Assets.car) keeps the actual runtime icon.
+          REMOVED=0
+          for png in "$APP"/AppIcon*.png; do
+            if [ -f "$png" ]; then
+              echo "[clean-icons] removing $(basename "$png")"
+              rm -f "$png"
+              REMOVED=$((REMOVED + 1))
+            fi
+          done
+          echo "[clean-icons] removed $REMOVED root-level icon PNG(s)"
+          /usr/bin/touch "$DERIVED_FILE_DIR/clean-icons.stamp"
+        name: Clean emplaced app icon PNGs
         basedOnDependencyAnalysis: false
         inputFiles:
           - $(BUILT_PRODUCTS_DIR)/$(WRAPPER_NAME)/Info.plist
         outputFiles:
-          - $(DERIVED_FILE_DIR)/strip-xattr.stamp
+          - $(DERIVED_FILE_DIR)/clean-icons.stamp
