@@ -74,6 +74,26 @@ jobs:
           xcodebuild -version
           xcodebuild -showsdks | grep -i ios | head -5
 
+      # Xcode 26 ships the Swift back-deploy compat libs via a separate
+      # MetalToolchain cryptex DMG that isn't auto-mounted on every
+      # boot. When swift-rs / Tauri's Channel.swift compile they look
+      # for libs under
+      #   /var/run/com.apple.security.cryptexd/mnt/.../Metal.xctoolchain/usr/lib/swift-5.0/iphoneos
+      # and fail to link with `swiftCompatibility56 not found` if the
+      # mount is missing. Open the DMG so the cryptex is mounted for
+      # the rest of the job. Tracked in tauri-apps/tauri#14864.
+      - name: Mount MetalToolchain cryptex
+        run: |
+          DMG=$(ls /System/Library/AssetsV2/com_apple_MobileAsset_MetalToolchain/*.asset/AssetData/Restore/*.dmg 2>/dev/null | head -1)
+          if [ -n "$DMG" ]; then
+            echo "Mounting $DMG"
+            open "$DMG" || true
+            sleep 5
+          else
+            echo "::warning::No MetalToolchain DMG found, swift-rs link may fail"
+          fi
+          ls /var/run/com.apple.security.cryptexd/mnt/ 2>&1 || true
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
