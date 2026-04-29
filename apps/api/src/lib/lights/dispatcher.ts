@@ -7,6 +7,8 @@
  */
 
 import type { LightProvider, RemoteLightDevice } from "@home-panel/shared";
+import { DirigeraError } from "../dirigera/client.js";
+import { dirigeraAdapter } from "./providers/dirigera.js";
 import {
   EwelinkError,
   ewelinkListDevices,
@@ -44,23 +46,9 @@ const EWELINK: LightProviderAdapter = {
   },
 };
 
-/* DIRIGERA stub — replaced by the real adapter once
- * `apps/api/src/lib/dirigera/` is wired up (see openspec change
- * add-dirigera-hub §6). The placeholder throws on use so a misconfigured
- * environment fails loudly rather than silently routing eWeLink calls
- * to the wrong handler. */
-const DIRIGERA_PLACEHOLDER: LightProviderAdapter = {
-  async setState() {
-    throw new Error("DIRIGERA provider not yet initialized");
-  },
-  async listRemote() {
-    return [];
-  },
-};
-
 const ADAPTERS: Record<LightProvider, LightProviderAdapter> = {
   ewelink: EWELINK,
-  dirigera: DIRIGERA_PLACEHOLDER,
+  dirigera: dirigeraAdapter,
 };
 
 export function getAdapter(provider: LightProvider): LightProviderAdapter {
@@ -73,8 +61,8 @@ export function isKnownProvider(value: string): value is LightProvider {
 
 /** Normalized error shape the routes layer turns into HTTP responses. */
 export interface LightOpError {
-  status: 400 | 401 | 404 | 502;
-  body: { error: string };
+  status: 400 | 401 | 404 | 502 | 503;
+  body: { error: string; code?: string };
 }
 
 /** Map a dispatcher error into an HTTP-friendly envelope. */
@@ -93,6 +81,24 @@ export function mapProviderError(err: unknown): LightOpError {
       return { status: 502, body: { error: "Device offline or unreachable" } };
     }
     return { status: 502, body: { error: `eWeLink error ${err.code}: ${err.message}` } };
+  }
+  if (err instanceof DirigeraError) {
+    /* The DIRIGERA hub returns 502 when a Thread/Zigbee device is
+     * unreachable; surface that as a tagged 503 so the client can show
+     * "device offline" instead of a generic upstream error. */
+    if (err.status === 502 || err.status === 504) {
+      return {
+        status: 503,
+        body: { error: "Device offline or unreachable", code: "DEVICE_OFFLINE" },
+      };
+    }
+    if (err.status === 401 || err.status === 403) {
+      return { status: 401, body: { error: "DIRIGERA authentication failed" } };
+    }
+    if (err.status === 404) {
+      return { status: 404, body: { error: "DIRIGERA device not found" } };
+    }
+    return { status: 502, body: { error: `DIRIGERA error ${err.status}: ${err.message}` } };
   }
   console.error("[lights] upstream error:", err);
   return { status: 502, body: { error: "Upstream provider unreachable" } };

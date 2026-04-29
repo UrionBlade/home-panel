@@ -24,7 +24,7 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db/client.js";
 import { lights, providerCredentials } from "../db/schema.js";
-import { getAdapter, mapProviderError } from "../lib/lights/dispatcher.js";
+import { getAdapter, isKnownProvider, mapProviderError } from "../lib/lights/dispatcher.js";
 import {
   EwelinkError,
   ensureEwelinkAccessToken,
@@ -183,12 +183,22 @@ export const lightsRouter = new Hono()
     const id = c.req.param("id");
     const row = db.select().from(lights).where(eq(lights.id, id)).get();
     if (!row) return c.json({ error: "Light not found" }, 404);
-    const next = row.lastState === "on" ? "off" : "on";
+    const previous = row.lastState;
+    const next = previous === "on" ? "off" : "on";
+    /* Optimistic update: flip locally first so SSE viewers see the new
+     * state immediately. If the upstream call fails we revert before
+     * returning the error. */
+    updateLastState(row.id, next);
     try {
-      await getAdapter(EWELINK).setState(row.deviceId, next);
-      updateLastState(row.id, next);
+      if (!isKnownProvider(row.provider)) {
+        throw new Error(`Unknown provider: ${row.provider}`);
+      }
+      await getAdapter(row.provider).setState(row.deviceId, next);
       return c.json({ ok: true, state: next }, 202);
     } catch (err) {
+      if (previous === "on" || previous === "off") {
+        updateLastState(row.id, previous);
+      }
       const mapped = mapProviderError(err);
       return c.json(mapped.body, mapped.status);
     }
@@ -210,11 +220,18 @@ export const lightsRouter = new Hono()
       return c.json({ error: "Body must set `state` ('on'|'off') or `toggle: true`" }, 400);
     }
 
+    const previous = row.lastState;
+    updateLastState(row.id, target);
     try {
-      await getAdapter(EWELINK).setState(row.deviceId, target);
-      updateLastState(row.id, target);
+      if (!isKnownProvider(row.provider)) {
+        throw new Error(`Unknown provider: ${row.provider}`);
+      }
+      await getAdapter(row.provider).setState(row.deviceId, target);
       return c.json({ ok: true, state: target }, 202);
     } catch (err) {
+      if (previous === "on" || previous === "off") {
+        updateLastState(row.id, previous);
+      }
       const mapped = mapProviderError(err);
       return c.json(mapped.body, mapped.status);
     }

@@ -32,34 +32,34 @@
 
 ## 5. Backend — device repository + sync
 
-- [ ] 5.1 Creare `src/lib/dirigera/device-repo.ts` con funzioni `upsertLight`, `upsertEnvSensor`, `upsertLeakSensor`, `appendEnvHistory`, `getRoomMappings`
-- [ ] 5.2 Implementare `syncDevices()`: chiama `listDevices()`, classifica per `deviceType` + capability, upserta nelle tabelle giuste, preservando `room_id` + `friendly_name` lato Home Panel
-- [ ] 5.3 Implementare il listener bus che ascolta `homepanel:dirigera:device-update` e applica le delta al repo + emette SSE corrispondente (lights:update, sensors:env-update, sensors:leak-trigger/ack)
-- [ ] 5.4 Logica leak: detectare transizione `false → true`, chiamare push notification, emettere SSE leak-trigger; transizione `true → false` emette solo SSE leak-ack
-- [ ] 5.5 Bootstrap function `initDirigera(app)`: chiamata da `src/index.ts` all'avvio; se `isConfigured()`, fa sync iniziale + apre WS subscriber + registra il provider lights; gracefully no-op altrimenti
-- [ ] 5.6 Scheduler retention `env_sensor_history`: cron job orario che cancella record con `recorded_at < now() - 7 days`
+- [x] 5.1 Creare `src/lib/dirigera/device-repo.ts` con funzioni `upsertLight`, `upsertEnvSensor`, `upsertLeakSensor`, `appendEnvHistory`, `getRoomMappings`
+- [x] 5.2 Implementare `syncDevices()`: chiama `listDevices()`, classifica per `deviceType` + capability, upserta nelle tabelle giuste, preservando `room_id` + `friendly_name` lato Home Panel
+- [x] 5.3 Implementare il listener bus che ascolta `homepanel:dirigera:device-update` e applica le delta al repo + emette SSE corrispondente (lights:update, sensors:env-update, sensors:leak-trigger/ack)
+- [x] 5.4 Logica leak: detectare transizione `false → true`, chiamare push notification, emettere SSE leak-trigger; transizione `true → false` emette solo SSE leak-ack
+- [x] 5.5 Bootstrap function `initDirigera(app)`: chiamata da `src/index.ts` all'avvio; se `isConfigured()`, fa sync iniziale + apre WS subscriber + registra il provider lights; gracefully no-op altrimenti
+- [x] 5.6 Scheduler retention `env_sensor_history`: cron job orario che cancella record con `recorded_at < now() - 7 days`
 - [ ] 5.7 Test integration: spin up un DIRIGERA mock (Express + ws server) e verificare sync + WS path end-to-end
 
 ## 6. Backend — lights provider integration
 
-- [ ] 6.1 Creare `src/lib/lights/providers/dirigera.ts` implementando l'interfaccia `LightProvider` esistente
-- [ ] 6.2 Mappare comandi `turnOn`, `turnOff`, `setBrightness` sulle chiamate `patchDevice` corrette
-- [ ] 6.3 Gestire device offline: ritornare error tipato `{ code: "DEVICE_OFFLINE" }` con HTTP 503 nel route layer
-- [ ] 6.4 Aggiornamento ottimistico della cache `lights` prima della conferma DIRIGERA
-- [ ] 6.5 Registrare il provider nel `dispatcher.ts` solo se `dirigera.isConfigured()`
+- [x] 6.1 Creare `src/lib/lights/providers/dirigera.ts` implementando l'interfaccia `LightProvider` esistente
+- [x] 6.2 Mappare comandi `turnOn`, `turnOff`, `setBrightness` sulle chiamate `patchDevice` corrette
+- [x] 6.3 Gestire device offline: ritornare error tipato `{ code: "DEVICE_OFFLINE" }` con HTTP 503 nel route layer
+- [x] 6.4 Aggiornamento ottimistico della cache `lights` prima della conferma DIRIGERA
+- [x] 6.5 Registrare il provider nel `dispatcher.ts` solo se `dirigera.isConfigured()`
 
 ## 7. Backend — routes
 
-- [ ] 7.1 Creare `src/routes/dirigera.ts` con `GET /status`, `POST /sync` (manual refresh), `GET /devices` (raw list per debug)
-- [ ] 7.2 Creare `src/routes/sensors.ts` con `GET /env`, `GET /env/:id`, `GET /env/:id/history`, `GET /leak`, `POST /leak/:id/ack`
-- [ ] 7.3 In dev/staging (NODE_ENV !== 'production'), esporre `POST /sensors/leak/:id/test-trigger` per iniettare evento simulato
-- [ ] 7.4 Wireare le route in `src/index.ts`, mountandole su `/api/v1/dirigera/*` e `/api/v1/sensors/*`
+- [x] 7.1 Creare `src/routes/dirigera.ts` con `GET /status`, `POST /sync` (manual refresh), `GET /devices` (raw list per debug)
+- [x] 7.2 Creare `src/routes/sensors.ts` con `GET /env`, `GET /env/:id`, `GET /env/:id/history`, `GET /leak`, `POST /leak/:id/ack`
+- [x] 7.3 In dev/staging (NODE_ENV !== 'production'), esporre `POST /sensors/leak/:id/test-trigger` per iniettare evento simulato
+- [x] 7.4 Wireare le route in `src/index.ts`, mountandole su `/api/v1/dirigera/*` e `/api/v1/sensors/*`
 - [ ] 7.5 Test integration delle nuove route con `supertest` o equivalente già usato dal repo
 
 ## 8. Backend — APNs leak push
 
-- [ ] 8.1 Creare `src/lib/push/templates/leak-alert.ts` con builder `buildLeakAlertPayload({ friendlyName, roomName, sensorId })` che produce l'oggetto APNs (alert title/body, sound, custom data)
-- [ ] 8.2 Modificare la handler leak in `device-repo.ts` (5.4) per invocare il push solo se `apns.isConfigured()`, loggare warning altrimenti
+- [x] 8.1 Creare `src/lib/push/templates/leak-alert.ts` con builder `buildLeakAlertPayload({ friendlyName, roomName, sensorId })` che produce l'oggetto APNs (alert title/body, sound, custom data)
+- [x] 8.2 Modificare la handler leak in `device-repo.ts` (5.4) per invocare il push solo se `apns.isConfigured()`, loggare warning altrimenti
 - [ ] 8.3 Unit test del payload builder con vari input (room null, friendlyName con caratteri speciali)
 
 ## 9. Frontend — shared types e hooks

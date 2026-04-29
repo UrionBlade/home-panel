@@ -15,6 +15,7 @@ import { seedVoiceSettings } from "./db/seed-voice-settings.js";
 import { stopAllLiveSessions } from "./lib/blink/liveview-manager.js";
 import { startBlinkScheduler } from "./lib/blink/scheduler.js";
 import { startSyncScheduler } from "./lib/calendar-sync.js";
+import { initDirigera } from "./lib/dirigera/bootstrap.js";
 import { startAcScheduler } from "./lib/ge/scheduler.js";
 import { geTokenStore } from "./lib/ge/store.js";
 import { startAcWsSubscriber } from "./lib/ge/ws-subscriber.js";
@@ -28,6 +29,7 @@ import { alarmRouter } from "./routes/alarm.js";
 import { blinkRouter } from "./routes/blink.js";
 import { calendarRouter } from "./routes/calendar.js";
 import { calendarSourcesRouter } from "./routes/calendar-sources.js";
+import { dirigeraRouter } from "./routes/dirigera.js";
 import { ewelinkOauthCallbackHandler } from "./routes/ewelink-oauth.js";
 import { familyRouter } from "./routes/family.js";
 import { ipCamerasRouter } from "./routes/ipCameras.js";
@@ -43,6 +45,7 @@ import { pushRouter } from "./routes/push.js";
 import { recipesRouter } from "./routes/recipes.js";
 import { roomsRouter } from "./routes/rooms.js";
 import { routinesRouter } from "./routes/routines.js";
+import { sensorsRouter } from "./routes/sensors.js";
 import { shoppingRouter } from "./routes/shopping.js";
 import { spotifyRouter } from "./routes/spotify.js";
 import { sseRouter } from "./routes/sse.js";
@@ -220,6 +223,8 @@ app.route(`/api/${API_VERSION}/routines`, routinesRouter);
 app.route(`/api/${API_VERSION}/zigbee`, zigbeeRouter);
 app.route(`/api/${API_VERSION}/alarm`, alarmRouter);
 app.route(`/api/${API_VERSION}/push`, pushRouter);
+app.route(`/api/${API_VERSION}/dirigera`, dirigeraRouter);
+app.route(`/api/${API_VERSION}/sensors`, sensorsRouter);
 
 /* Register the Hono app with the internal-fetch dispatcher so routines can
  * invoke peer routes in-process without duplicating handler logic. */
@@ -237,6 +242,10 @@ serve({ fetch: app.fetch, port, hostname }, (info) => {
   startAcWsSubscriber(geTokenStore);
   startRoutinesScheduler();
   startZigbeeBridge();
+  /* DIRIGERA bootstrap is async (initial sync + WS connect) but
+   * non-blocking — startup logs the failure and the WS subscriber
+   * keeps retrying. Skipped silently when env vars are missing. */
+  void initDirigera();
   /* Upsert su MediaMTX di tutti i path IP camera: così dopo un riavvio
    * del sidecar (o del backend) ogni camera ha il suo endpoint WebRTC
    * pronto senza dipendere da un'azione utente. */
