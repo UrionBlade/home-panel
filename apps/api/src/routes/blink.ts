@@ -6,6 +6,7 @@ import type {
   BlinkMotionClip,
   BlinkSetupInput,
 } from "@home-panel/shared";
+import { ALARM_SSE_EVENTS } from "@home-panel/shared";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { db } from "../db/client.js";
@@ -16,6 +17,7 @@ import {
   blinkCredentials,
   blinkMotionClips,
 } from "../db/schema.js";
+import { countUnread, getAlarmState, recordEvent } from "../lib/alarm/store.js";
 import {
   type BlinkPending2FA,
   type BlinkSession,
@@ -35,6 +37,10 @@ import {
   stopLiveSession,
   touchSession,
 } from "../lib/blink/liveview-manager.js";
+import { sendApnsBatch } from "../lib/push/apns.js";
+import { listTokens } from "../lib/push/store.js";
+import { getSirenDurationSeconds, triggerSirens } from "../lib/zigbee/client.js";
+import { sseEmitter } from "./sse.js";
 
 /* ---- DTO mappers ---- */
 
@@ -47,6 +53,7 @@ function cameraRowToDto(row: BlinkCameraRow): BlinkCamera {
     model: row.model,
     deviceType: row.deviceType,
     armed: row.enabled,
+    armedForAlarm: row.armedForAlarm,
     status: row.status,
     batteryLevel: row.batteryLevel,
     thumbnailUrl: row.thumbnailUrl,
@@ -278,6 +285,7 @@ export const blinkRouter = new Hono()
       roomId?: string | null;
       nickname?: string | null;
       name?: string | null;
+      armedForAlarm?: boolean;
     } | null;
     if (!body || typeof body !== "object") {
       return c.json({ error: "Body JSON obbligatorio" }, 400);
@@ -287,6 +295,9 @@ export const blinkRouter = new Hono()
     if (body.roomId !== undefined) {
       updates.roomId =
         typeof body.roomId === "string" && body.roomId.trim() ? body.roomId.trim() : null;
+    }
+    if (typeof body.armedForAlarm === "boolean") {
+      updates.armedForAlarm = body.armedForAlarm;
     }
     /* Accept both `nickname` and `name` as user-chosen override; empty
      * string clears the override and restores the Blink-side name. */
@@ -692,6 +703,44 @@ export async function syncCamerasAndClips(session: BlinkSession) {
         })
         .run();
       newClips++;
+
+      /* Fire the alarm only when the system is armed AND this camera
+       * is opted into alarm coverage. We snapshot the camera row each
+       * loop iteration to pick up the freshly-inserted row above. */
+      const camRow = db.select().from(blinkCameras).where(eq(blinkCameras.id, clip.cameraId)).get();
+      const alarm = getAlarmState();
+      if (alarm.armed && camRow?.armedForAlarm) {
+        const event = recordEvent({
+          ieeeAddress: `blink:${clip.cameraId}`,
+          friendlyName: camRow.nickname ?? camRow.name ?? "Camera",
+          kind: "motion",
+          payload: { source: "blink", clipId: clip.id, recordedAt: clip.recordedAt },
+        });
+        sseEmitter.emit("push", { event: ALARM_SSE_EVENTS.triggered, payload: event });
+        sseEmitter.emit("push", {
+          event: ALARM_SSE_EVENTS.state,
+          payload: { state: alarm, unreadCount: countUnread() },
+        });
+        /* Push notify all iOS tokens. Errors swallowed so a flaky push
+         * server can never block the siren. */
+        const tokens = listTokens("ios").map((t) => t.token);
+        if (tokens.length > 0) {
+          sendApnsBatch(tokens, {
+            title: "Movimento rilevato",
+            body: camRow.nickname ?? camRow.name ?? "Camera",
+            sound: "default",
+            timeSensitive: true,
+            collapseId: `alarm-blink-${clip.cameraId}`,
+            data: {
+              kind: "alarm",
+              alarmKind: "motion",
+              eventId: event.id,
+              cameraId: clip.cameraId,
+            },
+          }).catch((err) => console.error("[blink] APNs fanout failed:", err));
+        }
+        triggerSirens(getSirenDurationSeconds());
+      }
     }
   }
 

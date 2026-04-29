@@ -30,5 +30,44 @@
     "sensor_window": "Window",
     "siren": "Siren",
     "plug": "Plug"
+  },
+  "modal": {
+    "title": "Alarm active",
+    "codeMissing": "No disarm code configured. Set one from the Alarm page to use the keypad.",
+    "codeWrong": "Wrong code",
+    "codeError": "Error submitting code",
+    "backspace": "Delete last digit"
+  },
+  "code": {
+    "section": "Disarm code",
+    "intro": "4–8 digit numeric code required to silence the siren.",
+    "notConfigured": "No code set",
+    "configured": "Code configured",
+    "resetEnabled": "Reset enabled — current code is not required.",
+    "setUp": "Set code",
+    "change": "Change code",
+    "oldCode": "Current code",
+    "newCode": "New code",
+    "confirmCode": "Confirm code",
+    "save": "Save code",
+    "errors": {
+      "mismatch": "The two codes don't match",
+      "tooShort": "At least 4 digits",
+      "tooLong": "At most 8 digits",
+      "wrongOld": "Current code is wrong",
+      "generic": "Could not save code: {{message}}"
+    },
+    "saved": "Code updated"
+  },
+  "test": {
+    "title": "Alarm test",
+    "description": "Fires the siren as if a window had been opened. Stop from the keypad with your disarm code.",
+    "trigger": "Trigger test alarm",
+    "triggered": "Test alarm running ({{n}} sirens)",
+    "noSiren": "No armed siren: configure a Zigbee siren and turn its inclusion on."
+  },
+  "camera": {
+    "armForAlarmLabel": "Include in alarm",
+    "armForAlarmDescription": "When the alarm is armed, motion on this camera triggers the siren."
   }
 }

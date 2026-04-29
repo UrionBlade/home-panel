@@ -2,6 +2,8 @@ import clsx from "clsx";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AlarmCodeSection } from "../components/alarm/AlarmCodeSection";
+import { AlarmTestSection } from "../components/alarm/AlarmTestSection";
 import { FamilyManager } from "../components/family/FamilyManager";
 import { PageContainer } from "../components/layout/PageContainer";
 import { PageHeader } from "../components/layout/PageHeader";
@@ -149,6 +151,8 @@ export function SettingsPage() {
           <TvSettings />
           <LightsSettings />
           <ZigbeeSettings />
+          <AlarmCodeSection />
+          <AlarmTestSection />
           <PushSettings />
         </>
       )}

@@ -34,6 +34,17 @@ const ALARM_KIND_TITLES: Record<string, string> = {
   manual: "Allarme manuale",
 };
 
+/** How long the siren should sound on each trigger, parsed from
+ * ALARM_SIREN_DURATION_SECONDS. Default 5s — short for testing; bump
+ * to 180+ once the wiring is validated. Clamped to the NAS-AB02B2
+ * maximum of 1800. */
+export function getSirenDurationSeconds(): number {
+  const raw = process.env.ALARM_SIREN_DURATION_SECONDS;
+  const parsed = raw ? Number(raw) : NaN;
+  if (!Number.isFinite(parsed) || parsed <= 0) return 5;
+  return Math.min(1800, Math.round(parsed));
+}
+
 /** Fan out an alarm event to every iOS push token registered. */
 async function fanoutAlarmPush(event: {
   id: string;
@@ -182,6 +193,22 @@ function isDeviceArmed(ieeeAddress: string): boolean {
   return row?.armed ?? true;
 }
 
+/** Mirror the kind-derivation rules used by the frontend
+ * (`apps/mobile/src/lib/devices/model.ts`) on the backend so the alarm
+ * runtime can pick out sirens without round-tripping through the UI. */
+function isSirenDevice(dev: ZigbeeDevice): boolean {
+  if (dev.kindOverride === "siren") return true;
+  if (dev.kindOverride && dev.kindOverride !== "siren") return false;
+  const desc = (dev.description ?? "").toLowerCase();
+  const model = (dev.model ?? "").toLowerCase();
+  return (
+    desc.includes("siren") ||
+    desc.includes("alarm") ||
+    model.startsWith("hs2wd") ||
+    model.startsWith("nas-ab02")
+  );
+}
+
 /**
  * Decide whether a state payload represents a triggerable alarm event,
  * comparing the previous and the new state. Aqara/Z2M conventions:
@@ -258,6 +285,9 @@ function applyDeviceState(friendlyName: string, payload: Record<string, unknown>
        * thrown — the SSE alert is still the primary delivery channel
        * and we don't want a flaky push to break the live banner. */
       void fanoutAlarmPush(event);
+      /* Drive the physical sirens. The function looks up armed sirens
+       * itself; it's a no-op when the network has none. */
+      triggerSirens(getSirenDurationSeconds());
     }
   }
 }
@@ -501,4 +531,87 @@ export async function removeZigbeeDevice(ieeeAddress: string): Promise<void> {
   dbRemoveDevice(ieeeAddress);
   broadcastDevices();
   broadcastBridge();
+}
+
+/* ------------------------------------------------------------------ */
+/*  Siren control                                                      */
+/* ------------------------------------------------------------------ */
+
+/* Z2M expose contract differs across siren models. We send a payload
+ * that is a superset of all supported keys: each device only reads the
+ * properties its converter understands and ignores the rest. NEO
+ * NAS-AB02B2 reads `alarm` + `duration` + `volume` + `melody`; HEIMAN
+ * HS2WD-E and other IAS-WD sirens read the `warning` cluster object.
+ * Sending both in one publish keeps this resilient when a different
+ * model is added later. */
+function trigPayloadFor(durationSec: number): Record<string, unknown> {
+  return {
+    alarm: true,
+    duration: durationSec,
+    volume: "high",
+    melody: 5,
+    warning: {
+      duration: durationSec,
+      mode: "burglar",
+      level: "high",
+      strobe: true,
+      strobe_duty_cycle: 5,
+      strobe_level: "high",
+    },
+  };
+}
+
+const STOP_PAYLOAD: Record<string, unknown> = {
+  alarm: false,
+  warning: { duration: 0, mode: "stop", strobe: false, level: "low" },
+};
+
+function publishSirenSet(friendlyName: string, payload: Record<string, unknown>) {
+  if (!state.client || !state.mqttConnected) {
+    console.warn("[zigbee] cannot drive siren — MQTT disconnected");
+    return;
+  }
+  const topic = `${state.baseTopic}/${friendlyName}/set`;
+  state.client.publish(topic, JSON.stringify(payload), { qos: 1 }, (err) => {
+    if (err) {
+      console.warn(`[zigbee] siren publish failed (${friendlyName}):`, err.message);
+    }
+  });
+}
+
+/** Fire every armed siren on the network for `durationSec`. The siren
+ * itself enforces the cutoff so a backend crash mid-alarm still stops
+ * the noise. Disarmed sirens (per-device `armed` opted out) are
+ * skipped — useful for demo/dummy units kept in the inventory. */
+export function triggerSirens(durationSec: number): { fired: number } {
+  const sirens = listDevices()
+    .filter(isSirenDevice)
+    .filter((d) => d.armed);
+  if (sirens.length === 0) {
+    console.log("[zigbee] triggerSirens: no armed siren found");
+    return { fired: 0 };
+  }
+  const payload = trigPayloadFor(durationSec);
+  for (const dev of sirens) {
+    publishSirenSet(dev.friendlyName, payload);
+  }
+  console.log(
+    `[zigbee] triggered ${sirens.length} siren(s) for ${durationSec}s: ${sirens
+      .map((d) => d.friendlyName)
+      .join(", ")}`,
+  );
+  return { fired: sirens.length };
+}
+
+/** Silence every siren regardless of armed state — when the user disarms
+ * we don't want a forgotten "demo" toggle to keep blaring. */
+export function silenceSirens(): { silenced: number } {
+  const sirens = listDevices().filter(isSirenDevice);
+  for (const dev of sirens) {
+    publishSirenSet(dev.friendlyName, STOP_PAYLOAD);
+  }
+  if (sirens.length > 0) {
+    console.log(`[zigbee] silenced ${sirens.length} siren(s)`);
+  }
+  return { silenced: sirens.length };
 }

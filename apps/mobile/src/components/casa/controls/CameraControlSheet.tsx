@@ -12,7 +12,7 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { DeviceEntity } from "../../../lib/devices/model";
-import { useArmCamera } from "../../../lib/hooks/useBlink";
+import { useArmCamera, useUpdateCamera } from "../../../lib/hooks/useBlink";
 import { useT } from "../../../lib/useT";
 import { CameraFullscreenOverlay } from "../../cameras/CameraFullscreenOverlay";
 import { CameraLiveFrame } from "../../cameras/CameraLiveFrame";
@@ -36,8 +36,10 @@ interface CameraControlSheetProps {
  */
 export function CameraControlSheet({ open, device, onClose }: CameraControlSheetProps) {
   const { t } = useT("casa");
+  const { t: tAlarm } = useT("alarm");
   const row = device.raw as BlinkCamera;
   const arm = useArmCamera();
+  const updateCamera = useUpdateCamera();
   const navigate = useNavigate();
 
   const [liveActive, setLiveActive] = useState(false);
@@ -164,6 +166,28 @@ export function CameraControlSheet({ open, device, onClose }: CameraControlSheet
               value={lastMotion ?? "—"}
             />
           </div>
+
+          {/* Includi nell'allarme — quando il sistema è armato, una nuova
+           * motion clip su questa camera fa partire la sirena. */}
+          <label className="flex items-start gap-3 rounded-md border border-border bg-surface px-4 py-3 cursor-pointer hover:border-accent transition-colors">
+            <input
+              type="checkbox"
+              checked={row.armedForAlarm}
+              disabled={updateCamera.isPending}
+              onChange={(e) =>
+                updateCamera.mutate({ id: row.id, input: { armedForAlarm: e.target.checked } })
+              }
+              className="mt-1 h-4 w-4 accent-rose-500"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-sm leading-tight">
+                {tAlarm("camera.armForAlarmLabel")}
+              </p>
+              <p className="text-xs text-text-muted mt-0.5">
+                {tAlarm("camera.armForAlarmDescription")}
+              </p>
+            </div>
+          </label>
 
           {/* Vai alle registrazioni */}
           <button

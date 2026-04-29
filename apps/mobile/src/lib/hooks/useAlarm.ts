@@ -3,6 +3,9 @@ import {
   type AlarmEvent,
   type AlarmState,
   type AlarmStateResponse,
+  type DisarmCodeStatus,
+  type SetDisarmCodeInput,
+  type SilenceAlarmInput,
 } from "@home-panel/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
@@ -10,6 +13,7 @@ import { apiClient } from "../api-client";
 import { sseClient } from "../sse-client";
 
 const ALARM_STATE_KEY = ["alarm", "state"] as const;
+const DISARM_CODE_STATUS_KEY = ["alarm", "disarm-code-status"] as const;
 
 export function useAlarmState() {
   return useQuery({
@@ -57,13 +61,19 @@ export function useAlarmLiveSync(onTriggered?: (event: AlarmEvent) => void) {
       void qc.invalidateQueries({ queryKey: ALARM_STATE_KEY });
     };
 
+    const handleSilenced = () => {
+      void qc.invalidateQueries({ queryKey: ALARM_STATE_KEY });
+    };
+
     const off1 = sseClient.subscribe(ALARM_SSE_EVENTS.state, handleState);
     const off2 = sseClient.subscribe(ALARM_SSE_EVENTS.triggered, handleTriggered);
     const off3 = sseClient.subscribe(ALARM_SSE_EVENTS.acknowledged, handleAck);
+    const off4 = sseClient.subscribe(ALARM_SSE_EVENTS.silenced, handleSilenced);
     return () => {
       off1();
       off2();
       off3();
+      off4();
     };
   }, [qc, onTriggered]);
 }
@@ -104,6 +114,56 @@ export function useAlarmAckAll() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => apiClient.post<{ updated: number }>("/api/v1/alarm/events/ack-all"),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ALARM_STATE_KEY });
+    },
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/*  Disarm code + silence + test                                       */
+/* ------------------------------------------------------------------ */
+
+export function useDisarmCodeStatus() {
+  return useQuery({
+    queryKey: DISARM_CODE_STATUS_KEY,
+    queryFn: () => apiClient.get<DisarmCodeStatus>("/api/v1/alarm/disarm-code/status"),
+    staleTime: 30_000,
+  });
+}
+
+export function useSetDisarmCode() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SetDisarmCodeInput) =>
+      apiClient.post<{ ok: true }>("/api/v1/alarm/disarm-code", input),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: DISARM_CODE_STATUS_KEY });
+    },
+  });
+}
+
+interface SilenceResponse {
+  state: AlarmState;
+  silenced: number;
+  acknowledged: number;
+}
+
+export function useAlarmSilence() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SilenceAlarmInput) =>
+      apiClient.post<SilenceResponse>("/api/v1/alarm/silence", input),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ALARM_STATE_KEY });
+    },
+  });
+}
+
+export function useAlarmTest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiClient.post<{ event: AlarmEvent; fired: number }>("/api/v1/alarm/test"),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ALARM_STATE_KEY });
     },

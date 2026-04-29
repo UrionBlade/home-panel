@@ -279,6 +279,10 @@ export const blinkCameras = sqliteTable("blink_cameras", {
     .default("camera"),
   /** Per-device motion detection enabled flag. Distinct from "armed" network state. */
   enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  /** Whether motion clips from this camera should fire the home alarm
+   * when alarm_state.armed is true. Default false — opt in per camera
+   * from the panel so a casual motion event doesn't trigger the siren. */
+  armedForAlarm: integer("armed_for_alarm", { mode: "boolean" }).notNull().default(false),
   status: text("status", { enum: ["online", "offline"] })
     .notNull()
     .default("online"),
@@ -674,6 +678,10 @@ export const alarmState = sqliteTable("alarm_state", {
   /** Free-text mode label ("home" / "away" / "night") for future
    * use — the current MVP is binary armed/disarmed. */
   mode: text("mode").notNull().default("away"),
+  /** scrypt hash of the numeric disarm code, encoded as `saltHex:hashHex`.
+   * Null when no code has been configured yet — first setup then runs
+   * without an old code being required. The plaintext is never stored. */
+  disarmCodeHash: text("disarm_code_hash"),
   updatedAt: text("updated_at").notNull().default(sql`(CURRENT_TIMESTAMP)`),
 });
 export type AlarmStateRow = typeof alarmState.$inferSelect;

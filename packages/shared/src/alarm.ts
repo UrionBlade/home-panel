@@ -42,8 +42,35 @@ export interface AlarmArmInput {
   mode?: string;
 }
 
+/**
+ * Disarm-code metadata exposed to the frontend so it can render the
+ * right setup flow (first-time vs change vs reset). The plaintext code
+ * never crosses the wire on this endpoint — it's POST-only.
+ */
+export interface DisarmCodeStatus {
+  /** True once a code has been stored at least once. */
+  configured: boolean;
+  /** True when ALARM_DISARM_RESET=true on the API — lets the user set a
+   * fresh code without supplying the previous one. */
+  resetEnabled: boolean;
+}
+
+export interface SetDisarmCodeInput {
+  /** Required when `configured=true` and reset is disabled; ignored
+   * otherwise. */
+  oldCode?: string;
+  /** 4–8 numeric digits. */
+  newCode: string;
+}
+
+export interface SilenceAlarmInput {
+  /** Numeric code currently configured. */
+  code: string;
+}
+
 export const ALARM_SSE_EVENTS = {
   state: "alarm:state",
   triggered: "alarm:triggered",
   acknowledged: "alarm:acknowledged",
+  silenced: "alarm:silenced",
 } as const;

@@ -30,5 +30,44 @@
     "sensor_window": "Finestra",
     "siren": "Sirena",
     "plug": "Presa"
+  },
+  "modal": {
+    "title": "Allarme attivo",
+    "codeMissing": "Nessun codice di disarmo configurato. Impostane uno dalla pagina Allarme per usare il tastierino.",
+    "codeWrong": "Codice errato",
+    "codeError": "Errore nell'invio del codice",
+    "backspace": "Cancella ultima cifra"
+  },
+  "code": {
+    "section": "Codice di disarmo",
+    "intro": "Codice numerico di 4-8 cifre richiesto per spegnere la sirena.",
+    "notConfigured": "Nessun codice impostato",
+    "configured": "Codice configurato",
+    "resetEnabled": "Reset abilitato — il codice attuale non è richiesto.",
+    "setUp": "Imposta codice",
+    "change": "Cambia codice",
+    "oldCode": "Codice attuale",
+    "newCode": "Nuovo codice",
+    "confirmCode": "Conferma codice",
+    "save": "Salva codice",
+    "errors": {
+      "mismatch": "Le due cifre non coincidono",
+      "tooShort": "Almeno 4 cifre",
+      "tooLong": "Massimo 8 cifre",
+      "wrongOld": "Codice attuale errato",
+      "generic": "Impossibile salvare il codice: {{message}}"
+    },
+    "saved": "Codice aggiornato"
+  },
+  "test": {
+    "title": "Test allarme",
+    "description": "Fa scattare la sirena come se si fosse aperta una finestra. Si ferma dal tastierino con il codice di disarmo.",
+    "trigger": "Scatena allarme di prova",
+    "triggered": "Allarme di prova in corso ({{n}} sirene)",
+    "noSiren": "Nessuna sirena armata: configura una sirena Zigbee e attiva l'inclusione."
+  },
+  "camera": {
+    "armForAlarmLabel": "Includi nell'allarme",
+    "armForAlarmDescription": "Quando l'allarme è armato, un movimento di questa camera fa suonare la sirena."
   }
 }

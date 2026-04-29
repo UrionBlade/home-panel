@@ -15,6 +15,9 @@ export interface BlinkCamera {
   deviceType: BlinkDeviceType;
   /** Per-device motion detection flag — true when the camera is recording. */
   armed: boolean;
+  /** True when motion clips from this camera should fire the home alarm
+   * (gated by `alarm_state.armed`). Default false. */
+  armedForAlarm: boolean;
   status: "online" | "offline";
   batteryLevel: string | null;
   thumbnailUrl: string | null;
