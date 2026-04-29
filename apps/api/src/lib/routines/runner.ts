@@ -53,18 +53,31 @@ export async function runSteps(
   }
 
   const stepResults: RoutineStepResult[] = [];
+  let breakingFailure = false;
   for (let i = 0; i < steps.length; i += 1) {
     const step = steps[i] as RoutineStep;
     const result = await runStep(i, step, ctx);
     stepResults.push(result);
-    if (!result.ok && step.continueOnError !== true) break;
+    if (!result.ok && step.continueOnError !== true) {
+      breakingFailure = true;
+      break;
+    }
   }
 
   const finishedAt = new Date().toISOString();
-  const overallOk = stepResults.every((s) => s.ok);
+  /* A step that fails with `continueOnError: true` is best-effort by
+   * the user's own choice — the routine "succeeds" overall and we just
+   * surface the warning in lastRunError. The routine is only marked
+   * "error" when a hard step fails (or when execution couldn't even
+   * start). The previous behaviour treated any step failure as a full
+   * routine error, which made the user see "Buonanotte: errore" every
+   * night the moment the Blink token rolled over even though the
+   * lights and the alarm step had executed correctly. */
+  const overallOk = !breakingFailure;
 
-  /* Persist last-run metadata. Error message from the first failing step, or
-   * null on success. */
+  /* lastRunError is informational: the first failing step's message
+   * regardless of continueOnError, so the user can debug a flaky step
+   * without having to dig into logs. */
   const firstError = stepResults.find((s) => !s.ok);
   db.update(routines)
     .set({

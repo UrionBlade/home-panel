@@ -185,6 +185,19 @@ export function useVoice(enabled = false) {
     }
   }, []);
 
+  /** Close the listening / speaking overlay without disabling the
+   * assistant. The previous behaviour mapped backdrop-tap to
+   * `toggle()` which tore down the wake-word loop entirely — users
+   * had to re-enable the assistant manually after every accidental
+   * dismissal. */
+  const dismiss = useCallback(() => {
+    if (nativeVoiceClient.supported) {
+      void nativeVoiceClient.dismissCurrent();
+    } else {
+      voiceClient.dismissCurrent();
+    }
+  }, []);
+
   const supported = isNative || voiceClient.supported;
 
   return {
@@ -193,5 +206,6 @@ export function useVoice(enabled = false) {
     processTranscript,
     pushToTalk,
     toggle,
+    dismiss,
   };
 }

@@ -11,7 +11,7 @@ export function VoiceListeningOverlay() {
   const reduced = useReducedMotion();
   const { t } = useT("voice");
   const { t: tCommon } = useT("common");
-  const { status, transcript, response, toggle } = useVoiceContext();
+  const { status, transcript, response, dismiss } = useVoiceContext();
 
   const isVisible = status === "listening" || status === "processing" || status === "speaking";
 
@@ -25,7 +25,7 @@ export function VoiceListeningOverlay() {
             exit={{ opacity: 0 }}
             transition={{ duration: DURATION_MICRO }}
             className="fixed inset-0 z-[9998] bg-bg/70 backdrop-blur-sm"
-            onClick={toggle}
+            onClick={dismiss}
             aria-hidden
           />
 
@@ -106,7 +106,7 @@ export function VoiceListeningOverlay() {
 
             {/* Annulla */}
             <div className="pointer-events-auto">
-              <Button variant="ghost" size="md" onClick={toggle}>
+              <Button variant="ghost" size="md" onClick={dismiss}>
                 {tCommon("actions.cancel")}
               </Button>
             </div>

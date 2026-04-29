@@ -198,6 +198,26 @@ class NativeVoiceClient {
     }
   }
 
+  /** Soft-cancel the current listening / speaking cycle without
+   * disabling the assistant. Used by the listening overlay so a
+   * tap-outside or "Annulla" press doesn't kill the wake-word loop —
+   * `stop()` (and therefore `toggle()`) tears down the audio engine
+   * and would force the user to manually re-enable voice control. */
+  async dismissCurrent(): Promise<void> {
+    /* Stop any TTS in flight first — that's the user-visible "shut up"
+     * action when the assistant is mid-response. */
+    if (this.status === "speaking") {
+      await this.stopSpeaking();
+    }
+    /* When the recogniser is mid-listening we just nudge the status
+     * back to "idle" optimistically; the next recogniser callback /
+     * watchdog cycle will naturally bring it in line, but the user
+     * sees the overlay close immediately. */
+    if (this.status === "listening" || this.status === "processing") {
+      this.setStatus("idle");
+    }
+  }
+
   async setSensitivity(level: number): Promise<void> {
     if (!this.supported) return;
     try {

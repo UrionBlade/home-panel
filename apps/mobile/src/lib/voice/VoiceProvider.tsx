@@ -16,6 +16,9 @@ interface VoiceContextValue {
   supported: boolean;
   pushToTalk: () => void;
   toggle: () => void;
+  /** Close the current listening / speaking overlay without disabling
+   * the wake-word loop — see useVoice.dismiss for the rationale. */
+  dismiss: () => void;
 }
 
 const VoiceContext = createContext<VoiceContextValue>({
@@ -25,6 +28,7 @@ const VoiceContext = createContext<VoiceContextValue>({
   supported: false,
   pushToTalk: () => {},
   toggle: () => {},
+  dismiss: () => {},
 });
 
 export function VoiceProvider({ children }: { children: ReactNode }) {

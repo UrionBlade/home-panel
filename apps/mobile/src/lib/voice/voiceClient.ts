@@ -263,6 +263,19 @@ class VoiceClient {
   stopSpeaking() {
     speechSynthesis?.cancel();
   }
+
+  /** Soft-cancel: stop TTS if speaking, drop the live STT request if
+   * listening, but keep the assistant enabled. Mirrors
+   * `nativeVoiceClient.dismissCurrent()` so the overlay can close
+   * without nuking the engine. */
+  dismissCurrent() {
+    if (this._status === "speaking") {
+      this.stopSpeaking();
+    }
+    if (this._status === "listening" || this._status === "processing") {
+      this.setStatus("idle");
+    }
+  }
 }
 
 export const voiceClient = new VoiceClient();

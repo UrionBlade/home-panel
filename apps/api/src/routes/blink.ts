@@ -26,6 +26,7 @@ import {
   blinkRequestThumbnail,
   blinkSetDeviceEnabled,
   blinkVerify2FA,
+  installBlinkRefreshHandler,
 } from "../lib/blink/client.js";
 import { downloadPendingClips } from "../lib/blink/clip-downloader.js";
 import {
@@ -84,6 +85,12 @@ export function getSession(): BlinkSession | null {
  * Attempts a Blink OAuth token refresh. On success updates the DB and
  * returns the new session. On failure returns null
  * (the user will need to log in again).
+ *
+ * Registered as the global refresh handler in `client.ts` so every
+ * `blinkApi` call benefits from automatic 401 retry — without this
+ * registration the scheduled routines (Buonanotte etc.) crash the
+ * morning the access token rolls over even though the refresh token
+ * is still valid.
  */
 async function tryRefreshSession(session: BlinkSession): Promise<BlinkSession | null> {
   if (!session.refreshToken || !session.hardwareId) return null;
@@ -158,6 +165,11 @@ function setPending2FA(pending: BlinkPending2FA | null, email: string | null) {
     }, PENDING_2FA_TTL_MS);
   }
 }
+
+/* Wire the centralised 401 refresh path: every `blinkApi` call now
+ * auto-recovers from an expired access token via tryRefreshSession.
+ * Idempotent — safe to call once at module load. */
+installBlinkRefreshHandler(tryRefreshSession);
 
 export const blinkRouter = new Hono()
   /* ----- status ----- */

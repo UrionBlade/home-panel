@@ -368,13 +368,27 @@ export async function blinkRefreshToken(
 
 /* ---- Authenticated API calls ---- */
 
-async function blinkApi<T>(
+/* Auto-refresh hook installed by the routes layer at boot. Centralised
+ * here so every caller of blinkApi (arm, liveview, snapshot, …) gets the
+ * same 401 retry path without each route writing its own wrapper.
+ *
+ * The routes layer owns the persistence (decryption + DB write) of the
+ * new tokens; this module only knows how to swap them in on the live
+ * session object. Stays a no-op until install is called. */
+type RefreshHandler = (session: BlinkSession) => Promise<BlinkSession | null>;
+let refreshHandler: RefreshHandler | null = null;
+
+export function installBlinkRefreshHandler(handler: RefreshHandler): void {
+  refreshHandler = handler;
+}
+
+async function doFetch(
   session: BlinkSession,
   path: string,
-  method = "GET",
-  body?: unknown,
-): Promise<T> {
-  const res = await fetch(`${session.host}${path}`, {
+  method: string,
+  body: unknown,
+): Promise<Response> {
+  return fetch(`${session.host}${path}`, {
     method,
     headers: {
       Authorization: `Bearer ${session.accessToken}`,
@@ -388,6 +402,30 @@ async function blinkApi<T>(
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
+}
+
+async function blinkApi<T>(
+  session: BlinkSession,
+  path: string,
+  method = "GET",
+  body?: unknown,
+): Promise<T> {
+  let res = await doFetch(session, path, method, body);
+  /* On 401 try a single token refresh and retry once. Without this the
+   * scheduled "Buonanotte" routine (and every other automated arm/
+   * disarm) crashes the moment the access token rolls over — the user
+   * was seeing a 401 every morning even though the refresh token was
+   * still valid. */
+  if (res.status === 401 && refreshHandler) {
+    const refreshed = await refreshHandler(session).catch(() => null);
+    if (refreshed) {
+      /* Mutate the caller's session so any subsequent calls in the same
+       * request reuse the new tokens — saves another refresh+retry. */
+      session.accessToken = refreshed.accessToken;
+      session.refreshToken = refreshed.refreshToken;
+      res = await doFetch(session, path, method, body);
+    }
+  }
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`Blink API ${res.status}: ${body}`);
