@@ -22,7 +22,12 @@ concurrency:
 jobs:
   build:
     name: Build and upload to TestFlight
-    runs-on: macos-latest
+    # macos-15 image (= macos-latest as of 2026) has an in-flight
+    # CodeSign regression on Xcode 16.4 that fails every iOS build
+    # with "code object is not signed at all" on nested bundle
+    # subcomponents. macos-14 is the previous LTS image with Xcode
+    # 16.2 and isn't affected. Pin until GitHub rolls a fix.
+    runs-on: macos-14
     timeout-minutes: 60
     env:
       IOS_P12_BASE64: ${{ secrets.IOS_P12_BASE64 }}
