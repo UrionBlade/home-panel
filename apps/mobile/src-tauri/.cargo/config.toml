@@ -1,0 +1,11 @@
+# Force the iOS deployment floor seen by every Cargo build script —
+# in particular swift-rs and Tauri's Channel.swift glue, which compile
+# their own Swift sources via swiftc and would otherwise fall back to
+# a Swift 5.6 ABI baseline (iOS 13/14). With Xcode 26's toolchain
+# that older floor pulls in `swiftCompatibility56`, `…Concurrency`
+# and `…Packs` back-deploy archives that are no longer shipped, so
+# the linker fails. Pinning the env at 17.0 keeps every Swift
+# compilation in the build graph aligned with the Xcode project's
+# deployment target.
+[env]
+IPHONEOS_DEPLOYMENT_TARGET = "17.0"
