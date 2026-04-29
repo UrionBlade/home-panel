@@ -23,6 +23,7 @@ import {
   verifyDisarmCode,
 } from "../lib/alarm/store.js";
 import { getSirenDurationSeconds, silenceSirens, triggerSirens } from "../lib/zigbee/client.js";
+import { armAll as armAllZigbeeDevices } from "../lib/zigbee/store.js";
 import { sseEmitter } from "./sse.js";
 
 function pushState() {
@@ -44,6 +45,15 @@ export const alarmRouter = new Hono()
 
   .post("/arm", async (c) => {
     const body = (await c.req.json().catch(() => null)) as AlarmArmInput | null;
+    /* Arming the system also re-includes every Zigbee device in the
+     * alarm. Without this the per-device `armed` flag (intended as a
+     * "mute one specific window" escape hatch) silently sabotaged
+     * every routine that just calls /arm — sensors with `armed=0`
+     * would never fire even though the user thought the system was
+     * fully armed. The flag is still honoured for selective opt-out
+     * AFTER arming, but the natural "arm everything" intent now Just
+     * Works without an extra step. */
+    armAllZigbeeDevices();
     const state = setArmed(true, body?.mode);
     pushState();
     return c.json({ state });

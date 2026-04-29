@@ -128,6 +128,17 @@ export function setArmed(ieeeAddress: string, armed: boolean): ZigbeeDevice | nu
   return getDevice(ieeeAddress);
 }
 
+/** Bulk-arm every device in the Zigbee table — called when the alarm
+ * system is armed so a forgotten per-device mute doesn't silently keep
+ * a sensor out of the alarm. Idempotent. */
+export function armAll(): number {
+  const result = db
+    .update(zigbeeDevices)
+    .set({ armed: true, updatedAt: new Date().toISOString() })
+    .run();
+  return (result as unknown as { changes?: number }).changes ?? 0;
+}
+
 export function setKindOverride(
   ieeeAddress: string,
   kindOverride: string | null,
