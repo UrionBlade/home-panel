@@ -23,6 +23,8 @@ fn main() {
         .unwrap();
         let sdk_path = sdk_path.trim();
 
+        compile_swift_compat_stub(&out_dir, sdk_path);
+
         // Compile all Swift files together into a single static library.
         let status = Command::new("swiftc")
             .args([
@@ -58,6 +60,47 @@ fn main() {
         // compiled model there so `Bundle.main.url(forResource:)` finds it.
         compile_speaker_model();
     }
+}
+
+// Compile ios/swift_compat_stub.c into a static archive that provides
+// empty `__swift_FORCE_LOAD_$_swiftCompatibility*` symbols. swift-rs
+// and Tauri's Swift glue emit references to these at compile time but
+// Xcode 26's toolchain no longer ships the back-deploy archives that
+// would normally satisfy them — and our iOS 17 deployment target
+// makes those compat shims redundant anyway. Without this stub the
+// final iOS app link fails with `Undefined symbols for architecture
+// arm64: __swift_FORCE_LOAD_$_swiftCompatibility56` etc.
+fn compile_swift_compat_stub(out_dir: &str, sdk_path: &str) {
+    let stub_src = "ios/swift_compat_stub.c";
+    let stub_obj = format!("{out_dir}/swift_compat_stub.o");
+    let stub_lib = format!("{out_dir}/libswiftcompat.a");
+
+    let status = Command::new("xcrun")
+        .args([
+            "clang",
+            "-arch",
+            "arm64",
+            "-isysroot",
+            sdk_path,
+            "-mios-version-min=17.0",
+            "-c",
+            stub_src,
+            "-o",
+            &stub_obj,
+        ])
+        .status()
+        .expect("clang failed");
+    assert!(status.success(), "Failed to compile swift_compat_stub.c");
+
+    let status = Command::new("ar")
+        .args(["crus", &stub_lib, &stub_obj])
+        .status()
+        .expect("ar failed");
+    assert!(status.success(), "Failed to archive swift_compat_stub.o");
+
+    println!("cargo:rustc-link-search=native={out_dir}");
+    println!("cargo:rustc-link-lib=static=swiftcompat");
+    println!("cargo:rerun-if-changed={stub_src}");
 }
 
 fn compile_speaker_model() {
