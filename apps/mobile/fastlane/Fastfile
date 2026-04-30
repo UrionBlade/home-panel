@@ -290,7 +290,7 @@ platform :ios do
       # Bundle Identifier" because simulator builds don't populate
       # the .xcarchive's ApplicationProperties.
       sh(
-        "pnpm tauri ios build --target aarch64-apple-ios --export-method app-store-connect",
+        "pnpm tauri ios build --target arm64 --export-method app-store-connect",
         log: true,
       )
     end
