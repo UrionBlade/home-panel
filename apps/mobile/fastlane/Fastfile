@@ -375,14 +375,30 @@ platform :ios do
     ipa_export_dir = File.join(TAURI_IOS_ROOT, "build", "ipa")
     FileUtils.rm_rf(ipa_export_dir)
     FileUtils.mkdir_p(ipa_export_dir)
-    sh(
-      "/usr/bin/xcodebuild -exportArchive " \
-      "-archivePath '#{archive_path}' " \
-      "-exportOptionsPlist '#{EXPORT_OPTIONS_PLIST}' " \
-      "-exportPath '#{ipa_export_dir}' " \
-      "-allowProvisioningUpdates",
-      log: true,
-    )
+    begin
+      sh(
+        "/usr/bin/xcodebuild -exportArchive " \
+        "-archivePath '#{archive_path}' " \
+        "-exportOptionsPlist '#{EXPORT_OPTIONS_PLIST}' " \
+        "-exportPath '#{ipa_export_dir}' " \
+        "-allowProvisioningUpdates",
+        log: true,
+      )
+    rescue FastlaneCore::Interface::FastlaneShellError => e
+      UI.important("exportArchive failed: #{e.message.lines.first.strip}")
+      log_dir = Dir.glob("/var/folders/**/Home Panel_*.xcdistributionlogs").max_by { |p| File.mtime(p) }
+      if log_dir
+        UI.message("xcdistribution logs: #{log_dir}")
+        sh("ls -la '#{log_dir}'", log: true)
+        Dir.glob("#{log_dir}/**/*.log").each do |log|
+          UI.message("=== #{log} ===")
+          sh("cat '#{log}' | tail -100", log: true)
+        end
+      else
+        UI.message("No xcdistributionlogs found under /var/folders")
+      end
+      raise
+    end
 
     UI.message("Exported IPA to #{ipa_export_dir}")
   end
