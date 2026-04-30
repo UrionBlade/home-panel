@@ -420,6 +420,13 @@ platform :ios do
     ).strip
     UI.user_error!("No Apple Distribution cert in #{keychain}") if cert_sha.empty?
     UI.message("Using cert SHA #{cert_sha}")
+
+    # Diagnostic: dump bundle state BEFORE re-sign to see what Xcode
+    # build phase produced. We expect Format=app bundle on locale Mac
+    # vs Format=bundle on GH runner — if so, the bug is upstream.
+    sh("/usr/bin/codesign -dvv '#{built_app}' 2>&1 | head -12 || true", log: true)
+    sh("/usr/bin/file '#{built_app}/Home Panel' 2>&1 || true", log: true)
+    sh("/usr/libexec/PlistBuddy -c 'Print :CFBundlePackageType' '#{built_app}/Info.plist' 2>&1 || true", log: true)
     ent_path = "/tmp/home-panel.full-entitlements.plist"
     profile_path = "/tmp/HomePanel_AppStore.mobileprovision"
     sh(
