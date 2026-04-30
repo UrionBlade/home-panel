@@ -25,8 +25,45 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP_DIR="$ROOT/apps/mobile"
+TAURI_CONF="$APP_DIR/src-tauri/tauri.conf.json"
 TEAM_ID="JB3JURZ8UG"
 BUNDLE_ID="com.matteopoli.homepanel"
+
+# ---- Bump tauri.conf.json version ----
+# Usage: ./scripts/release-ios.sh [fix|feat|major]
+# - fix   → patch++ (0.27.45 → 0.27.46)   [default]
+# - feat  → minor++ (0.27.45 → 0.28.0)
+# - major → major++ (0.27.45 → 1.0.0)
+BUMP_TYPE="${1:-fix}"
+case "$BUMP_TYPE" in
+  fix|patch)   BUMP_KIND="patch" ;;
+  feat|minor)  BUMP_KIND="minor" ;;
+  major)       BUMP_KIND="major" ;;
+  *)
+    echo "❌ Unknown bump type '$BUMP_TYPE' — use fix | feat | major" >&2
+    exit 1
+    ;;
+esac
+
+CURRENT_VERSION=$(/usr/bin/python3 -c "import json; print(json.load(open('$TAURI_CONF'))['version'])")
+IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+case "$BUMP_KIND" in
+  patch) PATCH=$((PATCH + 1)) ;;
+  minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+  major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+esac
+NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+echo "→ Version bump ($BUMP_KIND): $CURRENT_VERSION → $NEW_VERSION"
+/usr/bin/python3 - <<PY
+import json, pathlib
+p = pathlib.Path("$TAURI_CONF")
+data = json.loads(p.read_text())
+data["version"] = "$NEW_VERSION"
+p.write_text(json.dumps(data, indent=2) + "\n")
+PY
+git -C "$ROOT" add "$TAURI_CONF"
+git -C "$ROOT" commit -m "chore(release): v$NEW_VERSION ($BUMP_KIND)" >/dev/null
+echo "→ Committed chore(release): v$NEW_VERSION ($BUMP_KIND)"
 APPLE_ID_NUMERIC="6762917341"
 ASC_KEY_ID="${ASC_KEY_ID:-KD3K3LBKTC}"
 ASC_ISSUER_ID="${ASC_ISSUER_ID:-ad154f37-dc13-4bf9-895a-a7c71b60b45b}"
@@ -58,6 +95,13 @@ rm -rf "$HOME/Library/Developer/Xcode/DerivedData/mobile-"*
 
 echo "→ pnpm tauri ios init…"
 pnpm tauri ios init >/dev/null 2>&1
+
+# Generate iOS app icons AFTER tauri ios init — init regenerates
+# gen/apple/Assets.xcassets with the default Tauri 'T' placeholder,
+# so `tauri icon` must overwrite that AFTER init has run.
+echo "→ pnpm tauri icon…"
+pnpm tauri icon src-tauri/icons/icon.png 2>&1 | tail -5 \
+  || echo "(tauri icon failed — bundle may carry placeholder icon)"
 
 # Patch pbxproj for manual signing with our cert + profile, and remove
 # the duplicate libapp.a Resources entry that tauri's generator creates
@@ -107,6 +151,17 @@ with open('/tmp/proj.xml', 'wb') as f:
 PY
 plutil -convert xml1 /tmp/proj.xml -o "$PBXPROJ"
 
+# Vite-injected env (build-time). Default to the NAS LAN IP that
+# `pnpm dev:nas` uses; override via VITE_API_BASE_URL / VITE_API_TOKEN
+# from the calling shell.
+export VITE_API_BASE_URL="${VITE_API_BASE_URL:-http://192.168.178.36:3000}"
+if [ -z "${VITE_API_TOKEN:-}" ] && [ -f "$APP_DIR/.env" ]; then
+  VITE_API_TOKEN=$(grep -E '^VITE_API_TOKEN=' "$APP_DIR/.env" | cut -d= -f2-)
+fi
+export VITE_API_TOKEN
+echo "→ VITE_API_BASE_URL=$VITE_API_BASE_URL"
+echo "→ VITE_API_TOKEN set: $([ -n "$VITE_API_TOKEN" ] && echo yes || echo NO)"
+
 # Tauri ios build (build phase succeeds, archive fails on Xcode 26 —
 # we salvage the .app from DerivedData and assemble the IPA manually).
 echo "→ pnpm tauri ios build…"
@@ -121,12 +176,14 @@ if [ -z "$BUILT_APP" ] || [ ! -d "$BUILT_APP" ]; then
 fi
 echo "→ Built .app: $BUILT_APP"
 
-# Stamp build number on the .app's Info.plist (tauri patches the source
-# Info.plist but the build phase already copied it before that).
+# Stamp CFBundleVersion = CFBundleShortVersionString. Apple resets the
+# build-number counter whenever the marketing version (semver) bumps,
+# so we don't need a sub-version suffix as long as we bump
+# tauri.conf.json before each release. If you re-upload the same
+# semver, bump tauri.conf.json first.
 SHORT_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$BUILT_APP/Info.plist")
-NEW_BUNDLE_VERSION="${SHORT_VERSION}.${BUILD_NUM}"
-/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $NEW_BUNDLE_VERSION" "$BUILT_APP/Info.plist"
-echo "→ CFBundleVersion = $NEW_BUNDLE_VERSION"
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $SHORT_VERSION" "$BUILT_APP/Info.plist"
+echo "→ CFBundleVersion = $SHORT_VERSION"
 
 # Inject usage strings (Apple rejects build without these).
 /usr/libexec/PlistBuddy -c "Add :NSMicrophoneUsageDescription string 'Home Panel uses the microphone for voice commands.'" "$BUILT_APP/Info.plist" 2>/dev/null \
