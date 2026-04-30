@@ -401,13 +401,39 @@ platform :ios do
     # with --upload-app + -t ios + --verbose so we see the full server
     # response and can decide whether the rejection is real or an
     # altool-on-Xcode-26 bug we can route around.
+    # altool always exits 0 even when the upload is rejected; --output-format
+    # json gives a structured response we can parse to fail loudly.
+    output_log = "/tmp/altool-upload.log"
+    json_path = "/tmp/altool-upload.json"
     sh(
       "/usr/bin/xcrun altool --upload-app " \
       "--type ios " \
       "--file '#{ipa_path}' " \
       "--apiKey #{ENV.fetch('ASC_API_KEY_ID')} " \
       "--apiIssuer #{ENV.fetch('ASC_API_KEY_ISSUER_ID')} " \
-      "--verbose",
+      "--output-format json " \
+      "--verbose 2>&1 | tee '#{output_log}' " \
+      "| /usr/bin/awk '/^\\{/,/^\\}$/' > '#{json_path}' || true",
+      log: true,
+    )
+    if File.exist?(json_path) && !File.read(json_path).strip.empty?
+      sh("/usr/bin/python3 -c \"import json; d=json.load(open('#{json_path}')); print(json.dumps(d, indent=2))\"", log: true)
+      result = JSON.parse(File.read(json_path)) rescue {}
+      errors = result["product-errors"] || result.dig("os-errors") || []
+      if errors.any?
+        UI.user_error!("altool upload failed: #{errors.first['message'] || errors.first}")
+      end
+    else
+      UI.user_error!("altool produced no JSON output, check #{output_log}")
+    end
+
+    # Inspect the WWDR CA generation in the cert chain — App Store may
+    # require a specific G6/G7 generation post-2026.
+    sh(
+      "/usr/bin/security find-identity -v -p codesigning home-panel-ci.keychain-db | head -5; " \
+      "/usr/bin/security find-certificate -c 'Apple Distribution: Matteo Poli' -p home-panel-ci.keychain-db " \
+      "| /usr/bin/openssl x509 -text -noout " \
+      "| /usr/bin/grep -E 'Issuer:|Subject:|Not Before:|Not After'",
       log: true,
     )
   end
