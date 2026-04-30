@@ -158,23 +158,59 @@ targets:
             [ -f "$png" ] && rm -f "$png"
           done
 
-          # 2. Pre-sign every nested directory bundle that Xcode 26's
-          #    ibtool / actool / coremlcompiler now produce with
-          #    embedded Swift / CoreML glue. CodeSign on the parent
-          #    treats them as nested code that has to already carry a
-          #    signature, and the main pass runs without --deep
-          #    (--deep broke -exportArchive with "Missing Bundle
-          #    Identifier" in 28e634c). Use find -exec because Xcode
-          #    build-phase scripts run under /bin/sh, not bash, so
-          #    process substitution isn't available.
-          if [ -n "${EXPANDED_CODE_SIGN_IDENTITY:-}" ]; then
-            find "$APP" -type d \
-              \( -name "*.storyboardc" -o -name "*.mlmodelc" \
-                 -o -name "*.bundle" -o -name "*.framework" \) \
-              -exec sh -c 'echo "[pre-sign] $1"; /usr/bin/codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" --timestamp=none --generate-entitlement-der "$1" || true' _ {} \;
-          else
-            echo "[pre-sign] EXPANDED_CODE_SIGN_IDENTITY unset, skipping"
-          fi
+          # 2. Inject a minimal Info.plist into every nested directory
+          #    bundle that doesn't already have one. With --deep on the
+          #    main CodeSign pass, every nested directory becomes a
+          #    signed bundle, and `xcodebuild -exportArchive` then
+          #    rejects the archive with "Missing Bundle Identifier" if
+          #    any of those bundles has no CFBundleIdentifier.
+          #    coremlcompiler's .mlmodelc is the obvious offender;
+          #    storyboardc / nib bundles can be too on Xcode 26.
+          find "$APP" -type d \
+            \( -name "*.storyboardc" -o -name "*.mlmodelc" \
+               -o -name "*.bundle" \) | while IFS= read -r nested; do
+            plist="$nested/Info.plist"
+            if [ ! -f "$plist" ]; then
+              base=$(basename "$nested")
+              # Strip the suffix to derive a unique identifier.
+              stem="${base%.*}"
+              cat > "$plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>com.matteopoli.homepanel.${stem}</string>
+    <key>CFBundleName</key>
+    <string>${stem}</string>
+    <key>CFBundlePackageType</key>
+    <string>BNDL</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+</dict>
+</plist>
+PLIST
+              echo "[plist] injected $plist"
+            fi
+          done
+
+          # Debug: list every nested bundle and report whether it has
+          # a CFBundleIdentifier. Helps diagnose Archive validation
+          # failures before they happen.
+          find "$APP" -type d \
+            \( -name "*.storyboardc" -o -name "*.mlmodelc" \
+               -o -name "*.bundle" -o -name "*.framework" -o -name "*.app" \) \
+            | while IFS= read -r nested; do
+              plist="$nested/Info.plist"
+              if [ -f "$plist" ]; then
+                id=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$plist" 2>/dev/null || echo "<missing>")
+                echo "[bundle] $nested -> $id"
+              else
+                echo "[bundle] $nested -> <no Info.plist>"
+              fi
+            done
 
           /usr/bin/touch "$DERIVED_FILE_DIR/clean-icons.stamp"
         name: Pre-codesign bundle cleanup
