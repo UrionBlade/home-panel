@@ -152,3 +152,12 @@ jobs:
       - name: Run Fastlane release lane
         working-directory: apps/mobile
         run: bundle exec fastlane ios release
+
+      - name: Upload IPA as artifact (for manual Transporter upload)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: home-panel-ipa
+          path: apps/mobile/src-tauri/gen/apple/build/ipa/*.ipa
+          if-no-files-found: warn
+          retention-days: 7
