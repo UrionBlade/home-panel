@@ -364,6 +364,25 @@ platform :ios do
 
     UI.message("Found built app at #{built_app}")
 
+    # Patch CFBundleVersion on the built .app's Info.plist. Tauri
+    # would do this during `tauri ios build`'s archive step, but on
+    # Xcode 26 archive fails before that runs and we end up here with
+    # the build phase's .app (which has the default 0.1.0 from
+    # tauri.conf.json). Apple rejects builds whose CFBundleVersion is
+    # less-than-or-equal to one already on App Store Connect with the
+    # misleading 409 'not signed using submission certificate'.
+    new_build = ENV.fetch("GITHUB_RUN_NUMBER", Time.now.to_i.to_s)
+    short_version = sh(
+      "/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' '#{built_app}/Info.plist'",
+      log: false,
+    ).strip
+    new_bundle_version = "#{short_version}.#{new_build}"
+    sh(
+      "/usr/libexec/PlistBuddy -c 'Set :CFBundleVersion #{new_bundle_version}' '#{built_app}/Info.plist'",
+      log: true,
+    )
+    UI.message("Stamped built .app CFBundleVersion = #{new_bundle_version}")
+
     # ROOT CAUSE of the 2026-04-30 server-side 409 "not signed using
     # submission certificate":
     #   1. xcodebuild on Xcode 26 + tauri-cli signs the .app with
