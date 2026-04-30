@@ -305,6 +305,41 @@ platform :ios do
 
     UI.message("Found built app at #{built_app}")
 
+    # Inspect the existing signature so we can decide whether to re-sign.
+    sh("/usr/bin/codesign -dvv '#{built_app}' 2>&1 | head -20", log: true)
+
+    # The .app left behind by the build phase was signed with whatever
+    # signing identity tauri's build step used (often the Development
+    # cert). App Store Connect rejects anything not signed with an
+    # Apple submission certificate, so re-sign the bundle with our
+    # Apple Distribution identity, recursively, using --deep + the
+    # entitlements that already live next to the app.
+    profile_path = "/tmp/HomePanel_AppStore.mobileprovision"
+    profile_plist = "/tmp/HomePanel_AppStore.entitlements.plist"
+    sh("/usr/bin/security cms -D -i '#{profile_path}' > '#{profile_plist}'", log: true)
+    entitlements_path = "/tmp/HomePanel_AppStore.entitlements.xml"
+    sh(
+      "/usr/libexec/PlistBuddy -x -c 'Print :Entitlements' '#{profile_plist}' > '#{entitlements_path}'",
+      log: true,
+    )
+
+    # Make sure embedded.mobileprovision in the bundle matches the one
+    # we'll be signing with.
+    FileUtils.cp(profile_path, File.join(built_app, "embedded.mobileprovision"))
+
+    # Recursively sign every nested bundle first, then the main one.
+    Dir.glob(File.join(built_app, "**/*.{framework,bundle,storyboardc,mlmodelc}")).each do |nested|
+      sh(
+        "/usr/bin/codesign --force --sign 'Apple Distribution: Matteo Poli (#{ENV.fetch('IOS_TEAM_ID')})' --timestamp=none '#{nested}'",
+        log: true,
+      )
+    end
+    sh(
+      "/usr/bin/codesign --force --sign 'Apple Distribution: Matteo Poli (#{ENV.fetch('IOS_TEAM_ID')})' --entitlements '#{entitlements_path}' --timestamp=none --generate-entitlement-der '#{built_app}'",
+      log: true,
+    )
+    sh("/usr/bin/codesign --verify --deep --strict --verbose=2 '#{built_app}'", log: true)
+
     # Assemble Payload/Home Panel.app → IPA zip ourselves.
     payload_dir = File.join(TAURI_IOS_ROOT, "build", "Payload")
     ipa_dir = File.join(TAURI_IOS_ROOT, "build", "ipa")
