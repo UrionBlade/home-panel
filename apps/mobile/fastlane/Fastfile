@@ -280,12 +280,17 @@ platform :ios do
     # bump that file to ship a new build (e.g. "0.1.1" -> "0.1.2").
 
     Dir.chdir(IOS_PROJECT_ROOT) do
-      # RUST_LOG=debug surfaces everything tauri-cli does between the
-      # build phases finishing and the "Archive Missing Bundle Identifier"
-      # error so we can see which xcodebuild invocation actually fails
-      # and what flags it's passing.
+      # `--target aarch64-apple-ios` pins the build to iOS device so
+      # xcodebuild's destination matcher doesn't fall back to a
+      # simulator. Without this, on Xcode 26 the loose default
+      # destination matches multiple iPhone simulator runtimes,
+      # xcodebuild logs "Using the first of multiple matching
+      # destinations: { platform:iOS Simulator, ... }", builds for
+      # simulator, and -archive then bails with "Archive Missing
+      # Bundle Identifier" because simulator builds don't populate
+      # the .xcarchive's ApplicationProperties.
       sh(
-        "RUST_LOG=debug RUST_BACKTRACE=1 pnpm tauri ios build --verbose --export-method app-store-connect 2>&1 | tail -300",
+        "pnpm tauri ios build --target aarch64-apple-ios --export-method app-store-connect",
         log: true,
       )
     end
