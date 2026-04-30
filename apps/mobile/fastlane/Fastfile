@@ -342,7 +342,7 @@ platform :ios do
     begin
       Dir.chdir(IOS_PROJECT_ROOT) do
         sh(
-          "pnpm tauri ios build --export-method app-store-connect",
+          "pnpm tauri ios build --export-method app-store-connect --build-number #{ENV.fetch('GITHUB_RUN_NUMBER', Time.now.to_i.to_s)}",
           log: true,
         )
       end
