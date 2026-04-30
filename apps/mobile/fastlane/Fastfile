@@ -343,116 +343,80 @@ platform :ios do
 
     UI.message("Found built app at #{built_app}")
 
-    # Check the built .app's Info.plist format and structure so we can
-    # rule out a binary-vs-xml plist mismatch upsetting IDEDistribution.
-    sh("/usr/bin/plutil -p '#{File.join(built_app, 'Info.plist')}' 2>&1 | head -30", log: true)
-    sh("/usr/bin/file '#{File.join(built_app, 'Info.plist')}'", log: true)
-    sh("/usr/bin/file '#{File.join(built_app, 'Home Panel')}'", log: true)
-    sh("ls -la '#{built_app}/' | head -20", log: true)
+    # Re-sign the salvaged .app cleanly:
+    #  - Strip every existing signature recursively (codesign --remove-signature)
+    #  - Re-sign nested .storyboardc / .mlmodelc / .bundle / .framework
+    #    WITHOUT entitlements (passing entitlements down propagates
+    #    application-identifier from the parent and trips altool's
+    #    "not signed using submission certificate" check)
+    #  - Refresh embedded.mobileprovision in the bundle root
+    #  - Re-sign the parent .app WITH entitlements extracted from the
+    #    App Store provisioning profile
+    keychain_name = "home-panel-ci.keychain-db"
+    identity_sha = IO.popen(
+      ["sh", "-c", "/usr/bin/security find-identity -v -p codesigning '#{keychain_name}' | awk '/Apple Distribution/ {print $2; exit}'"],
+      &:read,
+    ).strip
+    UI.user_error!("No Apple Distribution identity in #{keychain_name}") if identity_sha.empty?
+    UI.message("Re-signing with #{identity_sha}")
 
-    # Build the .xcarchive structure ourselves and use xcodebuild
-    # -exportArchive to produce the IPA. exportArchive does the
-    # App-Store-flavoured signing that altool insists on; just
-    # codesign + zip wasn't enough (altool rejected with 409
-    # "not signed using an Apple submission certificate").
-    archive_path = File.join(TAURI_IOS_ROOT, "build", "Home Panel.xcarchive")
-    FileUtils.rm_rf(archive_path)
-    FileUtils.mkdir_p(File.join(archive_path, "Products", "Applications"))
-    FileUtils.mkdir_p(File.join(archive_path, "dSYMs"))
-    # ditto preserves bundle metadata + extended attributes that
-    # FileUtils.cp_r may strip; without it Xcode's IDEDistribution
-    # framework fails to load the copied .app's Info dictionary.
+    profile_path = "/tmp/HomePanel_AppStore.mobileprovision"
+    profile_plist = "/tmp/HomePanel_AppStore.entitlements.plist"
+    sh("/usr/bin/security cms -D -i '#{profile_path}' > '#{profile_plist}'", log: true)
+    entitlements_path = "/tmp/HomePanel_AppStore.entitlements.xml"
     sh(
-      "/usr/bin/ditto '#{built_app}' " \
-      "'#{File.join(archive_path, 'Products', 'Applications', File.basename(built_app))}'",
+      "/usr/libexec/PlistBuddy -x -c 'Print :Entitlements' '#{profile_plist}' > '#{entitlements_path}'",
       log: true,
     )
 
-    # Also copy the dSYM if present (helps with crash symbolication).
-    Dir.glob("#{built_app}.dSYM").each do |dsym|
-      FileUtils.cp_r(dsym, File.join(archive_path, "dSYMs", File.basename(dsym)))
+    # Strip existing signature on the parent first (codesign refuses to
+    # remove a signature from a bundle whose nested items are still
+    # signed with mismatched identity).
+    sh("/usr/bin/codesign --remove-signature '#{built_app}' || true", log: true)
+    Dir.glob(File.join(built_app, "**/*.{framework,bundle,storyboardc,mlmodelc}")).each do |nested|
+      sh("/usr/bin/codesign --remove-signature '#{nested}' || true", log: true)
     end
 
-    # Read identifier + version off the built app's Info.plist so the
-    # archive metadata is internally consistent. Use IO.popen rather
-    # than fastlane's sh because the latter prefixes captured stdout
-    # with shell echo noise that contaminates the value.
-    app_plist = File.join(built_app, "Info.plist")
-    bundle_id = IO.popen(["/usr/libexec/PlistBuddy", "-c", "Print :CFBundleIdentifier", app_plist], &:read).strip
-    short_ver = IO.popen(["/usr/libexec/PlistBuddy", "-c", "Print :CFBundleShortVersionString", app_plist], &:read).strip
-    bundle_ver = IO.popen(["/usr/libexec/PlistBuddy", "-c", "Print :CFBundleVersion", app_plist], &:read).strip
-    UI.message("Archive metadata: id=#{bundle_id.inspect} short=#{short_ver.inspect} version=#{bundle_ver.inspect}")
-    UI.user_error!("Empty CFBundleIdentifier in built app's Info.plist") if bundle_id.empty?
+    # Refresh embedded.mobileprovision so it matches the cert about to
+    # sign the bundle.
+    FileUtils.cp(profile_path, File.join(built_app, "embedded.mobileprovision"))
 
-    archive_info = File.join(archive_path, "Info.plist")
-    File.write(archive_info, <<~PLIST)
-      <?xml version="1.0" encoding="UTF-8"?>
-      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-      <plist version="1.0">
-      <dict>
-        <key>ApplicationProperties</key>
-        <dict>
-          <key>ApplicationPath</key>
-          <string>Applications/#{File.basename(built_app)}</string>
-          <key>Architectures</key>
-          <array><string>arm64</string></array>
-          <key>CFBundleIdentifier</key>
-          <string>#{bundle_id}</string>
-          <key>CFBundleShortVersionString</key>
-          <string>#{short_ver}</string>
-          <key>CFBundleVersion</key>
-          <string>#{bundle_ver}</string>
-          <key>SigningIdentity</key>
-          <string>Apple Distribution: Matteo Poli (#{ENV.fetch('IOS_TEAM_ID')})</string>
-        </dict>
-        <key>ArchiveVersion</key>
-        <integer>2</integer>
-        <key>CreationDate</key>
-        <date>#{Time.now.utc.iso8601}</date>
-        <key>Name</key>
-        <string>Home Panel</string>
-        <key>SchemeName</key>
-        <string>mobile_iOS</string>
-      </dict>
-      </plist>
-    PLIST
-
-    sh("/usr/bin/codesign -dvv '#{File.join(archive_path, 'Products', 'Applications', File.basename(built_app))}' 2>&1 | head -10", log: true)
-
-    # Verify the archive's Info.plist round-trips through PlistBuddy
-    # so we can spot any encoding / heredoc issues before exportArchive.
-    sh("/usr/libexec/PlistBuddy -c 'Print' '#{archive_info}'", log: true)
-    sh("ls -la '#{archive_path}/Products/Applications/'", log: true)
-
-    ipa_export_dir = File.join(TAURI_IOS_ROOT, "build", "ipa")
-    FileUtils.rm_rf(ipa_export_dir)
-    FileUtils.mkdir_p(ipa_export_dir)
-    begin
+    # Re-sign nested bundles WITHOUT entitlements (no --entitlements
+    # flag so codesign doesn't propagate the parent's
+    # application-identifier).
+    Dir.glob(File.join(built_app, "**/*.{framework,bundle,storyboardc,mlmodelc}")).each do |nested|
       sh(
-        "/usr/bin/xcodebuild -exportArchive " \
-        "-archivePath '#{archive_path}' " \
-        "-exportOptionsPlist '#{EXPORT_OPTIONS_PLIST}' " \
-        "-exportPath '#{ipa_export_dir}' " \
-        "-allowProvisioningUpdates",
+        "/usr/bin/codesign --force --sign #{identity_sha} --timestamp=none '#{nested}'",
         log: true,
       )
-    rescue FastlaneCore::Interface::FastlaneShellError => e
-      UI.important("exportArchive failed: #{e.message.lines.first.strip}")
-      log_dir = Dir.glob("/var/folders/**/Home Panel_*.xcdistributionlogs").max_by { |p| File.mtime(p) }
-      if log_dir
-        UI.message("xcdistribution logs: #{log_dir}")
-        sh("ls -la '#{log_dir}'", log: true)
-        Dir.glob("#{log_dir}/**/*.log").each do |log|
-          UI.message("=== #{log} ===")
-          sh("cat '#{log}' | tail -100", log: true)
-        end
-      else
-        UI.message("No xcdistributionlogs found under /var/folders")
-      end
-      raise
     end
 
-    UI.message("Exported IPA to #{ipa_export_dir}")
+    # Sign the parent with full entitlements + DER encoding.
+    sh(
+      "/usr/bin/codesign --force --sign #{identity_sha} " \
+      "--entitlements '#{entitlements_path}' " \
+      "--timestamp=none --generate-entitlement-der '#{built_app}'",
+      log: true,
+    )
+    sh("/usr/bin/codesign --verify --deep --strict --verbose=2 '#{built_app}'", log: true)
+    sh("/usr/bin/codesign -dvvv '#{built_app}' 2>&1 | head -30", log: true)
+
+    # Assemble Payload/Home Panel.app → IPA zip.
+    payload_dir = File.join(TAURI_IOS_ROOT, "build", "Payload")
+    ipa_dir = File.join(TAURI_IOS_ROOT, "build", "ipa")
+    ipa_path = File.join(ipa_dir, "Home Panel.ipa")
+    FileUtils.rm_rf(payload_dir)
+    FileUtils.rm_rf(ipa_dir)
+    FileUtils.mkdir_p(payload_dir)
+    FileUtils.mkdir_p(ipa_dir)
+    sh(
+      "/usr/bin/ditto '#{built_app}' '#{File.join(payload_dir, File.basename(built_app))}'",
+      log: true,
+    )
+    Dir.chdir(File.dirname(payload_dir)) do
+      sh("/usr/bin/zip -qry '#{ipa_path}' Payload", log: true)
+    end
+    UI.message("Wrote IPA at #{ipa_path}")
   end
 
   private_lane :upload_build do
