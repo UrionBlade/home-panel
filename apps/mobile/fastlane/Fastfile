@@ -354,9 +354,8 @@ platform :ios do
     #    App Store provisioning profile
     keychain_name = "home-panel-ci.keychain-db"
     identity_sha = IO.popen(
-      ["sh", "-c", "/usr/bin/security find-identity -v -p codesigning '#{keychain_name}' | awk '/Apple Distribution/ {print $2; exit}'"],
-      &:read,
-    ).strip
+      ["sh", "-c", "/usr/bin/security find-identity -v -p codesigning '#{keychain_name}' | awk '/Apple Distribution/ {print $2; exit}'"]
+    ) { |io| io.read }.strip
     UI.user_error!("No Apple Distribution identity in #{keychain_name}") if identity_sha.empty?
     UI.message("Re-signing with #{identity_sha}")
 
