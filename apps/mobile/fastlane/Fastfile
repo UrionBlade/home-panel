@@ -383,23 +383,17 @@ platform :ios do
     ent_path = "/tmp/home-panel.entitlements.plist"
     sh("/usr/bin/codesign --display --entitlements :- '#{built_app}' > #{ent_path}", log: true)
 
-    # Sign nested bundles (mlmodelc, storyboardc) before the top-level
-    # so their CodeResources are sealed into the main signature.
+    # Use --deep so codesign recurses into nested bundles
+    # (SpeakerECAPA.mlmodelc, LaunchScreen.storyboardc) and signs
+    # them with their per-bundle identifier before sealing them into
+    # the main bundle's CodeResources as nested code, not as loose
+    # resource files. Without --deep the main CodeResources lists every
+    # file inside SpeakerECAPA individually AND a separate signature
+    # exists inside the .mlmodelc — Apple's server-side validator
+    # rejects this double-bookkeeping with a misleading 409 'not signed
+    # using submission certificate'.
     sh(
-      "find '#{built_app}' -type d \\( -name '*.mlmodelc' -o -name '*.bundle' \\) -print0 | " \
-      "while IFS= read -r -d '' nested; do " \
-      "  stem=$(basename \"$nested\" | sed 's/\\.[^.]*$//'); " \
-      "  echo \"[codesign] signing nested $nested as #{bundle_id}.${stem}\"; " \
-      "  /usr/bin/codesign --force --sign '#{cert_name}' " \
-      "    --identifier '#{bundle_id}.'\"$stem\" " \
-      "    --keychain '#{keychain}' " \
-      "    \"$nested\"; " \
-      "done",
-      log: true,
-    )
-
-    sh(
-      "/usr/bin/codesign --force --sign '#{cert_name}' " \
+      "/usr/bin/codesign --force --deep --sign '#{cert_name}' " \
       "--identifier '#{bundle_id}' " \
       "--entitlements '#{ent_path}' " \
       "--keychain '#{keychain}' " \
@@ -409,6 +403,7 @@ platform :ios do
     )
     sh("/usr/bin/codesign -dvv '#{built_app}' 2>&1 | head -10", log: true)
     sh("/usr/bin/codesign -dvv '#{built_app}/Resources/SpeakerECAPA.mlmodelc' 2>&1 | head -10 || true", log: true)
+    sh("/usr/bin/codesign --verify --deep --strict --verbose=2 '#{built_app}' 2>&1 | tail -10 || true", log: true)
     sh(
       "/usr/bin/security cms -D -i '/tmp/HomePanel_AppStore.mobileprovision' > /tmp/profile-decoded.plist && " \
       "/usr/libexec/PlistBuddy -c 'Print :Entitlements:get-task-allow' /tmp/profile-decoded.plist 2>&1 || true",
