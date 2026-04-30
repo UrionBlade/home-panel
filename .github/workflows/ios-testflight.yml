@@ -27,7 +27,11 @@ jobs:
     # Xcode 26 lives on macos-15 (and macos-latest as runners roll
     # forward); macos-14 stays on Xcode 16 and produces builds App
     # Store Connect now rejects.
-    runs-on: macos-15
+    # macos-15 (Intel) genera binary con LC_BUILD_VERSION minos=17.0
+    # che codesign tratta come Format=bundle (non app bundle), facendo
+    # rifiutare l'upload con 409. macos-latest (Apple Silicon arm64,
+    # come Mac locale) produce minos=14.0 + Format=app bundle → OK.
+    runs-on: macos-latest
     timeout-minutes: 60
     env:
       IOS_P12_BASE64: ${{ secrets.IOS_P12_BASE64 }}
