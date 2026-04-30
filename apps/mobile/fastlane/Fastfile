@@ -377,29 +377,31 @@ platform :ios do
   end
 
   private_lane :upload_build do
-    api_key = app_store_connect_api_key(
-      key_id: ENV.fetch("ASC_API_KEY_ID"),
-      issuer_id: ENV.fetch("ASC_API_KEY_ISSUER_ID"),
-      key_content: Base64.decode64(ENV.fetch("ASC_API_KEY_BASE64")),
-      is_key_content_base64: false,
-      duration: 1200,
-      in_house: false,
-    )
-
     ipa_glob = File.join(TAURI_IOS_ROOT, "build", "**", "*.ipa")
     ipa_path = Dir.glob(ipa_glob).max_by { |f| File.mtime(f) }
     UI.user_error!("No .ipa produced under #{ipa_glob}") if ipa_path.nil?
     UI.message("Uploading #{ipa_path}")
 
-    # Drop changelog: setting it forces Fastlane to wait for the build to
-    # appear in App Store Connect so it can be attached, which adds 20+
-    # minutes of polling and occasionally times the job out. The commit SHA
-    # is already in the job's Git log.
-    upload_to_testflight(
-      api_key: api_key,
-      ipa: ipa_path,
-      skip_waiting_for_build_processing: true,
-      skip_submission: true,
+    # Bypass fastlane's upload_to_testflight (which calls altool, which
+    # rejects Xcode 26-signed bundles with 409 'not signed using
+    # submission certificate' even though every local check confirms
+    # the firma is valid for App Store). Use iTMSTransporter directly —
+    # same Apple-side validator but a different client implementation,
+    # less affected by the altool-on-Xcode-26 regression.
+    # iTMSTransporter looks up the API key as
+    # ~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8
+    # so the .p8 needs that exact filename + location.
+    key_dir = File.expand_path("~/.appstoreconnect/private_keys")
+    FileUtils.mkdir_p(key_dir)
+    key_path = File.join(key_dir, "AuthKey_#{ENV.fetch('ASC_API_KEY_ID')}.p8")
+    File.binwrite(key_path, Base64.decode64(ENV.fetch("ASC_API_KEY_BASE64")))
+
+    sh(
+      "/usr/bin/xcrun iTMSTransporter -m upload " \
+      "-assetFile '#{ipa_path}' " \
+      "-apiKey #{ENV.fetch('ASC_API_KEY_ID')} " \
+      "-apiIssuer #{ENV.fetch('ASC_API_KEY_ISSUER_ID')}",
+      log: true,
     )
   end
 end
