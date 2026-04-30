@@ -359,6 +359,36 @@ platform :ios do
     UI.user_error!("No Apple Distribution identity in #{keychain_name}") if identity_sha.empty?
     UI.message("Re-signing with #{identity_sha}")
 
+    # Diagnostic: verify the cert we're about to sign with is actually
+    # listed in the provisioning profile's DeveloperCertificates array.
+    # If altool keeps rejecting with 409 even after a clean re-sign, a
+    # cert/profile mismatch is the most likely cause.
+    sh(
+      "/usr/bin/security cms -D -i '/tmp/HomePanel_AppStore.mobileprovision' " \
+      "| /usr/libexec/PlistBuddy -c 'Print :DeveloperCertificates' /dev/stdin " \
+      "| /usr/bin/grep -c '#{identity_sha[0..7]}' || true",
+      log: true,
+    )
+    sh(
+      "/usr/bin/security cms -D -i '/tmp/HomePanel_AppStore.mobileprovision' " \
+      "> /tmp/profile-dump.plist && " \
+      "/usr/libexec/PlistBuddy -c 'Print :Name' /tmp/profile-dump.plist && " \
+      "/usr/libexec/PlistBuddy -c 'Print :ExpirationDate' /tmp/profile-dump.plist && " \
+      "/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier' /tmp/profile-dump.plist && " \
+      "/usr/libexec/PlistBuddy -c 'Print :ProvisionsAllDevices' /tmp/profile-dump.plist 2>&1 | head -5 && " \
+      "/usr/libexec/PlistBuddy -c 'Print :ProvisionedDevices' /tmp/profile-dump.plist 2>&1 | head -3",
+      log: true,
+    )
+    # Print SHA-1 of every cert listed in the profile so we can compare
+    # against the keychain identity hash.
+    sh(
+      "/usr/bin/python3 -c \"" \
+      "import plistlib, hashlib, subprocess, sys; " \
+      "p = plistlib.loads(subprocess.check_output(['/usr/bin/security','cms','-D','-i','/tmp/HomePanel_AppStore.mobileprovision'])); " \
+      "[print('profile cert SHA1', hashlib.sha1(c).hexdigest().upper()) for c in p.get('DeveloperCertificates', [])]\"",
+      log: true,
+    )
+
     profile_path = "/tmp/HomePanel_AppStore.mobileprovision"
     profile_plist = "/tmp/HomePanel_AppStore.entitlements.plist"
     sh("/usr/bin/security cms -D -i '#{profile_path}' > '#{profile_plist}'", log: true)
