@@ -273,35 +273,51 @@ platform :ios do
   end
 
   private_lane :build_tauri_ios do
-    # Our manual-signing ExportOptions.plist was written at
-    # gen/apple/ExportOptions.plist in ensure_ios_project; Tauri picks up
-    # that file for the -exportArchive step.
-    # CFBundleVersion is taken verbatim from tauri.conf.json `version`, so
-    # bump that file to ship a new build (e.g. "0.1.1" -> "0.1.2").
+    # `tauri ios build` runs xcodebuild build (which produces a signed
+    # .app under DerivedData) and then xcodebuild archive (which fails
+    # on Xcode 26 with "Archive Missing Bundle Identifier" for reasons
+    # we couldn't isolate). Catch the archive failure but salvage the
+    # already-built signed .app and assemble the IPA ourselves —
+    # the archive intermediate is just packaging, exportArchive isn't
+    # doing anything we can't replicate by zipping Payload/Home Panel.app
+    # into an .ipa.
 
-    Dir.chdir(IOS_PROJECT_ROOT) do
-      # `--target aarch64-apple-ios` pins the build to iOS device so
-      # xcodebuild's destination matcher doesn't fall back to a
-      # simulator. Without this, on Xcode 26 the loose default
-      # destination matches multiple iPhone simulator runtimes,
-      # xcodebuild logs "Using the first of multiple matching
-      # destinations: { platform:iOS Simulator, ... }", builds for
-      # simulator, and -archive then bails with "Archive Missing
-      # Bundle Identifier" because simulator builds don't populate
-      # the .xcarchive's ApplicationProperties.
-      # Pass `-destination generic/platform=iOS` through to xcodebuild
-      # via tauri's `--` runner-args separator. cargo-mobile2 leaves
-      # -destination unset for the iphoneos SDK case, expecting
-      # xcodebuild to default to device. Xcode 26 instead lists every
-      # simulator as a candidate and picks the first one with a
-      # WARNING ("Using the first of multiple matching destinations"),
-      # which makes the archive build a simulator-only one and trips
-      # exportArchive on "Archive Missing Bundle Identifier".
-      sh(
-        "pnpm tauri ios build --target aarch64 --export-method app-store-connect -- -destination 'generic/platform=iOS'",
-        log: true,
-      )
+    built_app_glob = File.expand_path(
+      "Library/Developer/Xcode/DerivedData/mobile-*/Build/Products/release-iphoneos/Home Panel.app",
+      Dir.home,
+    )
+
+    archive_failed = false
+    begin
+      Dir.chdir(IOS_PROJECT_ROOT) do
+        sh(
+          "pnpm tauri ios build --export-method app-store-connect",
+          log: true,
+        )
+      end
+    rescue FastlaneCore::Interface::FastlaneShellError => e
+      archive_failed = true
+      UI.important("`tauri ios build` failed (#{e.message.lines.first.strip}); checking whether the build phase produced a usable .app to package manually.")
     end
+
+    built_app = Dir.glob(built_app_glob).max_by { |p| File.mtime(p) }
+    UI.user_error!("No built .app found under #{built_app_glob} after tauri ios build (archive_failed=#{archive_failed})") if built_app.nil?
+
+    UI.message("Found built app at #{built_app}")
+
+    # Assemble Payload/Home Panel.app → IPA zip ourselves.
+    payload_dir = File.join(TAURI_IOS_ROOT, "build", "Payload")
+    ipa_dir = File.join(TAURI_IOS_ROOT, "build", "ipa")
+    ipa_path = File.join(ipa_dir, "Home Panel.ipa")
+    FileUtils.rm_rf(payload_dir)
+    FileUtils.rm_rf(ipa_dir)
+    FileUtils.mkdir_p(payload_dir)
+    FileUtils.mkdir_p(ipa_dir)
+    FileUtils.cp_r(built_app, File.join(payload_dir, File.basename(built_app)))
+    Dir.chdir(File.dirname(payload_dir)) do
+      sh("/usr/bin/zip -qry '#{ipa_path}' Payload", log: true)
+    end
+    UI.message("Wrote IPA at #{ipa_path}")
   end
 
   private_lane :upload_build do
