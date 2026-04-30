@@ -201,19 +201,24 @@ targets:
                 || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0" "$plist"
             ' _ {} \;
 
-          # Debug: list every nested bundle and report whether it has
-          # a CFBundleIdentifier. Helps diagnose archive failures.
+          # Debug: dump the full Info.plist of the main app and every
+          # nested bundle so archive validation failures can be
+          # diagnosed without another CI iteration.
+          echo "=== bundle inventory ==="
+          ls -la "$APP/" || true
+          echo "=== main Info.plist ==="
+          /usr/libexec/PlistBuddy -c "Print" "$APP/Info.plist" 2>&1 | head -40
           find "$APP" -type d \
             \( -name "*.storyboardc" -o -name "*.mlmodelc" \
                -o -name "*.bundle" -o -name "*.framework" -o -name "*.app" \) \
             -exec sh -c '
               nested="$1"
               plist="$nested/Info.plist"
+              echo "=== $nested/Info.plist ==="
               if [ -f "$plist" ]; then
-                id=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$plist" 2>/dev/null || echo "<missing>")
-                echo "[bundle] $nested -> $id"
+                /usr/libexec/PlistBuddy -c "Print" "$plist" 2>&1 | head -40
               else
-                echo "[bundle] $nested -> <no Info.plist>"
+                echo "(no Info.plist)"
               fi
             ' _ {} \;
 
