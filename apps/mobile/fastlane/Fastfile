@@ -426,6 +426,14 @@ platform :ios do
     sh("/usr/bin/codesign -dvvv '#{built_app}' 2>&1 | head -30", log: true)
     sh("/usr/bin/codesign -dvv --entitlements - '#{built_app}' 2>&1 | head -40", log: true)
 
+    # Dump the bundle contents to spot anything weird (missing Frameworks/,
+    # extra .DS_Store, broken symlinks, foreign .car / .nib files…) that
+    # might trip altool's server-side validation despite codesign
+    # locally reporting a valid signature.
+    sh("ls -laR '#{built_app}' | head -60", log: true)
+    sh("/usr/bin/find '#{built_app}' -type l -ls", log: true)
+    sh("/usr/bin/find '#{built_app}' -name '.DS_Store' -o -name '*.swp' -o -name '__MACOSX' 2>/dev/null", log: true)
+
     # Assemble Payload/Home Panel.app → IPA zip.
     payload_dir = File.join(TAURI_IOS_ROOT, "build", "Payload")
     ipa_dir = File.join(TAURI_IOS_ROOT, "build", "ipa")
