@@ -337,6 +337,13 @@ platform :ios do
 
     UI.message("Found built app at #{built_app}")
 
+    # Check the built .app's Info.plist format and structure so we can
+    # rule out a binary-vs-xml plist mismatch upsetting IDEDistribution.
+    sh("/usr/bin/plutil -p '#{File.join(built_app, 'Info.plist')}' 2>&1 | head -30", log: true)
+    sh("/usr/bin/file '#{File.join(built_app, 'Info.plist')}'", log: true)
+    sh("/usr/bin/file '#{File.join(built_app, 'Home Panel')}'", log: true)
+    sh("ls -la '#{built_app}/' | head -20", log: true)
+
     # Build the .xcarchive structure ourselves and use xcodebuild
     # -exportArchive to produce the IPA. exportArchive does the
     # App-Store-flavoured signing that altool insists on; just
