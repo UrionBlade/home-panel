@@ -34,7 +34,7 @@ fn main() {
                 "-emit-library",
                 "-static",
                 "-module-name", "IOSPlugins",
-                "-target", "arm64-apple-ios17.0",
+                "-target", "arm64-apple-ios14.0",
                 "-sdk", sdk_path,
                 "-o", &lib_path,
             ])
@@ -82,7 +82,7 @@ fn compile_swift_compat_stub(out_dir: &str, sdk_path: &str) {
             "arm64",
             "-isysroot",
             sdk_path,
-            "-mios-version-min=17.0",
+            "-mios-version-min=14.0",
             "-c",
             stub_src,
             "-o",

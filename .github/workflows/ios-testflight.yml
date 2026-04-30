@@ -39,13 +39,15 @@ jobs:
       IOS_TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
       VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
       VITE_API_TOKEN: ${{ secrets.VITE_API_TOKEN }}
-      # swift-rs and Tauri's Channel.swift are compiled by cargo (not
-      # xcodebuild), so they pick up their deployment floor from env
-      # rather than from project.yml. Without this they default to a
-      # Swift 5.6 ABI baseline (iOS 13/14) and the linker pulls in the
-      # back-deploy compatibility libraries (swiftCompatibility56,
-      # Concurrency, Packs) that Xcode 26's toolchain no longer ships.
-      IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+      # Match gen/apple/project.yml deploymentTarget=14.0. Bumping
+      # this to 17.0 promoted the final binary's LC_BUILD_VERSION
+      # minos to 17.0, which made codesign on iOS treat the bundle
+      # as Format=bundle (not Format=app bundle), Identifier degraded
+      # to CFBundleName, and Apple's server-side validator rejected
+      # the upload with 409 'not signed using submission certificate'.
+      # The undefined Swift-compat symbols that 14.0 used to pull in
+      # are stubbed out by swift_compat_stub.c.
+      IPHONEOS_DEPLOYMENT_TARGET: "14.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
