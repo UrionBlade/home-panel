@@ -86,13 +86,11 @@ targets:
         # defaults user scripts to sandboxed, which silently no-op's
         # rm against $BUILT_PRODUCTS_DIR.
         ENABLE_USER_SCRIPT_SANDBOXING: NO
-        # Note: --deep was tried in 28e634c and again here, but combined
-        # with the speaker-model + storyboardc bundles it makes
-        # xcodebuild archive bail with "Archive Missing Bundle
-        # Identifier". The pre-codesign script below now patches
-        # Info.plist into every nested bundle so the main CodeSign
-        # pass can sign them as a side effect of signing the parent
-        # without --deep escalating archive validation.
+        # Re-enable --deep on Xcode 26: combined with the Info.plist
+        # patches the post-build script applies to every nested bundle,
+        # codesign signs everything in one pass and the archive
+        # validation gets a well-formed bundle tree.
+        OTHER_CODE_SIGN_FLAGS: --deep
       groups: [app]
     dependencies:
       - framework: libapp.a

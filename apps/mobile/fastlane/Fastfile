@@ -18,6 +18,8 @@
 # Build number strategy: use GITHUB_RUN_NUMBER (strictly increasing per repo).
 # Fallback to current unix timestamp for local runs.
 
+require "json"
+
 default_platform(:ios)
 
 IOS_PROJECT_ROOT = File.expand_path("..", __dir__)
@@ -271,17 +273,46 @@ platform :ios do
   end
 
   private_lane :build_tauri_ios do
-    # Our manual-signing ExportOptions.plist was written at
-    # gen/apple/ExportOptions.plist in ensure_ios_project; Tauri picks up
-    # that file for the -exportArchive step.
-    # CFBundleVersion is taken verbatim from tauri.conf.json `version`, so
-    # bump that file to ship a new build (e.g. "0.1.1" -> "0.1.2").
+    # Bypass `tauri ios build`'s archive step. On Xcode 26 it ends with
+    # "Archive Missing Bundle Identifier" even though every Info.plist
+    # in the bundle has CFBundleIdentifier set — the failure is in
+    # whatever extra step Tauri performs around xcodebuild archive,
+    # not in xcodebuild itself. Drive xcodebuild directly so we have
+    # full control of the archive arguments.
+    #
+    # Replicates what `tauri ios build` does around xcodebuild:
+    #   1. Run `pnpm build` (tauri.conf.json's beforeBuildCommand) to
+    #      produce the frontend dist/ that the iOS WebView loads.
+    #   2. Stamp CFBundleVersion from tauri.conf.json's `version` so
+    #      App Store Connect doesn't reject duplicate build numbers.
+    #   3. xcodebuild archive — runs the preBuildScripts (tauri ios
+    #      xcode-script → cargo build → libapp.a) and CodeSign.
+    #   4. xcodebuild -exportArchive — produces the .ipa.
+    archive_path = File.join(TAURI_IOS_ROOT, "build", "Home Panel.xcarchive")
+    export_path = File.join(TAURI_IOS_ROOT, "build", "ipa")
+    FileUtils.rm_rf(archive_path) if File.exist?(archive_path)
+    FileUtils.rm_rf(export_path) if File.exist?(export_path)
+    FileUtils.mkdir_p(export_path)
 
-    # Pre-flight: dump the effective build settings xcodebuild will see
-    # for the archive action so we can confirm PRODUCT_BUNDLE_IDENTIFIER
-    # actually reaches the configuration. With Xcode 26 the
-    # "Archive Missing Bundle Identifier" error fires if this resolves
-    # empty for the active target/configuration.
+    Dir.chdir(IOS_PROJECT_ROOT) do
+      sh("pnpm build", log: true)
+    end
+
+    tauri_conf = JSON.parse(File.read(File.join(IOS_PROJECT_ROOT, "src-tauri", "tauri.conf.json")))
+    version = tauri_conf.fetch("version")
+    sh(
+      "/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion #{version}\" \"#{INFO_PLIST}\" 2>/dev/null " \
+      "|| /usr/libexec/PlistBuddy -c \"Add :CFBundleVersion string #{version}\" \"#{INFO_PLIST}\"",
+      log: true,
+    )
+    sh(
+      "/usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString #{version}\" \"#{INFO_PLIST}\" 2>/dev/null " \
+      "|| /usr/libexec/PlistBuddy -c \"Add :CFBundleShortVersionString string #{version}\" \"#{INFO_PLIST}\"",
+      log: true,
+    )
+
+    # Pre-flight: dump the effective build settings to confirm
+    # PRODUCT_BUNDLE_IDENTIFIER reaches the configuration.
     sh(
       "/usr/bin/xcodebuild " \
       "-project '#{TAURI_IOS_ROOT}/mobile.xcodeproj' " \
@@ -292,9 +323,27 @@ platform :ios do
       log: true,
     )
 
-    Dir.chdir(IOS_PROJECT_ROOT) do
-      sh("pnpm tauri ios build --export-method app-store-connect")
-    end
+    sh(
+      "/usr/bin/xcodebuild archive " \
+      "-project '#{TAURI_IOS_ROOT}/mobile.xcodeproj' " \
+      "-scheme mobile_iOS " \
+      "-configuration release " \
+      "-destination 'generic/platform=iOS' " \
+      "-archivePath '#{archive_path}' " \
+      "PRODUCT_BUNDLE_IDENTIFIER=com.matteopoli.homepanel " \
+      "CODE_SIGN_STYLE=Manual " \
+      "DEVELOPMENT_TEAM=#{ENV.fetch('IOS_TEAM_ID')} " \
+      "CODE_SIGN_IDENTITY='Apple Distribution'",
+      log: true,
+    )
+
+    sh(
+      "/usr/bin/xcodebuild -exportArchive " \
+      "-archivePath '#{archive_path}' " \
+      "-exportOptionsPlist '#{EXPORT_OPTIONS_PLIST}' " \
+      "-exportPath '#{export_path}'",
+      log: true,
+    )
   end
 
   private_lane :upload_build do
