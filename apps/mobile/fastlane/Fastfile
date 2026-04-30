@@ -202,6 +202,27 @@ platform :ios do
       lock_when_sleeps: false,
     )
 
+    # Pre-install Apple WWDR intermediate certificates into the
+    # ephemeral keychain. Without this, codesign embeds whatever WWDR
+    # the runner's system keychain happens to ship (often G3) into the
+    # signed bundle's CMS chain. App Store Connect's server-side
+    # validator post-2026 mandate has been observed to reject builds
+    # whose CMS chain doesn't include a modern WWDR (G6+), surfacing
+    # the misleading 409 "not signed using submission certificate".
+    %w[
+      https://www.apple.com/certificateauthority/AppleWWDRCAG6.cer
+      https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer
+    ].each do |url|
+      filename = File.basename(url)
+      cer_path = "/tmp/#{filename}"
+      sh("/usr/bin/curl -sfL '#{url}' -o '#{cer_path}'", log: false)
+      sh(
+        "/usr/bin/security import '#{cer_path}' -k '#{keychain_name}' " \
+        "-T /usr/bin/codesign -T /usr/bin/security 2>&1 || true",
+        log: true,
+      )
+    end
+
     p12_path = "/tmp/ios_distribution.p12"
     File.binwrite(p12_path, Base64.decode64(ENV.fetch("IOS_P12_BASE64")))
 
