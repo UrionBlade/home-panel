@@ -409,8 +409,17 @@ platform :ios do
     #      SENZA --preserve-metadata (che rompe app-bundle recognition)
     #      SENZA --identifier (codesign legge il giusto da Info.plist
     #      quando il bundle è correttamente "app bundle")
-    cert_name = "Apple Distribution: Matteo Poli (#{ENV.fetch('IOS_TEAM_ID')})"
     keychain = "home-panel-ci.keychain-db"
+    # Resolve cert by SHA — `Apple Distribution: ...` is ambiguous when
+    # the imported p12 contains multiple identities with the same CN.
+    # Pick the most recently issued (= last in find-identity output).
+    cert_sha = sh(
+      "/usr/bin/security find-identity -v -p codesigning '#{keychain}' " \
+      "| /usr/bin/awk '/Apple Distribution: Matteo Poli/ {print $2}' | tail -1",
+      log: false,
+    ).strip
+    UI.user_error!("No Apple Distribution cert in #{keychain}") if cert_sha.empty?
+    UI.message("Using cert SHA #{cert_sha}")
     ent_path = "/tmp/home-panel.full-entitlements.plist"
     profile_path = "/tmp/HomePanel_AppStore.mobileprovision"
     sh(
@@ -421,7 +430,7 @@ platform :ios do
     sh("/bin/cat '#{ent_path}'", log: true)
 
     sh(
-      "/usr/bin/codesign --force --deep --sign '#{cert_name}' " \
+      "/usr/bin/codesign --force --deep --sign '#{cert_sha}' " \
       "--entitlements '#{ent_path}' " \
       "--keychain '#{keychain}' " \
       "'#{built_app}'",
