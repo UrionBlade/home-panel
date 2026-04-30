@@ -54,10 +54,11 @@ fn main() {
         println!("cargo:rerun-if-changed=ios/VoicePlugin.swift");
         println!("cargo:rerun-if-changed=ios/PushPlugin.swift");
 
-        // DEBUG TEST 1: skip SpeakerECAPA.mlmodelc to isolate altool 409.
-        // Hypothesis: Apple's server-side validator rejects the bundle
-        // because of the .mlmodelc nested folder. Restore after the test.
-        // compile_speaker_model();
+        // Compile the speaker-embedding .mlpackage into the runtime
+        // .mlmodelc bundle. Tauri's iOS template picks up resources from
+        // gen/apple/Resources via Xcode build phases — we drop the
+        // compiled model there so `Bundle.main.url(forResource:)` finds it.
+        compile_speaker_model();
     }
 }
 

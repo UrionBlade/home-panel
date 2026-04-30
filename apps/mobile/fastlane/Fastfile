@@ -343,13 +343,32 @@ platform :ios do
 
     UI.message("Found built app at #{built_app}")
 
-    # Quinn-the-Eskimo's advice on Apple forums: re-signing manually
-    # with --deep is almost always a sign that something else is off.
-    # The build phase already signed the bundle with
-    # "Apple Distribution: Matteo Poli" (the right cert for App Store
-    # submission, confirmed via codesign -dvv and verified against the
-    # provisioning profile's DeveloperCertificates SHA-1). So skip the
-    # re-sign entirely and just package the bundle as-is.
+    # ROOT CAUSE of the 2026-04-30 server-side 409 "not signed using
+    # submission certificate": xcodebuild on Xcode 26 + tauri-cli signs
+    # the .app with `Identifier=Home Panel` (CFBundleName) instead of
+    # the CFBundleIdentifier `com.matteopoli.homepanel`. Apple's
+    # server-side validator compares the codesign Identifier to the
+    # bundle id and rejects the mismatch — the rejection message is
+    # misleading, the cert itself is fine.
+    #
+    # Fix: re-sign the top-level bundle with --identifier set to the
+    # bundle id, preserving the entitlements that xcodebuild already
+    # baked in (extracted from the existing signature). Nested bundles
+    # (mlmodelc, storyboardc) keep their per-bundle identifiers.
+    bundle_id = "com.matteopoli.homepanel"
+    cert_name = "Apple Distribution: Matteo Poli (#{ENV.fetch('IOS_TEAM_ID')})"
+    keychain = "home-panel-ci.keychain-db"
+    ent_path = "/tmp/home-panel.entitlements.plist"
+    sh("/usr/bin/codesign --display --entitlements :- '#{built_app}' > #{ent_path}", log: true)
+    sh(
+      "/usr/bin/codesign --force --sign '#{cert_name}' " \
+      "--identifier '#{bundle_id}' " \
+      "--entitlements '#{ent_path}' " \
+      "--keychain '#{keychain}' " \
+      "--preserve-metadata=runtime,flags " \
+      "'#{built_app}'",
+      log: true,
+    )
     sh("/usr/bin/codesign -dvv '#{built_app}' 2>&1 | head -10", log: true)
     sh(
       "/usr/bin/security cms -D -i '/tmp/HomePanel_AppStore.mobileprovision' > /tmp/profile-decoded.plist && " \
