@@ -65,6 +65,15 @@ targets:
         RUST_LOG: info
     settings:
       base:
+        # Reassert at the target level — Xcode 26 xcodebuild archive
+        # otherwise reads PRODUCT_BUNDLE_IDENTIFIER from a different
+        # scope and writes an empty string into the .xcarchive's
+        # ApplicationProperties.CFBundleIdentifier, which then trips
+        # "Archive Missing Bundle Identifier" at exportArchive time.
+        # The Info.plist of the built .app already has the right
+        # CFBundleIdentifier but xcodebuild reads from build settings
+        # when generating the archive's metadata, not the plist.
+        PRODUCT_BUNDLE_IDENTIFIER: com.matteopoli.homepanel
         ENABLE_BITCODE: false
         ARCHS: [arm64]
         VALID_ARCHS: arm64

@@ -92,6 +92,13 @@ platform :ios do
       config.build_settings["CODE_SIGN_IDENTITY"] = "Apple Distribution"
       config.build_settings["PROVISIONING_PROFILE_SPECIFIER"] = profile_name
       config.build_settings["PROVISIONING_PROFILE"] = profile_uuid
+      # Reassert PRODUCT_BUNDLE_IDENTIFIER at the configuration level —
+      # Xcode 26's xcodebuild archive reads it from the active config's
+      # build settings (not from the .app's Info.plist) when populating
+      # the .xcarchive's ApplicationProperties.CFBundleIdentifier. If
+      # it's blank or inherited-only, exportArchive bails with
+      # "Archive Missing Bundle Identifier".
+      config.build_settings["PRODUCT_BUNDLE_IDENTIFIER"] = "com.matteopoli.homepanel"
     end
 
     project.save
