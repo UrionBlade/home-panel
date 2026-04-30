@@ -158,42 +158,47 @@ targets:
             [ -f "$png" ] && rm -f "$png"
           done
 
-          # 2. Inject a minimal Info.plist into every nested directory
-          #    bundle that doesn't already have one. With --deep on the
-          #    main CodeSign pass, every nested directory becomes a
-          #    signed bundle, and `xcodebuild -exportArchive` then
-          #    rejects the archive with "Missing Bundle Identifier" if
-          #    any of those bundles has no CFBundleIdentifier.
-          #    Heredocs inside YAML block scalars are awkward (the body
-          #    has to stay indented to keep the parser happy), so build
-          #    the plist with printf instead.
+          # 2. Make sure every nested directory bundle has an Info.plist
+          #    with a CFBundleIdentifier. With --deep on the main
+          #    CodeSign pass every nested directory is signed as a
+          #    bundle, and `xcodebuild -exportArchive` then rejects the
+          #    archive with "Missing Bundle Identifier" against any of
+          #    them that has no CFBundleIdentifier. Cases observed:
+          #      - SpeakerECAPA.mlmodelc has no Info.plist at all
+          #      - LaunchScreen.storyboardc has an Info.plist that
+          #        ibtool generated without a CFBundleIdentifier key
+          #    Treat both: create the plist if missing, then add the
+          #    key if absent. PlistBuddy returns 0 on success, non-zero
+          #    when the key already exists — we use that to decide
+          #    between Add and (no-op) leave-alone.
           find "$APP" -type d \
             \( -name "*.storyboardc" -o -name "*.mlmodelc" -o -name "*.bundle" \) \
             -exec sh -c '
               nested="$1"
               plist="$nested/Info.plist"
-              [ -f "$plist" ] && exit 0
               base=$(basename "$nested")
               stem="${base%.*}"
-              printf "%s\n" \
-                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" \
-                "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">" \
-                "<plist version=\"1.0\">" \
-                "<dict>" \
-                "    <key>CFBundleIdentifier</key>" \
-                "    <string>com.matteopoli.homepanel.${stem}</string>" \
-                "    <key>CFBundleName</key>" \
-                "    <string>${stem}</string>" \
-                "    <key>CFBundlePackageType</key>" \
-                "    <string>BNDL</string>" \
-                "    <key>CFBundleVersion</key>" \
-                "    <string>1</string>" \
-                "    <key>CFBundleShortVersionString</key>" \
-                "    <string>1.0</string>" \
-                "</dict>" \
-                "</plist>" \
-                > "$plist"
-              echo "[plist] injected $plist"
+              if [ ! -f "$plist" ]; then
+                printf "%s\n" \
+                  "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" \
+                  "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">" \
+                  "<plist version=\"1.0\">" \
+                  "<dict>" \
+                  "</dict>" \
+                  "</plist>" \
+                  > "$plist"
+                echo "[plist] created $plist"
+              fi
+              /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$plist" >/dev/null 2>&1 \
+                || { /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.matteopoli.homepanel.${stem}" "$plist"; echo "[plist] added CFBundleIdentifier=com.matteopoli.homepanel.${stem} to $plist"; }
+              /usr/libexec/PlistBuddy -c "Print :CFBundleName" "$plist" >/dev/null 2>&1 \
+                || /usr/libexec/PlistBuddy -c "Add :CFBundleName string ${stem}" "$plist"
+              /usr/libexec/PlistBuddy -c "Print :CFBundlePackageType" "$plist" >/dev/null 2>&1 \
+                || /usr/libexec/PlistBuddy -c "Add :CFBundlePackageType string BNDL" "$plist"
+              /usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$plist" >/dev/null 2>&1 \
+                || /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string 1" "$plist"
+              /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$plist" >/dev/null 2>&1 \
+                || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0" "$plist"
             ' _ {} \;
 
           # Debug: list every nested bundle and report whether it has
