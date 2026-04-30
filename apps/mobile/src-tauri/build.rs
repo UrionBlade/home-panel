@@ -125,8 +125,45 @@ fn compile_speaker_model() {
     match status {
         Ok(s) if s.success() => {
             println!("cargo:rerun-if-changed=ios/Models/SpeakerECAPA.mlpackage");
+            inject_mlmodelc_info_plist(&dest_root.join("SpeakerECAPA.mlmodelc"));
         }
         Ok(s) => println!("cargo:warning=coremlcompiler exited with {s}"),
         Err(e) => println!("cargo:warning=coremlcompiler failed to spawn: {e}"),
+    }
+}
+
+// coremlcompiler produces an .mlmodelc directory without an Info.plist.
+// Xcode 26's CodeSign + --deep treats every nested directory as a bundle
+// to be signed, and `xcodebuild -exportArchive` then refuses to package
+// the result with `Archive Missing Bundle Identifier` because the signed
+// nested bundle has no CFBundleIdentifier. Drop a minimal Info.plist
+// alongside the model so it's a well-formed bundle.
+fn inject_mlmodelc_info_plist(mlmodelc: &PathBuf) {
+    if !mlmodelc.is_dir() {
+        return;
+    }
+    let plist = r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>com.matteopoli.homepanel.SpeakerECAPA</string>
+    <key>CFBundleName</key>
+    <string>SpeakerECAPA</string>
+    <key>CFBundlePackageType</key>
+    <string>BNDL</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+</dict>
+</plist>
+"#;
+    let info_path = mlmodelc.join("Info.plist");
+    if let Err(e) = std::fs::write(&info_path, plist) {
+        println!(
+            "cargo:warning=failed to write {}: {e}",
+            info_path.display()
+        );
     }
 }
