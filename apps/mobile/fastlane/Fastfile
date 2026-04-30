@@ -419,7 +419,7 @@ platform :ios do
     sh(
       "/usr/bin/codesign --force --deep --sign #{identity_sha} " \
       "--entitlements '#{entitlements_path}' " \
-      "--timestamp=none --generate-entitlement-der '#{built_app}'",
+      "--timestamp '#{built_app}'",
       log: true,
     )
     sh("/usr/bin/codesign --verify --deep --strict --verbose=2 '#{built_app}'", log: true)
