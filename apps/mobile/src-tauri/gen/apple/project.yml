@@ -86,21 +86,13 @@ targets:
         # defaults user scripts to sandboxed, which silently no-op's
         # rm against $BUILT_PRODUCTS_DIR.
         ENABLE_USER_SCRIPT_SANDBOXING: NO
-        # Xcode 26's CodeSign step keeps tripping on
-        # "code object is not signed at all" against subcomponents
-        # (Assets.car, embedded.mobileprovision, …) because each
-        # nested item that codesign sees as signable has to already
-        # carry a signature when the parent is signed. Pre-signing
-        # one item only moves the failure to the next file. Pass
-        # --deep so the main codesign descends into every subcomponent
-        # in a single pass. The earlier --deep attempt (28e634c) was
-        # reverted because exportArchive failed with "Missing Bundle
-        # Identifier" — that root cause was the iOS 14 deployment
-        # target leaving nested Swift frameworks without proper
-        # CFBundleIdentifier; with iOS 17 + the swift_compat_stub
-        # those nested items now have valid Info.plist metadata and
-        # --deep should resolve cleanly.
-        OTHER_CODE_SIGN_FLAGS: --deep
+        # Note: --deep was tried in 28e634c and again here, but combined
+        # with the speaker-model + storyboardc bundles it makes
+        # xcodebuild archive bail with "Archive Missing Bundle
+        # Identifier". The pre-codesign script below now patches
+        # Info.plist into every nested bundle so the main CodeSign
+        # pass can sign them as a side effect of signing the parent
+        # without --deep escalating archive validation.
       groups: [app]
     dependencies:
       - framework: libapp.a
