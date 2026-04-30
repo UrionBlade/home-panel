@@ -322,11 +322,15 @@ platform :ios do
     end
 
     # Read identifier + version off the built app's Info.plist so the
-    # archive metadata is internally consistent.
+    # archive metadata is internally consistent. Use IO.popen rather
+    # than fastlane's sh because the latter prefixes captured stdout
+    # with shell echo noise that contaminates the value.
     app_plist = File.join(built_app, "Info.plist")
-    bundle_id = sh("/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' '#{app_plist}'", log: false).strip
-    short_ver = sh("/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' '#{app_plist}'", log: false).strip
-    bundle_ver = sh("/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' '#{app_plist}'", log: false).strip
+    bundle_id = IO.popen(["/usr/libexec/PlistBuddy", "-c", "Print :CFBundleIdentifier", app_plist], &:read).strip
+    short_ver = IO.popen(["/usr/libexec/PlistBuddy", "-c", "Print :CFBundleShortVersionString", app_plist], &:read).strip
+    bundle_ver = IO.popen(["/usr/libexec/PlistBuddy", "-c", "Print :CFBundleVersion", app_plist], &:read).strip
+    UI.message("Archive metadata: id=#{bundle_id.inspect} short=#{short_ver.inspect} version=#{bundle_ver.inspect}")
+    UI.user_error!("Empty CFBundleIdentifier in built app's Info.plist") if bundle_id.empty?
 
     archive_info = File.join(archive_path, "Info.plist")
     File.write(archive_info, <<~PLIST)
@@ -362,6 +366,11 @@ platform :ios do
     PLIST
 
     sh("/usr/bin/codesign -dvv '#{File.join(archive_path, 'Products', 'Applications', File.basename(built_app))}' 2>&1 | head -10", log: true)
+
+    # Verify the archive's Info.plist round-trips through PlistBuddy
+    # so we can spot any encoding / heredoc issues before exportArchive.
+    sh("/usr/libexec/PlistBuddy -c 'Print' '#{archive_info}'", log: true)
+    sh("ls -la '#{archive_path}/Products/Applications/'", log: true)
 
     ipa_export_dir = File.join(TAURI_IOS_ROOT, "build", "ipa")
     FileUtils.rm_rf(ipa_export_dir)
