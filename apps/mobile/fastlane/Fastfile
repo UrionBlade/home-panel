@@ -289,8 +289,16 @@ platform :ios do
       # simulator, and -archive then bails with "Archive Missing
       # Bundle Identifier" because simulator builds don't populate
       # the .xcarchive's ApplicationProperties.
+      # Pass `-destination generic/platform=iOS` through to xcodebuild
+      # via tauri's `--` runner-args separator. cargo-mobile2 leaves
+      # -destination unset for the iphoneos SDK case, expecting
+      # xcodebuild to default to device. Xcode 26 instead lists every
+      # simulator as a candidate and picks the first one with a
+      # WARNING ("Using the first of multiple matching destinations"),
+      # which makes the archive build a simulator-only one and trips
+      # exportArchive on "Archive Missing Bundle Identifier".
       sh(
-        "pnpm tauri ios build --target aarch64 --export-method app-store-connect",
+        "pnpm tauri ios build --target aarch64 --export-method app-store-connect -- -destination 'generic/platform=iOS'",
         log: true,
       )
     end
