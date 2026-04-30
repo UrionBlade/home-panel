@@ -346,7 +346,14 @@ platform :ios do
     FileUtils.rm_rf(archive_path)
     FileUtils.mkdir_p(File.join(archive_path, "Products", "Applications"))
     FileUtils.mkdir_p(File.join(archive_path, "dSYMs"))
-    FileUtils.cp_r(built_app, File.join(archive_path, "Products", "Applications", File.basename(built_app)))
+    # ditto preserves bundle metadata + extended attributes that
+    # FileUtils.cp_r may strip; without it Xcode's IDEDistribution
+    # framework fails to load the copied .app's Info dictionary.
+    sh(
+      "/usr/bin/ditto '#{built_app}' " \
+      "'#{File.join(archive_path, 'Products', 'Applications', File.basename(built_app))}'",
+      log: true,
+    )
 
     # Also copy the dSYM if present (helps with crash symbolication).
     Dir.glob("#{built_app}.dSYM").each do |dsym|
