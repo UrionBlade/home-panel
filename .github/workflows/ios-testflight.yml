@@ -65,7 +65,19 @@ jobs:
           # on the project is iOS 17 to avoid pulling in Swift
           # back-deploy libs (swiftCompatibility56/Concurrency/Packs)
           # that aren't shipped with Xcode 26's toolchain.
-          candidates=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          # Prefer Xcode 26.2 over 26.3: 26.3 produces .app bundles
+          # whose Mach-O isn't recognised as an "app bundle" by codesign
+          # (Format=bundle invece di Format=app bundle), making any
+          # re-sign degrade Identifier to CFBundleName ("Home Panel").
+          # Apple's server-side validator then rejects the upload with
+          # 409 'not signed using submission certificate'. Xcode 26.2
+          # doesn't have this regression — verified locally on Mac, with
+          # delivery 774cad10-a4da-4866-835a-76f98b1d7da7.
+          candidates=$(ls -d /Applications/Xcode_26.2*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$candidates" ]; then
+            echo "::warning::Xcode 26.2 not found on runner; falling back to latest Xcode 26.x but expect 409 from altool"
+            candidates=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          fi
           if [ -z "$candidates" ]; then
             echo "::warning::No Xcode 26 found, falling back to Xcode 16 — App Store Connect upload may be rejected and the codesign bug will reappear"
             candidates=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
