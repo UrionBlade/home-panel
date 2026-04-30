@@ -453,18 +453,21 @@ platform :ios do
     # json gives a structured response we can parse to fail loudly.
     output_log = "/tmp/altool-upload.log"
     json_path = "/tmp/altool-upload.json"
-    # --use-old-altool routes around an Xcode 26 altool bug where, when
-    # the team has multiple apps with bundle ids sharing a prefix, the
-    # new altool picks the wrong AppleID and Apple's server rejects the
-    # upload with a misleading 409 "not signed using submission
-    # certificate". Apple confirmed the bug in fastlane/fastlane#29698:
+    # --apple-id pins altool to the correct app on App Store Connect.
+    # Without it, the new altool that ships in Xcode 26 picks the wrong
+    # AppleID when the team has multiple apps with bundle ids sharing
+    # a prefix and Apple's server rejects the upload with a misleading
+    # 409 "not signed using submission certificate". Apple confirmed
+    # the bug in fastlane/fastlane#29698:
     #   "There's a bug in new altool if there are bundleIds with the
     #    same prefix, the wrong AppleID might be used. The workaround
-    #    for now, is to specify --apple-id <ID> ... or --use-old-altool".
+    #    for now, is to specify --apple-id <ID>".
+    # 6762917341 = numeric Apple ID for com.matteopoli.homepanel,
+    # retrieved via `xcrun altool --list-apps`.
     sh(
       "/usr/bin/xcrun altool --upload-app " \
       "--type ios " \
-      "--use-old-altool " \
+      "--apple-id 6762917341 " \
       "--file '#{ipa_path}' " \
       "--apiKey #{ENV.fetch('ASC_API_KEY_ID')} " \
       "--apiIssuer #{ENV.fetch('ASC_API_KEY_ISSUER_ID')} " \
