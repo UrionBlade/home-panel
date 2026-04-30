@@ -273,15 +273,39 @@ platform :ios do
   end
 
   private_lane :build_tauri_ios do
-    # `tauri ios build` runs xcodebuild build (which produces a signed
-    # .app under DerivedData) and then xcodebuild archive (which fails
-    # on Xcode 26 with "Archive Missing Bundle Identifier" for reasons
-    # we couldn't isolate). Catch the archive failure but salvage the
-    # already-built signed .app and assemble the IPA ourselves —
-    # the archive intermediate is just packaging, exportArchive isn't
-    # doing anything we can't replicate by zipping Payload/Home Panel.app
-    # into an .ipa.
+    # On Xcode 26 the bare `xcodebuild ... archive` cargo-mobile2 issues
+    # ends with "Archive Missing Bundle Identifier" because xcodebuild
+    # logs "Using the first of multiple matching destinations" (a
+    # simulator) and the archive's ApplicationProperties end up empty.
+    # Drop a wrapper script earlier in PATH that re-invokes the real
+    # xcodebuild with `-destination generic/platform=iOS` injected for
+    # archive runs — leaves -showBuildSettings / -exportArchive /
+    # -showsdks invocations untouched.
+    xcwrap_dir = File.join(IOS_PROJECT_ROOT, ".fastlane-xcodebuild-shim")
+    FileUtils.rm_rf(xcwrap_dir)
+    FileUtils.mkdir_p(xcwrap_dir)
+    File.write(File.join(xcwrap_dir, "xcodebuild"), <<~SH)
+      #!/bin/bash
+      # Inject -destination 'generic/platform=iOS' for archive actions
+      # so Xcode 26 doesn't fall back to a simulator destination and
+      # leave the archive without ApplicationProperties.
+      for arg in "$@"; do
+        if [ "$arg" = "archive" ]; then
+          exec /usr/bin/xcodebuild -destination "generic/platform=iOS" "$@"
+        fi
+      done
+      exec /usr/bin/xcodebuild "$@"
+    SH
+    FileUtils.chmod(0o755, File.join(xcwrap_dir, "xcodebuild"))
+    ENV["PATH"] = "#{xcwrap_dir}:#{ENV.fetch('PATH')}"
+    UI.message("Installed xcodebuild shim at #{xcwrap_dir}")
+    sh("which xcodebuild", log: true)
 
+    # `tauri ios build` runs xcodebuild build (which produces a signed
+    # .app under DerivedData) and then xcodebuild archive. With the
+    # shim above, the archive should now have proper destination and
+    # complete cleanly — but if it doesn't, fall back to manual IPA
+    # assembly from the salvaged .app.
     built_app_glob = File.expand_path(
       "Library/Developer/Xcode/DerivedData/mobile-*/Build/Products/release-iphoneos/Home Panel.app",
       Dir.home,
@@ -295,6 +319,14 @@ platform :ios do
           log: true,
         )
       end
+      # Tauri's archive succeeded — find the IPA it produced and we're done.
+      ipa_glob = File.join(TAURI_IOS_ROOT, "build", "**", "*.ipa")
+      tauri_ipa = Dir.glob(ipa_glob).max_by { |p| File.mtime(p) }
+      if tauri_ipa
+        UI.success("tauri ios build produced #{tauri_ipa}")
+        return
+      end
+      UI.important("tauri ios build returned 0 but no IPA was found under #{ipa_glob}; falling through to manual assembly.")
     rescue FastlaneCore::Interface::FastlaneShellError => e
       archive_failed = true
       UI.important("`tauri ios build` failed (#{e.message.lines.first.strip}); checking whether the build phase produced a usable .app to package manually.")
