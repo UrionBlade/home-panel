@@ -276,6 +276,22 @@ platform :ios do
     # that file for the -exportArchive step.
     # CFBundleVersion is taken verbatim from tauri.conf.json `version`, so
     # bump that file to ship a new build (e.g. "0.1.1" -> "0.1.2").
+
+    # Pre-flight: dump the effective build settings xcodebuild will see
+    # for the archive action so we can confirm PRODUCT_BUNDLE_IDENTIFIER
+    # actually reaches the configuration. With Xcode 26 the
+    # "Archive Missing Bundle Identifier" error fires if this resolves
+    # empty for the active target/configuration.
+    sh(
+      "/usr/bin/xcodebuild " \
+      "-project '#{TAURI_IOS_ROOT}/mobile.xcodeproj' " \
+      "-scheme mobile_iOS " \
+      "-configuration release " \
+      "-destination 'generic/platform=iOS' " \
+      "-showBuildSettings 2>&1 | grep -E 'PRODUCT_BUNDLE_IDENTIFIER|PRODUCT_NAME|CODE_SIGN_IDENTITY|PROVISIONING_PROFILE_SPECIFIER' | sort -u",
+      log: true,
+    )
+
     Dir.chdir(IOS_PROJECT_ROOT) do
       sh("pnpm tauri ios build --export-method app-store-connect")
     end
