@@ -164,45 +164,45 @@ targets:
           #    signed bundle, and `xcodebuild -exportArchive` then
           #    rejects the archive with "Missing Bundle Identifier" if
           #    any of those bundles has no CFBundleIdentifier.
-          #    coremlcompiler's .mlmodelc is the obvious offender;
-          #    storyboardc / nib bundles can be too on Xcode 26.
+          #    Heredocs inside YAML block scalars are awkward (the body
+          #    has to stay indented to keep the parser happy), so build
+          #    the plist with printf instead.
           find "$APP" -type d \
-            \( -name "*.storyboardc" -o -name "*.mlmodelc" \
-               -o -name "*.bundle" \) | while IFS= read -r nested; do
-            plist="$nested/Info.plist"
-            if [ ! -f "$plist" ]; then
+            \( -name "*.storyboardc" -o -name "*.mlmodelc" -o -name "*.bundle" \) \
+            -exec sh -c '
+              nested="$1"
+              plist="$nested/Info.plist"
+              [ -f "$plist" ] && exit 0
               base=$(basename "$nested")
-              # Strip the suffix to derive a unique identifier.
               stem="${base%.*}"
-              cat > "$plist" <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleIdentifier</key>
-    <string>com.matteopoli.homepanel.${stem}</string>
-    <key>CFBundleName</key>
-    <string>${stem}</string>
-    <key>CFBundlePackageType</key>
-    <string>BNDL</string>
-    <key>CFBundleVersion</key>
-    <string>1</string>
-    <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
-</dict>
-</plist>
-PLIST
+              printf "%s\n" \
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" \
+                "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">" \
+                "<plist version=\"1.0\">" \
+                "<dict>" \
+                "    <key>CFBundleIdentifier</key>" \
+                "    <string>com.matteopoli.homepanel.${stem}</string>" \
+                "    <key>CFBundleName</key>" \
+                "    <string>${stem}</string>" \
+                "    <key>CFBundlePackageType</key>" \
+                "    <string>BNDL</string>" \
+                "    <key>CFBundleVersion</key>" \
+                "    <string>1</string>" \
+                "    <key>CFBundleShortVersionString</key>" \
+                "    <string>1.0</string>" \
+                "</dict>" \
+                "</plist>" \
+                > "$plist"
               echo "[plist] injected $plist"
-            fi
-          done
+            ' _ {} \;
 
           # Debug: list every nested bundle and report whether it has
-          # a CFBundleIdentifier. Helps diagnose Archive validation
-          # failures before they happen.
+          # a CFBundleIdentifier. Helps diagnose archive failures.
           find "$APP" -type d \
             \( -name "*.storyboardc" -o -name "*.mlmodelc" \
                -o -name "*.bundle" -o -name "*.framework" -o -name "*.app" \) \
-            | while IFS= read -r nested; do
+            -exec sh -c '
+              nested="$1"
               plist="$nested/Info.plist"
               if [ -f "$plist" ]; then
                 id=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$plist" 2>/dev/null || echo "<missing>")
@@ -210,7 +210,7 @@ PLIST
               else
                 echo "[bundle] $nested -> <no Info.plist>"
               fi
-            done
+            ' _ {} \;
 
           /usr/bin/touch "$DERIVED_FILE_DIR/clean-icons.stamp"
         name: Pre-codesign bundle cleanup
