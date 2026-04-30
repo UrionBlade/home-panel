@@ -429,8 +429,15 @@ platform :ios do
     )
     sh("/bin/cat '#{ent_path}'", log: true)
 
+    # Pass -i / --identifier com.matteopoli.homepanel explicitly:
+    # tauri's pbxproj produces a bundle whose Mach-O CFBundlePackageType
+    # leaks to "BNDL" instead of "APPL", so codesign treats it as a
+    # generic bundle and falls back to CFBundleName ("Home Panel") for
+    # the signing identifier. Forcing the identifier produces a bundle
+    # whose codesign Identifier matches CFBundleIdentifier.
     sh(
       "/usr/bin/codesign --force --deep --sign '#{cert_sha}' " \
+      "--identifier 'com.matteopoli.homepanel' " \
       "--entitlements '#{ent_path}' " \
       "--keychain '#{keychain}' " \
       "'#{built_app}'",
