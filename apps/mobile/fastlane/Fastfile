@@ -401,6 +401,17 @@ platform :ios do
     # with --upload-app + -t ios + --verbose so we see the full server
     # response and can decide whether the rejection is real or an
     # altool-on-Xcode-26 bug we can route around.
+    # Inspect the WWDR CA generation in the cert chain — App Store may
+    # require a specific G6/G7 generation post-2026.
+    sh("/usr/bin/security find-identity -v -p codesigning home-panel-ci.keychain-db | head -5", log: true)
+    sh(
+      "/usr/bin/security find-certificate -c 'Apple Distribution' -p home-panel-ci.keychain-db " \
+      "| /usr/bin/openssl x509 -text -noout " \
+      "| /usr/bin/grep -E 'Issuer:|Subject:|Not Before|Not After|Public Key Algorithm|Signature Algorithm' " \
+      "| head -20",
+      log: true,
+    )
+
     # altool always exits 0 even when the upload is rejected; --output-format
     # json gives a structured response we can parse to fail loudly.
     output_log = "/tmp/altool-upload.log"
@@ -427,14 +438,5 @@ platform :ios do
       UI.user_error!("altool produced no JSON output, check #{output_log}")
     end
 
-    # Inspect the WWDR CA generation in the cert chain — App Store may
-    # require a specific G6/G7 generation post-2026.
-    sh(
-      "/usr/bin/security find-identity -v -p codesigning home-panel-ci.keychain-db | head -5; " \
-      "/usr/bin/security find-certificate -c 'Apple Distribution: Matteo Poli' -p home-panel-ci.keychain-db " \
-      "| /usr/bin/openssl x509 -text -noout " \
-      "| /usr/bin/grep -E 'Issuer:|Subject:|Not Before:|Not After'",
-      log: true,
-    )
   end
 end
