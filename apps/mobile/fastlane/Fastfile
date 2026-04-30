@@ -308,12 +308,23 @@ platform :ios do
     # Inspect the existing signature so we can decide whether to re-sign.
     sh("/usr/bin/codesign -dvv '#{built_app}' 2>&1 | head -20", log: true)
 
-    # The .app left behind by the build phase was signed with whatever
-    # signing identity tauri's build step used (often the Development
-    # cert). App Store Connect rejects anything not signed with an
-    # Apple submission certificate, so re-sign the bundle with our
-    # Apple Distribution identity, recursively, using --deep + the
-    # entitlements that already live next to the app.
+    # Look up the Apple Distribution identity SHA-1 in the ephemeral
+    # keychain we provisioned in setup_signing. Using the SHA hash
+    # avoids any ambiguity if multiple certs match the friendly name.
+    keychain_name = "home-panel-ci.keychain-db"
+    identity_sha = sh(
+      "/usr/bin/security find-identity -v -p codesigning '#{keychain_name}' " \
+      "| awk '/Apple Distribution/ {print $2; exit}'",
+      log: true,
+    ).strip
+    UI.user_error!("No Apple Distribution identity in #{keychain_name}") if identity_sha.empty?
+    UI.message("Using signing identity SHA #{identity_sha}")
+
+    # Dump every codesigning identity available in the temp keychain
+    # so we can see whether a Development cert is masquerading as
+    # the Distribution one.
+    sh("/usr/bin/security find-identity -v -p codesigning '#{keychain_name}'", log: true)
+
     profile_path = "/tmp/HomePanel_AppStore.mobileprovision"
     profile_plist = "/tmp/HomePanel_AppStore.entitlements.plist"
     sh("/usr/bin/security cms -D -i '#{profile_path}' > '#{profile_plist}'", log: true)
@@ -330,15 +341,16 @@ platform :ios do
     # Recursively sign every nested bundle first, then the main one.
     Dir.glob(File.join(built_app, "**/*.{framework,bundle,storyboardc,mlmodelc}")).each do |nested|
       sh(
-        "/usr/bin/codesign --force --sign 'Apple Distribution: Matteo Poli (#{ENV.fetch('IOS_TEAM_ID')})' --timestamp=none '#{nested}'",
+        "/usr/bin/codesign --force --sign #{identity_sha} --timestamp=none '#{nested}'",
         log: true,
       )
     end
     sh(
-      "/usr/bin/codesign --force --sign 'Apple Distribution: Matteo Poli (#{ENV.fetch('IOS_TEAM_ID')})' --entitlements '#{entitlements_path}' --timestamp=none --generate-entitlement-der '#{built_app}'",
+      "/usr/bin/codesign --force --sign #{identity_sha} --entitlements '#{entitlements_path}' --timestamp=none --generate-entitlement-der '#{built_app}'",
       log: true,
     )
     sh("/usr/bin/codesign --verify --deep --strict --verbose=2 '#{built_app}'", log: true)
+    sh("/usr/bin/codesign -dvvv '#{built_app}' 2>&1 | head -30", log: true)
 
     # Assemble Payload/Home Panel.app → IPA zip ourselves.
     payload_dir = File.join(TAURI_IOS_ROOT, "build", "Payload")
