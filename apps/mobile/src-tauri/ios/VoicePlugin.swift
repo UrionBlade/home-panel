@@ -424,12 +424,14 @@ private func startRecognitionSession() {
 /// script. If it's missing the rest of the voice pipeline still works.
 private func loadSpeakerModelIfNeeded() {
     guard gSpeakerModel == nil else { return }
-    /* The compiled model lives under `Resources/` inside the app bundle —
-     * see `project.yml`. The plain (top-level) lookup is kept as a fallback
-     * in case the project layout changes back to a flat resource group. */
-    let url = Bundle.main.url(forResource: "SpeakerECAPA", withExtension: "mlmodelc",
-                              subdirectory: "Resources")
-        ?? Bundle.main.url(forResource: "SpeakerECAPA", withExtension: "mlmodelc")
+    /* The compiled model is added to the app target as a flat file
+     * reference (release-ios.sh patches the pbxproj), so it lands at
+     * the bundle root — same place LaunchScreen.storyboardc lives.
+     * The Resources/-subdirectory lookup stays as a legacy fallback
+     * for older bundles still in TestFlight. */
+    let url = Bundle.main.url(forResource: "SpeakerECAPA", withExtension: "mlmodelc")
+        ?? Bundle.main.url(forResource: "SpeakerECAPA", withExtension: "mlmodelc",
+                           subdirectory: "Resources")
     guard let url = url else {
         voiceLog("speaker model: SpeakerECAPA.mlmodelc not found in bundle — skipping")
         return

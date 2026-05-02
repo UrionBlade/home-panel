@@ -103,16 +103,9 @@ echo "→ pnpm tauri icon…"
 pnpm tauri icon src-tauri/icons/icon.png 2>&1 | tail -5 \
   || echo "(tauri icon failed — bundle may carry placeholder icon)"
 
-# NOTE — Resources/ folder + SpeakerECAPA.mlmodelc bundling NOT wired
-# here yet. Several attempts on 2026-05-02 (xcodegen-regenerate vs
-# direct pbxproj patch via plistlib, with explicit nested codesign of
-# .mlmodelc + top-level --identifier + --deep, with and without the
-# .gitkeep seed) all produced `Format=bundle with Mach-O thin` instead
-# of `Format=app bundle`, which Apple rejects with the misleading 409
-# "not signed using submission certificate". The CI Fastfile uses the
-# same recipe and ships, so something Mac-local-vs-runner is biting.
-# Park here until a fresh investigation can compare the two byte-by-
-# byte. Voice enrolment remains broken until then.
+# Make sure the compiled SpeakerECAPA.mlmodelc lives where build.rs
+# emits it (so the file reference patch below resolves on disk).
+mkdir -p src-tauri/gen/apple/Resources
 
 # Patch pbxproj for manual signing with our cert + profile, and remove
 # the duplicate libapp.a Resources entry that tauri's generator creates
@@ -121,7 +114,7 @@ echo "→ Patching pbxproj…"
 PBXPROJ="src-tauri/gen/apple/mobile.xcodeproj/project.pbxproj"
 plutil -convert xml1 -o /tmp/proj.xml "$PBXPROJ"
 /usr/bin/python3 - <<PY
-import plistlib
+import plistlib, uuid
 with open('/tmp/proj.xml', 'rb') as f:
     p = plistlib.load(f)
 target_uuid = next(u for u, o in p['objects'].items()
@@ -132,6 +125,45 @@ ta = attrs.setdefault('TargetAttributes', {})
 ta.setdefault(target_uuid, {})
 ta[target_uuid]['ProvisioningStyle'] = 'Manual'
 ta[target_uuid]['DevelopmentTeam'] = '$TEAM_ID'
+
+# Add SpeakerECAPA.mlmodelc as a single file reference (NOT a folder
+# reference on Resources/) — build.rs compiles it into
+# gen/apple/Resources/SpeakerECAPA.mlmodelc, but we point Xcode at
+# that path directly so it lands at the bundle root, the way
+# LaunchScreen.storyboardc does. Earlier attempts that added a folder
+# reference on the whole Resources/ directory produced bundles whose
+# codesign Format collapsed to "bundle" (instead of "app bundle"),
+# rejected by Apple with the misleading 409. A flat single-file
+# reference avoids that pitfall.
+def make_uuid():
+    return uuid.uuid4().hex[:24].upper()
+
+main_group_uuid = project['mainGroup']
+main_group = p['objects'][main_group_uuid]
+already = False
+for child_uuid in main_group.get('children', []):
+    obj = p['objects'].get(child_uuid)
+    if obj and obj.get('path') == 'Resources/SpeakerECAPA.mlmodelc':
+        already = True
+        break
+
+if not already:
+    ref_uuid = make_uuid()
+    p['objects'][ref_uuid] = {
+        'isa': 'PBXFileReference',
+        'lastKnownFileType': 'wrapper.coreml.mlmodelc',
+        'path': 'Resources/SpeakerECAPA.mlmodelc',
+        'sourceTree': 'SOURCE_ROOT',
+    }
+    main_group['children'].append(ref_uuid)
+    bf_uuid = make_uuid()
+    p['objects'][bf_uuid] = {'isa': 'PBXBuildFile', 'fileRef': ref_uuid}
+    target_obj = p['objects'][target_uuid]
+    for phase_uuid in target_obj.get('buildPhases', []):
+        phase = p['objects'][phase_uuid]
+        if phase.get('isa') == 'PBXResourcesBuildPhase':
+            phase.setdefault('files', []).append(bf_uuid)
+            break
 
 # Remove debug libapp.a from Resources phase.
 fileref_libapp = [u for u, o in p['objects'].items()
