@@ -44,7 +44,10 @@ export function CasaPage() {
    * Il menu ⋯ resta dedicato alla modifica del device (rinomina + sposta
    * stanza), chiaramente separato dall'azione principale. */
   const onPrimary = (device: DeviceEntity) => {
-    if (device.kind === "light") {
+    /* Lights and smart plugs share one-tap toggle semantics: tile tap
+     * flips on/off without opening any sheet. Everything else falls
+     * through to a kind-specific ControlSheet. */
+    if (device.kind === "light" || device.kind === "plug") {
       void actions.toggle(device);
       return;
     }
