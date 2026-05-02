@@ -103,6 +103,17 @@ echo "→ pnpm tauri icon…"
 pnpm tauri icon src-tauri/icons/icon.png 2>&1 | tail -5 \
   || echo "(tauri icon failed — bundle may carry placeholder icon)"
 
+# NOTE — Resources/ folder + SpeakerECAPA.mlmodelc bundling NOT wired
+# here yet. Several attempts on 2026-05-02 (xcodegen-regenerate vs
+# direct pbxproj patch via plistlib, with explicit nested codesign of
+# .mlmodelc + top-level --identifier + --deep, with and without the
+# .gitkeep seed) all produced `Format=bundle with Mach-O thin` instead
+# of `Format=app bundle`, which Apple rejects with the misleading 409
+# "not signed using submission certificate". The CI Fastfile uses the
+# same recipe and ships, so something Mac-local-vs-runner is biting.
+# Park here until a fresh investigation can compare the two byte-by-
+# byte. Voice enrolment remains broken until then.
+
 # Patch pbxproj for manual signing with our cert + profile, and remove
 # the duplicate libapp.a Resources entry that tauri's generator creates
 # (`Multiple commands produce libapp.a` build error).
@@ -151,10 +162,13 @@ with open('/tmp/proj.xml', 'wb') as f:
 PY
 plutil -convert xml1 /tmp/proj.xml -o "$PBXPROJ"
 
-# Vite-injected env (build-time). Default to the NAS LAN IP that
-# `pnpm dev:nas` uses; override via VITE_API_BASE_URL / VITE_API_TOKEN
-# from the calling shell.
-export VITE_API_BASE_URL="${VITE_API_BASE_URL:-http://192.168.178.36:3000}"
+# Vite-injected env (build-time). Default to the Tailscale tailnet
+# HTTPS endpoint so the bundled app reaches the backend both at home
+# (MagicDNS resolves to the LAN IP) and away (DERP relay or P2P) —
+# 192.168.178.x only worked on home Wi-Fi and silently broke remote
+# usage. Override via VITE_API_BASE_URL from the calling shell when
+# needed (e.g. local dev pointing at a staging backend).
+export VITE_API_BASE_URL="${VITE_API_BASE_URL:-https://synology.taild3452e.ts.net:8443}"
 if [ -z "${VITE_API_TOKEN:-}" ] && [ -f "$APP_DIR/.env" ]; then
   VITE_API_TOKEN=$(grep -E '^VITE_API_TOKEN=' "$APP_DIR/.env" | cut -d= -f2-)
 fi
