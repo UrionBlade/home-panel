@@ -5,6 +5,7 @@ import type {
   ZigbeePermitJoinInput,
   ZigbeePermitJoinResponse,
   ZigbeeRenameInput,
+  ZigbeeSetStateInput,
   ZigbeeStateResponse,
 } from "@home-panel/shared";
 import { Hono } from "hono";
@@ -14,6 +15,7 @@ import {
   permitJoin,
   removeZigbeeDevice,
   renameDevice,
+  setDeviceState,
 } from "../lib/zigbee/client.js";
 import { getDevice, listDevices, setArmed, setKindOverride, setRoom } from "../lib/zigbee/store.js";
 
@@ -133,6 +135,29 @@ export const zigbeeRouter = new Hono()
     const updated = setArmed(id, body.armed);
     if (!updated) return c.json({ error: "device non trovato" }, 404);
     return c.json(updated);
+  })
+
+  /** Drive a controllable device's power state. Body:
+   *  `{ state: "ON" | "OFF" | "TOGGLE" }`. Used by the Casa tile
+   *  one-tap toggle for plugs. Z2M publishes the resulting state back
+   *  on the device's topic, which feeds the live update path. */
+  .post("/devices/:id/state", async (c) => {
+    const id = c.req.param("id");
+    const body = (await c.req.json().catch(() => null)) as ZigbeeSetStateInput | null;
+    const state = body?.state;
+    if (state !== "ON" && state !== "OFF" && state !== "TOGGLE") {
+      return c.json({ error: "state deve essere ON, OFF o TOGGLE" }, 400);
+    }
+    try {
+      await setDeviceState(id, state);
+      return c.json({ ok: true });
+    } catch (err) {
+      const message = errorMessage(err);
+      if (message.includes("not found")) {
+        return c.json({ error: "device non trovato" }, 404);
+      }
+      return c.json({ error: message }, 502);
+    }
   })
 
   /** Remove the device from the mesh. The bridge will follow up with a

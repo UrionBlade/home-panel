@@ -18,6 +18,7 @@ import {
   useZigbeeAssignRoom,
   useZigbeeLiveSync,
   useZigbeeRenameDevice,
+  useZigbeeSetState,
   useZigbeeState,
 } from "../hooks/useZigbee";
 import type { DeviceEntity } from "./model";
@@ -139,6 +140,7 @@ export function useDeviceActions() {
   const laundryAssign = useAssignDevices();
   const zigbeeRename = useZigbeeRenameDevice();
   const zigbeeAssignRoom = useZigbeeAssignRoom();
+  const zigbeeSetState = useZigbeeSetState();
   const envSensorRoom = useUpdateEnvSensorRoom();
   const envSensorRename = useRenameEnvSensor();
   const leakSensorRoom = useUpdateLeakSensorRoom();
@@ -159,6 +161,14 @@ export function useDeviceActions() {
             const isOn = entity.status === "on";
             return tvPower.mutateAsync({ on: !isOn });
           }
+          case "plug":
+            /* Z2M's TOGGLE invert what the plug currently reports — no
+             * need to read state.status here, the bridge does the flip
+             * and pushes the resulting state back via SSE. */
+            return zigbeeSetState.mutateAsync({
+              ieeeAddress: entity.id,
+              state: "TOGGLE",
+            });
           default:
             return Promise.resolve();
         }
@@ -258,6 +268,7 @@ export function useDeviceActions() {
       laundryAssign,
       zigbeeRename,
       zigbeeAssignRoom,
+      zigbeeSetState,
       envSensorRoom,
       envSensorRename,
       leakSensorRoom,

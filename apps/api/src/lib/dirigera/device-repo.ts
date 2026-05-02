@@ -136,7 +136,10 @@ interface EnvUpsert {
   tempC: number | null;
   humidityPct: number | null;
   batteryPct: number | null;
-  offline: boolean;
+  /** `null` when the WS frame doesn't carry `isReachable` (partial
+   * delta) — keep the previously-stored flag instead of flipping the
+   * sensor to "offline" on every attribute update. */
+  offline: boolean | null;
   lastSeen: string | null;
 }
 
@@ -156,20 +159,18 @@ export function upsertEnvSensor(input: EnvUpsert): UpsertEnvResult {
     .get();
 
   if (existing) {
-    db.update(envSensors)
-      .set({
-        kind: input.kind,
-        lastCo2Ppm: input.co2Ppm,
-        lastPm25: input.pm25,
-        lastTempC: input.tempC,
-        lastHumidityPct: input.humidityPct,
-        lastBatteryPct: input.batteryPct,
-        offline: input.offline,
-        lastSeen: input.lastSeen ?? now,
-        updatedAt: now,
-      })
-      .where(eq(envSensors.id, existing.id))
-      .run();
+    const update: Record<string, unknown> = {
+      kind: input.kind,
+      lastCo2Ppm: input.co2Ppm,
+      lastPm25: input.pm25,
+      lastTempC: input.tempC,
+      lastHumidityPct: input.humidityPct,
+      lastBatteryPct: input.batteryPct,
+      lastSeen: input.lastSeen ?? now,
+      updatedAt: now,
+    };
+    if (input.offline !== null) update.offline = input.offline;
+    db.update(envSensors).set(update).where(eq(envSensors.id, existing.id)).run();
     return { rowId: existing.id, isNew: false };
   }
   const id = randomUUID();
@@ -184,7 +185,7 @@ export function upsertEnvSensor(input: EnvUpsert): UpsertEnvResult {
       lastTempC: input.tempC,
       lastHumidityPct: input.humidityPct,
       lastBatteryPct: input.batteryPct,
-      offline: input.offline,
+      offline: input.offline ?? false,
       lastSeen: input.lastSeen ?? now,
     })
     .run();
@@ -226,7 +227,8 @@ interface LeakUpsert {
   friendlyName: string;
   leakDetected: boolean;
   batteryPct: number | null;
-  offline: boolean;
+  /** Same partial-delta semantics as `EnvUpsert.offline`. */
+  offline: boolean | null;
   lastSeen: string | null;
 }
 
@@ -251,19 +253,17 @@ export function upsertLeakSensor(input: LeakUpsert): UpsertLeakResult {
   if (existing) {
     const triggered = !existing.leakDetected && input.leakDetected;
     const cleared = existing.leakDetected && !input.leakDetected;
-    db.update(leakSensors)
-      .set({
-        leakDetected: input.leakDetected,
-        batteryPct: input.batteryPct,
-        offline: input.offline,
-        lastSeen: input.lastSeen ?? now,
-        /* Clear the ack timestamp when the sensor returns to dry so the
-         * next leak fires a fresh modal+push. */
-        lastAckAt: cleared ? null : existing.lastAckAt,
-        updatedAt: now,
-      })
-      .where(eq(leakSensors.id, existing.id))
-      .run();
+    const update: Record<string, unknown> = {
+      leakDetected: input.leakDetected,
+      batteryPct: input.batteryPct,
+      lastSeen: input.lastSeen ?? now,
+      /* Clear the ack timestamp when the sensor returns to dry so the
+       * next leak fires a fresh modal+push. */
+      lastAckAt: cleared ? null : existing.lastAckAt,
+      updatedAt: now,
+    };
+    if (input.offline !== null) update.offline = input.offline;
+    db.update(leakSensors).set(update).where(eq(leakSensors.id, existing.id)).run();
     const row = db
       .select()
       .from(leakSensors)
@@ -280,7 +280,7 @@ export function upsertLeakSensor(input: LeakUpsert): UpsertLeakResult {
       friendlyName: input.friendlyName,
       leakDetected: input.leakDetected,
       batteryPct: input.batteryPct,
-      offline: input.offline,
+      offline: input.offline ?? false,
       lastSeen: input.lastSeen ?? now,
     })
     .run();

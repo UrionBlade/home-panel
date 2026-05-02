@@ -3,6 +3,7 @@ import {
   type ZigbeeBridgeState,
   type ZigbeeDevice,
   type ZigbeePermitJoinResponse,
+  type ZigbeePowerState,
   type ZigbeeStateResponse,
 } from "@home-panel/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -144,6 +145,18 @@ export function useZigbeeSetKind() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ZIGBEE_STATE_KEY });
     },
+  });
+}
+
+export function useZigbeeSetState() {
+  return useMutation({
+    mutationFn: ({ ieeeAddress, state }: { ieeeAddress: string; state: ZigbeePowerState }) =>
+      apiClient.post<{ ok: true }>(
+        `/api/v1/zigbee/devices/${encodeURIComponent(ieeeAddress)}/state`,
+        { state },
+      ),
+    /* No invalidate here — Z2M publishes the resulting state back on
+     * the device topic, which the SSE channel pushes into the cache. */
   });
 }
 

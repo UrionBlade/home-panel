@@ -535,6 +535,30 @@ export async function renameDevice(ieeeAddress: string, friendlyName: string): P
   });
 }
 
+/** Drive a controllable Zigbee device's power state via Z2M's
+ *  `<friendly>/set` topic. Used by the Casa tile one-tap toggle for
+ *  plugs (and any future on/off device). The bridge will publish the
+ *  new state back on `<friendly>` which the message handler ingests
+ *  as a normal device update — no need to optimistically poke the
+ *  store here. */
+export async function setDeviceState(
+  ieeeAddress: string,
+  power: "ON" | "OFF" | "TOGGLE",
+): Promise<void> {
+  if (!state.client || !state.mqttConnected) {
+    throw new Error("zigbee2mqtt: MQTT bridge disconnected");
+  }
+  const dev = getDevice(ieeeAddress);
+  if (!dev) throw new Error(`zigbee device ${ieeeAddress} not found`);
+  const topic = `${state.baseTopic}/${dev.friendlyName}/set`;
+  await new Promise<void>((resolve, reject) => {
+    state.client?.publish(topic, JSON.stringify({ state: power }), { qos: 1 }, (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+}
+
 export async function removeZigbeeDevice(ieeeAddress: string): Promise<void> {
   const dev = getDevice(ieeeAddress);
   if (!dev) throw new Error(`zigbee device ${ieeeAddress} not found`);

@@ -88,6 +88,12 @@ export interface ZigbeeKindOverrideInput {
   kindOverride: string | null;
 }
 
+export type ZigbeePowerState = "ON" | "OFF" | "TOGGLE";
+
+export interface ZigbeeSetStateInput {
+  state: ZigbeePowerState;
+}
+
 /** SSE event names used by the mobile client to refresh state. */
 export const ZIGBEE_SSE_EVENTS = {
   bridge: "zigbee:bridge",

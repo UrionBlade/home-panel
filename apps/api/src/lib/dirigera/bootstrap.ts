@@ -157,7 +157,7 @@ function applyEnv(device: DirigeraDevice, kind: "air_quality" | "climate"): void
     tempC: temp,
     humidityPct: hum,
     batteryPct: battery == null ? null : Math.round(battery),
-    offline: !device.isReachable,
+    offline: typeof device.isReachable === "boolean" ? !device.isReachable : null,
     lastSeen: device.lastSeen ?? null,
   });
 
@@ -194,7 +194,7 @@ function applyLeak(device: DirigeraDevice): void {
     friendlyName,
     leakDetected: detected,
     batteryPct: battery == null ? null : Math.round(battery),
-    offline: !device.isReachable,
+    offline: typeof device.isReachable === "boolean" ? !device.isReachable : null,
     lastSeen: device.lastSeen ?? null,
   });
 

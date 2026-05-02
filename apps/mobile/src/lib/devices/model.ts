@@ -301,7 +301,9 @@ export function projectZigbee(row: ZigbeeDevice): DeviceEntity {
     status,
     subtitle,
     renameable: true,
-    supportsToggle: false,
+    /* Plugs are the only Z2M kind we drive on/off from a tile tap.
+     * Sensors/sirens stay non-toggleable from the Casa surface. */
+    supportsToggle: kind === "plug" && row.availability !== "offline",
     raw: row,
   };
 }
