@@ -321,7 +321,7 @@ function StatusBadge({ status }: { status: DeviceStatus }) {
 interface KindTint {
   /** CSS token name fragment. Add new ones in tokens.css under the
    * `--tile-<name>-{a,b}` namespace before listing them here. */
-  name: "terracotta" | "sage" | "ochre" | "mauve" | "sky" | "blush" | "glacier";
+  name: "terracotta" | "sage" | "ochre" | "mauve" | "sky" | "blush" | "amber" | "glacier";
   neutral: false;
 }
 
@@ -349,14 +349,17 @@ function tintForKind(kind: DeviceKind): TintResult {
       return { name: "sage", neutral: false };
     case "tv":
       return { name: "terracotta", neutral: false };
-    /* Zigbee sensors / actuators share a dedicated "blush" tint so
-     * they form a recognisable family on the Casa wall, separate from
-     * the appliance palette (no clash with TV terracotta). */
+    /* Zigbee intrusion sensors share a dedicated "blush" tint so they
+     * form a recognisable family on the Casa wall, separate from the
+     * appliance palette (no clash with TV terracotta). Plugs are not
+     * part of the alarm system — they get their own amber tint so a
+     * smart outlet doesn't visually masquerade as a sensor. */
     case "sensor_door":
     case "sensor_window":
     case "siren":
-    case "plug":
       return { name: "blush", neutral: false };
+    case "plug":
+      return { name: "amber", neutral: false };
     /* Environmental + leak sensors share a glacier-pale tint distinct
      * from sky (AC) and sage (laundry). Cool-but-light reads as
      * "ambient" rather than "appliance" and keeps the DIRIGERA hub

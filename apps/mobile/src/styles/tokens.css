@@ -114,10 +114,15 @@
   --tile-mauve-b: oklch(82% 0.10 320);
   --tile-sky-a: oklch(89% 0.07 220);
   --tile-sky-b: oklch(82% 0.105 225);
-  /* Sensors family — door / window / siren / plug share a "blush"
+  /* Sensors family — door / window / siren share a "blush"
    * warm-rose tint so they form a coherent visual group. */
   --tile-blush-a: oklch(89% 0.07 10);
   --tile-blush-b: oklch(81% 0.115 12);
+  /* Smart plugs — amber gradient distinct from ochre (lights) so the
+   * Casa wall reads "lights vs actuators" at a glance, but still on
+   * the warm side because both are user-driven on/off devices. */
+  --tile-amber-a: oklch(90% 0.085 60);
+  --tile-amber-b: oklch(82% 0.13 55);
   /* Environmental sensors family — DIRIGERA air / climate / leak share
    * a glacier tint that's clearly paler and more cyan-leaning than the
    * sky (AC) hue, so a sensor card never reads as a climate device. */
@@ -159,6 +164,8 @@
     --tile-sky-b: oklch(20% 0.08 225);
     --tile-blush-a: oklch(28% 0.06 10);
     --tile-blush-b: oklch(22% 0.08 12);
+    --tile-amber-a: oklch(30% 0.07 60);
+    --tile-amber-b: oklch(24% 0.09 55);
     --tile-glacier-a: oklch(34% 0.035 200);
     --tile-glacier-b: oklch(26% 0.05 200);
 
@@ -209,6 +216,8 @@
   --tile-mauve-b: oklch(22% 0.07 320);
   --tile-sky-a: oklch(26% 0.06 220);
   --tile-sky-b: oklch(20% 0.08 225);
+  --tile-amber-a: oklch(30% 0.07 60);
+  --tile-amber-b: oklch(24% 0.09 55);
   --tile-glacier-a: oklch(34% 0.035 200);
   --tile-glacier-b: oklch(26% 0.05 200);
 

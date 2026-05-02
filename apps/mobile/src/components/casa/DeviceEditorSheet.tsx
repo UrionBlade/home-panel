@@ -58,6 +58,12 @@ export function DeviceEditorSheet({ open, device, rooms, onClose }: DeviceEditor
 
   const isZigbee = device ? isZigbeeKind(device.kind) : false;
   const zigbeeRaw = isZigbee ? (device?.raw as ZigbeeDevice | undefined) : undefined;
+  /* Plugs aren't part of the alarm system — hide the armed toggle so
+   * a smart outlet's tile editor doesn't pretend it can be wired in.
+   * Driven by the user's current pick, not the saved kind, so flipping
+   * a mis-classified contact sensor to "plug" hides the armed row
+   * immediately. */
+  const showAlarmControls = isZigbee && pickedKind !== "plug";
   const isEnvSensor = device?.kind === "sensor_air" || device?.kind === "sensor_climate";
   const envSensor = isEnvSensor ? (device?.raw as EnvSensor | undefined) : undefined;
 
@@ -74,7 +80,7 @@ export function DeviceEditorSheet({ open, device, rooms, onClose }: DeviceEditor
 
   const kindLabel = t(`kinds.${device.kind}`, { count: 1, defaultValue: device.kind });
   const kindChanged = isZigbee && pickedKind !== null && pickedKind !== device.kind;
-  const armedChanged = isZigbee && armed !== (zigbeeRaw?.armed ?? true);
+  const armedChanged = showAlarmControls && armed !== (zigbeeRaw?.armed ?? true);
   const dirty =
     name.trim() !== device.name || roomId !== device.roomId || kindChanged || armedChanged;
   const canSave = dirty && !saving && name.trim().length > 0;
@@ -207,28 +213,30 @@ export function DeviceEditorSheet({ open, device, rooms, onClose }: DeviceEditor
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setArmed(!armed)}
-              aria-pressed={armed}
-              className={[
-                "flex items-center gap-3 rounded-md border px-4 py-3 text-left transition-colors",
-                armed
-                  ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                  : "border-border bg-surface text-text-muted hover:border-text-muted/40",
-              ].join(" ")}
-            >
-              {armed ? (
-                <ShieldCheckIcon size={22} weight="fill" className="shrink-0" />
-              ) : (
-                <ShieldSlashIcon size={22} weight="duotone" className="shrink-0" />
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="font-medium leading-tight">
-                  {armed ? tAlarm("deviceArmed") : tAlarm("deviceDisarmed")}
-                </p>
-              </div>
-            </button>
+            {showAlarmControls && (
+              <button
+                type="button"
+                onClick={() => setArmed(!armed)}
+                aria-pressed={armed}
+                className={[
+                  "flex items-center gap-3 rounded-md border px-4 py-3 text-left transition-colors",
+                  armed
+                    ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                    : "border-border bg-surface text-text-muted hover:border-text-muted/40",
+                ].join(" ")}
+              >
+                {armed ? (
+                  <ShieldCheckIcon size={22} weight="fill" className="shrink-0" />
+                ) : (
+                  <ShieldSlashIcon size={22} weight="duotone" className="shrink-0" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium leading-tight">
+                    {armed ? tAlarm("deviceArmed") : tAlarm("deviceDisarmed")}
+                  </p>
+                </div>
+              </button>
+            )}
           </>
         )}
 
