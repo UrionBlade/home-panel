@@ -32,7 +32,8 @@
       "icons/icon.ico"
     ],
     "iOS": {
-      "developmentTeam": "JB3JURZ8UG"
+      "developmentTeam": "JB3JURZ8UG",
+      "minimumSystemVersion": "14.0"
     }
   }
 }
