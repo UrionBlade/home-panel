@@ -56,6 +56,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Install Ruby + gems BEFORE switching Xcode. setup-ruby compiles
+      # native gems (json, bigdecimal, …) with whatever `xcrun cc`
+      # resolves to; once we `xcode-select` to Xcode 26.2 that host
+      # compilation fails ("compiler failed to generate an executable
+      # file"). Compiling against the runner's default Xcode first, then
+      # switching, keeps both the gem build and the iOS build happy.
+      - name: Set up Ruby + Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+          working-directory: apps/mobile
+
       - name: Select Xcode (26+ required by Apple, fall back to 16)
         run: |
           echo "Available Xcodes:"
@@ -159,13 +172,6 @@ jobs:
 
       - name: Install pnpm deps
         run: pnpm install --frozen-lockfile
-
-      - name: Set up Ruby + Fastlane
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.3"
-          bundler-cache: true
-          working-directory: apps/mobile
 
       - name: Run Fastlane release lane
         working-directory: apps/mobile
