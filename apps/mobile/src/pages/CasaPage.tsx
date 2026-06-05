@@ -34,7 +34,12 @@ export function CasaPage() {
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [creatingRoom, setCreatingRoom] = useState(false);
   const [editingDevice, setEditingDevice] = useState<DeviceEntity | null>(null);
-  const [controlDevice, setControlDevice] = useState<DeviceEntity | null>(null);
+  /* Store only the id, not a snapshot: the open control sheet must read
+   * live state from `devices` so optimistic updates (e.g. AC setpoint)
+   * reflect immediately instead of freezing at the value captured on tap. */
+  const [controlDeviceId, setControlDeviceId] = useState<string | null>(null);
+  const controlDevice =
+    controlDeviceId !== null ? (devices.find((d) => d.id === controlDeviceId) ?? null) : null;
 
   /* Tap sulla tile:
    *  - Luce → toggle on/off immediato (azione primaria diretta).
@@ -58,7 +63,7 @@ export function CasaPage() {
       setEditingDevice(device);
       return;
     }
-    setControlDevice(device);
+    setControlDeviceId(device.id);
   };
 
   const onMenu = (device: DeviceEntity) => {
@@ -146,7 +151,7 @@ export function CasaPage() {
         onClose={() => setEditingDevice(null)}
       />
 
-      <DeviceControlSheet device={controlDevice} onClose={() => setControlDevice(null)} />
+      <DeviceControlSheet device={controlDevice} onClose={() => setControlDeviceId(null)} />
     </PageContainer>
   );
 }
