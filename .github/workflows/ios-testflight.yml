@@ -160,15 +160,16 @@ jobs:
       - name: Install pnpm deps
         run: pnpm install --frozen-lockfile
 
-      # Runs after Select Xcode so native gem extensions (json,
-      # bigdecimal) compile against a full Xcode toolchain + macOS SDK.
-      # The runner's default developer dir is Command-Line-Tools-only on
-      # the current image, which fails with "install development tools
-      # first" the moment the gem cache rolls over and a build is needed.
+      # On the macos-15-arm64 (darwin-24) image, setup-ruby served a
+      # darwin-23-built 3.3.11 because no darwin-24 build of 3.3.11
+      # exists; native gem extensions (json, bigdecimal) then fail to
+      # compile against the newer toolchain ("compiler failed to generate
+      # an executable file"). Pin a Ruby version that ships a matching
+      # darwin-24 prebuilt so gem extensions build cleanly.
       - name: Set up Ruby + Fastlane
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.3"
+          ruby-version: "3.4"
           bundler-cache: true
           working-directory: apps/mobile
 
