@@ -657,6 +657,22 @@ public func ios_voice_poll_enrollment_embedding() -> UnsafePointer<Float>? {
     return UnsafePointer(gLastEnrollmentEmbeddingCBuf)
 }
 
+/// Reports whether speaker capture can actually produce an embedding right
+/// now, so the enrollment flow can fail fast with a truthful message instead
+/// of waiting out the 4 s timeout and blaming the user ("speak louder").
+///   0 = ready (engine running + model loaded)
+///   1 = audio engine not running (voice assistant disabled)
+///   2 = engine running but SpeakerECAPA.mlmodelc missing from the bundle
+@_cdecl("ios_voice_speaker_status")
+public func ios_voice_speaker_status() -> Int32 {
+    guard gIsRunning else { return 1 }
+    // Idempotent — if the engine is up the model load was already attempted
+    // in startEngine, but re-asserting here costs nothing and covers any
+    // path that started the engine without loading the model.
+    loadSpeakerModelIfNeeded()
+    return gSpeakerModel == nil ? 2 : 0
+}
+
 // ---------------------------------------------------------------------------
 // MARK: - TTS
 // ---------------------------------------------------------------------------

@@ -41,6 +41,7 @@ extern "C" {
     fn ios_voice_begin_enrollment_capture();
     fn ios_voice_end_enrollment_capture();
     fn ios_voice_poll_enrollment_embedding() -> *const std::os::raw::c_float;
+    fn ios_voice_speaker_status() -> std::os::raw::c_int;
 }
 
 /// Length of the speaker embedding emitted by `ios_voice_poll_embedding`.
@@ -237,6 +238,14 @@ pub async fn voice_capture_speaker_embedding() -> Result<Vec<f32>, String> {
     #[cfg(target_os = "ios")]
     {
         use std::time::{Duration, Instant};
+        /* Fail fast with a truthful, machine-readable code when capture
+         * physically can't succeed, instead of timing out and blaming the
+         * user. The UI maps these codes to localized strings. */
+        match unsafe { ios_voice_speaker_status() } {
+            1 => return Err("voice/engine-off".to_string()),
+            2 => return Err("voice/model-missing".to_string()),
+            _ => {}
+        }
         unsafe { ios_voice_begin_enrollment_capture() };
         let deadline = Instant::now() + Duration::from_secs(4);
         loop {
@@ -252,9 +261,7 @@ pub async fn voice_capture_speaker_embedding() -> Result<Vec<f32>, String> {
                  * live SFSpeechRecognizer back online; without this the
                  * voice assistant would stay deaf after a silent timeout. */
                 unsafe { ios_voice_end_enrollment_capture() };
-                return Err(
-                    "timeout: nessun campione audio sufficiente nei 4s".to_string()
-                );
+                return Err("voice/timeout".to_string());
             }
             tokio::time::sleep(Duration::from_millis(100)).await;
         }

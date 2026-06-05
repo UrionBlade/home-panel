@@ -53,6 +53,21 @@ export function VoiceEnrollment({ member }: VoiceEnrollmentProps) {
   const currentIndex = Math.min(sampleCount, kPhrases.length - 1);
   const isComplete = sampleCount >= kRecommendedSamples;
 
+  /* The native capture command rejects with a stable machine-readable code
+   * (Tauri surfaces a rejected Result<_, String> as the bare string). Map
+   * the known codes to localized copy; fall back to the generic message. */
+  const captureErrorText = (err: unknown): string => {
+    const code = err instanceof Error ? err.message : typeof err === "string" ? err : "";
+    switch (code) {
+      case "voice/engine-off":
+        return t("voice.errors.engineOff");
+      case "voice/model-missing":
+        return t("voice.errors.modelMissing");
+      default:
+        return t("voice.errors.captureFailed");
+    }
+  };
+
   const handleRecord = async () => {
     if (!nativeVoiceClient.supported) {
       pushToast({ tone: "danger", text: t("voice.errors.nativeOnly") });
@@ -67,10 +82,7 @@ export function VoiceEnrollment({ member }: VoiceEnrollmentProps) {
         text: t("voice.toasts.sampleSaved", { count: sampleCount + 1 }),
       });
     } catch (err) {
-      pushToast({
-        tone: "danger",
-        text: err instanceof Error ? err.message : t("voice.errors.captureFailed"),
-      });
+      pushToast({ tone: "danger", text: captureErrorText(err) });
     } finally {
       setRecording(false);
     }

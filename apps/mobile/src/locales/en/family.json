@@ -53,6 +53,8 @@
     "errors": {
       "nativeOnly": "Voice recording only works inside the TestFlight app on iPad/iPhone.",
       "captureFailed": "I didn't capture enough audio. Try again, a bit louder.",
+      "engineOff": "Turn on the voice assistant in settings first, then record your voice.",
+      "modelMissing": "The voice model isn't bundled in this app version. Update to the latest TestFlight build.",
       "deleteFailed": "Couldn't delete the voice profile."
     },
     "toasts": {
