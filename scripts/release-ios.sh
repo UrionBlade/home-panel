@@ -237,6 +237,13 @@ echo "→ CFBundleVersion = $SHORT_VERSION"
 /usr/libexec/PlistBuddy -c "Add :NSSpeechRecognitionUsageDescription string 'Home Panel processes voice locally.'" "$BUILT_APP/Info.plist" 2>/dev/null \
   || /usr/libexec/PlistBuddy -c "Set :NSSpeechRecognitionUsageDescription 'Home Panel processes voice locally.'" "$BUILT_APP/Info.plist"
 
+# Declare export compliance in the bundle. Without it every upload lands in
+# MISSING_EXPORT_COMPLIANCE and stays invisible to testers until someone
+# answers the question by hand in App Store Connect. The app only uses
+# standard HTTPS, which is exempt.
+/usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$BUILT_APP/Info.plist" 2>/dev/null \
+  || /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption false" "$BUILT_APP/Info.plist"
+
 # Drop libapp.a if it leaked into the bundle root (codesign treats it
 # as orphan code and breaks app-bundle recognition).
 rm -f "$BUILT_APP/libapp.a"
