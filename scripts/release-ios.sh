@@ -274,7 +274,10 @@ echo "→ IPA: $IPA_DIR/Home Panel.ipa ($(du -h "$IPA_DIR/Home Panel.ipa" | cut 
 
 # Upload via altool.
 mkdir -p "$HOME/.appstoreconnect/private_keys"
-cp "$ASC_KEY_PATH" "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+# ponytail: no-op when ASC_KEY_PATH already points at the destination —
+# plain cp errors out on identical src/dst and set -e kills the upload.
+ASC_KEY_DEST="$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+[ "$ASC_KEY_PATH" -ef "$ASC_KEY_DEST" ] || cp "$ASC_KEY_PATH" "$ASC_KEY_DEST"
 echo "→ Uploading to TestFlight…"
 xcrun altool --upload-app --type ios \
   --apple-id "$APPLE_ID_NUMERIC" \
