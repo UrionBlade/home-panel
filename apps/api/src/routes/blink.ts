@@ -23,6 +23,7 @@ import {
   type BlinkSession,
   blinkListCameras,
   blinkListMedia,
+  blinkListSyncModules,
   blinkLogin,
   blinkRefreshToken,
   blinkRequestThumbnail,
@@ -333,6 +334,20 @@ export const blinkRouter = new Hono()
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sync fallita";
       console.error("[blink] sync error:", msg);
+      return c.json({ error: msg }, 500);
+    }
+  })
+
+  /* Reports whether a Sync Module can host a USB drive, which is the only
+   * way to keep event clips without a Blink subscription. */
+  .get("/sync-modules", async (c) => {
+    const session = getSession();
+    if (!session) return c.json({ error: "Credenziali Blink non configurate" }, 400);
+    try {
+      return c.json({ syncModules: await blinkListSyncModules(session) });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Lettura sync module fallita";
+      console.error("[blink] sync-modules error:", msg);
       return c.json({ error: msg }, 500);
     }
   })

@@ -90,6 +90,18 @@ export interface BlinkCameraInfo {
   firmwareVersion: string;
 }
 
+export interface BlinkSyncModuleInfo {
+  id: string;
+  name: string;
+  networkId: string;
+  status: string;
+  /** Hardware supports a USB drive (Sync Module 2). False on first-gen. */
+  localStorageCompatible: boolean;
+  /** USB drive present and local storage turned on in the Blink app. */
+  localStorageEnabled: boolean;
+  localStorageStatus: string;
+}
+
 export interface BlinkClipInfo {
   id: string;
   cameraId: string;
@@ -479,6 +491,38 @@ export async function blinkListCameras(session: BlinkSession): Promise<BlinkCame
   for (const c of data.owls ?? []) list.push(toInfo(c, "owl"));
   for (const c of data.doorbells ?? []) list.push(toInfo(c, "doorbell"));
   return list;
+}
+
+/**
+ * Sync modules as reported by /homescreen. Without a Blink subscription the
+ * cloud stores no clips, so the only free way to keep event clips is the USB
+ * drive a Sync Module 2 can host ("local storage"). Reading these flags tells
+ * us whether that route is available before we build anything on top of it.
+ */
+export async function blinkListSyncModules(session: BlinkSession): Promise<BlinkSyncModuleInfo[]> {
+  interface HomescreenSyncModule {
+    id: number;
+    name: string;
+    network_id: number;
+    status: string;
+    /** Absent on first-gen modules, which cannot host a USB drive at all. */
+    local_storage_compatible?: boolean;
+    local_storage_enabled?: boolean;
+    local_storage_status?: string;
+  }
+  const data = await blinkApi<{ sync_modules?: HomescreenSyncModule[] }>(
+    session,
+    `/api/v3/accounts/${session.accountId}/homescreen`,
+  );
+  return (data.sync_modules ?? []).map((m) => ({
+    id: String(m.id),
+    name: m.name,
+    networkId: String(m.network_id),
+    status: m.status,
+    localStorageCompatible: m.local_storage_compatible ?? false,
+    localStorageEnabled: m.local_storage_enabled ?? false,
+    localStorageStatus: m.local_storage_status ?? "unknown",
+  }));
 }
 
 export async function blinkArmNetwork(
