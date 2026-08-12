@@ -98,6 +98,23 @@ docker compose up -d --build
 
 The API runs on port 3000 with persistent SQLite in `./data/`.
 
+#### Surviving a NAS reboot (Synology)
+
+At boot, containers race each other to register on the docker bridge and
+the losers die with exit 128 (`failed to update bridge store ... timeout`).
+`restart: unless-stopped` does not recover them — the failure is in the
+start path, so the policy has nothing to restart and the stack stays down
+until someone runs `up -d` by hand. Install the boot script once:
+
+```bash
+sudo cp scripts/synology/home-panel-stack.sh /usr/local/etc/rc.d/home-panel-stack.sh
+sudo chmod +x /usr/local/etc/rc.d/home-panel-stack.sh
+sudo /usr/local/etc/rc.d/home-panel-stack.sh start   # verify: writes to /var/log/home-panel-stack.log
+```
+
+It waits for the docker daemon, then retries `up -d` until the stack is
+up, for both the home-panel and runner compose projects.
+
 ## Optional integrations
 
 | Service | How to configure |

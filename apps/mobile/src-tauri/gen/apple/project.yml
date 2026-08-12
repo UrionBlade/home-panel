@@ -12,6 +12,7 @@ settingGroups:
     base:
       PRODUCT_NAME: Home Panel
       PRODUCT_BUNDLE_IDENTIFIER: com.matteopoli.homepanel
+      DEVELOPMENT_TEAM: JB3JURZ8UG
 targetTemplates:
   app:
     type: application
@@ -35,10 +36,6 @@ targets:
       - path: assets
         buildPhase: resources
         type: folder
-      - path: Resources
-        buildPhase: resources
-        type: folder
-        optional: true
       - path: LaunchScreen.storyboard
     info:
       path: mobile_iOS/Info.plist
@@ -55,8 +52,8 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
-        CFBundleShortVersionString: 0.1.0
-        CFBundleVersion: "0.1.0"
+        CFBundleShortVersionString: 0.29.6
+        CFBundleVersion: "0.29.6"
     entitlements:
       path: mobile_iOS/mobile_iOS.entitlements
     scheme:
@@ -65,32 +62,13 @@ targets:
         RUST_LOG: info
     settings:
       base:
-        # Reassert at the target level — Xcode 26 xcodebuild archive
-        # otherwise reads PRODUCT_BUNDLE_IDENTIFIER from a different
-        # scope and writes an empty string into the .xcarchive's
-        # ApplicationProperties.CFBundleIdentifier, which then trips
-        # "Archive Missing Bundle Identifier" at exportArchive time.
-        # The Info.plist of the built .app already has the right
-        # CFBundleIdentifier but xcodebuild reads from build settings
-        # when generating the archive's metadata, not the plist.
-        PRODUCT_BUNDLE_IDENTIFIER: com.matteopoli.homepanel
         ENABLE_BITCODE: false
         ARCHS: [arm64]
-        VALID_ARCHS: arm64
+        VALID_ARCHS: arm64 
         LIBRARY_SEARCH_PATHS[arch=x86_64]: $(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)
         LIBRARY_SEARCH_PATHS[arch=arm64]: $(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME) $(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)
         ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES: true
         EXCLUDED_ARCHS[sdk=iphoneos*]: x86_64
-        # Required so the postBuildScript below can rm the bundle's
-        # emplaced AppIcon copies before CodeSign runs. Xcode 15+
-        # defaults user scripts to sandboxed, which silently no-op's
-        # rm against $BUILT_PRODUCTS_DIR.
-        ENABLE_USER_SCRIPT_SANDBOXING: NO
-        # Re-enable --deep on Xcode 26: combined with the Info.plist
-        # patches the post-build script applies to every nested bundle,
-        # codesign signs everything in one pass and the archive
-        # validation gets a well-formed bundle tree.
-        OTHER_CODE_SIGN_FLAGS: --deep
       groups: [app]
     dependencies:
       - framework: libapp.a
@@ -109,122 +87,3 @@ targets:
         outputFiles:
           - $(SRCROOT)/Externals/x86_64/${CONFIGURATION}/libapp.a
           - $(SRCROOT)/Externals/arm64/${CONFIGURATION}/libapp.a
-    postBuildScripts:
-      # Pre-codesign cleanup that the main CodeSign step depends on:
-      #
-      # 1. Strip extended attributes — Xcode user scripts, asset catalog
-      #    compiles and resource copies all leave xattrs that CodeSign
-      #    treats as foreign code-signing metadata.
-      #
-      # 2. Remove the bundle-root AppIcon*.png copies that Xcode 16
-      #    emplaces (a back-compat artefact for iOS < 13). With our
-      #    iOS 17 deployment target Assets.car covers the runtime icon
-      #    and the loose PNGs only confuse CodeSign with:
-      #      "code object is not signed at all" / In subcomponent:
-      #      Home Panel.app/AppIcon60x60@2x.png
-      #    Xcode 26 doesn't emplace them so the loop is a no-op there.
-      #
-      # 3. Pre-sign every nested directory bundle (.storyboardc,
-      #    .mlmodelc, .bundle, .framework). Xcode 26's ibtool --link
-      #    started producing storyboardc bundles with embedded Swift
-      #    glue, which CodeSign now treats as nested code that has to
-      #    be signed before the main bundle pass:
-      #      Home Panel.app: code object is not signed at all
-      #      In subcomponent: Home Panel.app/LaunchScreen.storyboardc
-      #    Same goes for the SpeakerECAPA.mlmodelc that build.rs drops
-      #    into the bundle. We don't want --deep on the main CodeSign
-      #    (it broke archive packaging with "Missing Bundle Identifier"
-      #    in 28e634c), so handle the inner bundles explicitly here.
-      #
-      # inputFiles forces this phase to run AFTER the resources phase
-      # emplaces everything and BEFORE the implicit CodeSign step.
-      - script: |
-          set -e
-          APP="$BUILT_PRODUCTS_DIR/$WRAPPER_NAME"
-
-          # 1. Remove the bundle-root AppIcon PNG copies. Xcode 26 (like
-          #    Xcode 16) emplaces them as a back-compat artefact for
-          #    iOS < 13 — devices on our iOS 17 deployment target read
-          #    icons from Assets.car, so the loose PNGs serve no
-          #    purpose, but CodeSign treats each one as a nested
-          #    unsigned code object and bails:
-          #      Home Panel.app: code object is not signed at all
-          #      In subcomponent: Home Panel.app/AppIcon60x60@2x.png
-          #    Targeted file removal works where `xattr -cr` did harm
-          #    (stripping codesign-resource markers actool attaches to
-          #    Assets.car and embedded.mobileprovision).
-          for png in "$APP"/AppIcon*.png; do
-            [ -f "$png" ] && rm -f "$png"
-          done
-
-          # 2. Make sure every nested directory bundle has an Info.plist
-          #    with a CFBundleIdentifier. With --deep on the main
-          #    CodeSign pass every nested directory is signed as a
-          #    bundle, and `xcodebuild -exportArchive` then rejects the
-          #    archive with "Missing Bundle Identifier" against any of
-          #    them that has no CFBundleIdentifier. Cases observed:
-          #      - SpeakerECAPA.mlmodelc has no Info.plist at all
-          #      - LaunchScreen.storyboardc has an Info.plist that
-          #        ibtool generated without a CFBundleIdentifier key
-          #    Treat both: create the plist if missing, then add the
-          #    key if absent. PlistBuddy returns 0 on success, non-zero
-          #    when the key already exists — we use that to decide
-          #    between Add and (no-op) leave-alone.
-          find "$APP" -type d \
-            \( -name "*.storyboardc" -o -name "*.mlmodelc" -o -name "*.bundle" \) \
-            -exec sh -c '
-              nested="$1"
-              plist="$nested/Info.plist"
-              base=$(basename "$nested")
-              stem="${base%.*}"
-              if [ ! -f "$plist" ]; then
-                printf "%s\n" \
-                  "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" \
-                  "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">" \
-                  "<plist version=\"1.0\">" \
-                  "<dict>" \
-                  "</dict>" \
-                  "</plist>" \
-                  > "$plist"
-                echo "[plist] created $plist"
-              fi
-              /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$plist" >/dev/null 2>&1 \
-                || { /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.matteopoli.homepanel.${stem}" "$plist"; echo "[plist] added CFBundleIdentifier=com.matteopoli.homepanel.${stem} to $plist"; }
-              /usr/libexec/PlistBuddy -c "Print :CFBundleName" "$plist" >/dev/null 2>&1 \
-                || /usr/libexec/PlistBuddy -c "Add :CFBundleName string ${stem}" "$plist"
-              /usr/libexec/PlistBuddy -c "Print :CFBundlePackageType" "$plist" >/dev/null 2>&1 \
-                || /usr/libexec/PlistBuddy -c "Add :CFBundlePackageType string BNDL" "$plist"
-              /usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$plist" >/dev/null 2>&1 \
-                || /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string 1" "$plist"
-              /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$plist" >/dev/null 2>&1 \
-                || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0" "$plist"
-            ' _ {} \;
-
-          # Debug: dump the full Info.plist of the main app and every
-          # nested bundle so archive validation failures can be
-          # diagnosed without another CI iteration.
-          echo "=== bundle inventory ==="
-          ls -la "$APP/" || true
-          echo "=== main Info.plist ==="
-          /usr/libexec/PlistBuddy -c "Print" "$APP/Info.plist" 2>&1 | head -40
-          find "$APP" -type d \
-            \( -name "*.storyboardc" -o -name "*.mlmodelc" \
-               -o -name "*.bundle" -o -name "*.framework" -o -name "*.app" \) \
-            -exec sh -c '
-              nested="$1"
-              plist="$nested/Info.plist"
-              echo "=== $nested/Info.plist ==="
-              if [ -f "$plist" ]; then
-                /usr/libexec/PlistBuddy -c "Print" "$plist" 2>&1 | head -40
-              else
-                echo "(no Info.plist)"
-              fi
-            ' _ {} \;
-
-          /usr/bin/touch "$DERIVED_FILE_DIR/clean-icons.stamp"
-        name: Pre-codesign bundle cleanup
-        basedOnDependencyAnalysis: false
-        inputFiles:
-          - $(BUILT_PRODUCTS_DIR)/$(WRAPPER_NAME)/Info.plist
-        outputFiles:
-          - $(DERIVED_FILE_DIR)/clean-icons.stamp
